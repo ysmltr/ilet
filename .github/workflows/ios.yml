@@ -102,13 +102,25 @@ jobs:
             echo "::notice title=swift-format patch::No layout changes; the findings above need fixing by hand."
             exit 0
           fi
-          split -l 250 "$RUNNER_TEMP/format.patch" "$RUNNER_TEMP/format-part-"
-          parts=("$RUNNER_TEMP"/format-part-*)
-          for index in "${!parts[@]}"; do
-            # A workflow command is one line, so %, CR and LF are escaped.
-            body=$(perl -pe 's/%/%25/g; s/\r/%0D/g; s/\n/%0A/g' "${parts[$index]}")
-            echo "::notice title=swift-format patch $((index + 1)) of ${#parts[@]}::$body"
-          done
+          # GitHub keeps 4096 characters of a notice and shows 10 per step, so the patch is cut at
+          # line ends into parts of at most 4000 bytes. A workflow command is a single line, so %,
+          # CR and LF are escaped.
+          perl -e '
+            local $/;
+            my @parts = ("");
+            for my $line (split /(?<=\n)/, <STDIN>) {
+              push @parts, "" if length($parts[-1]) > 0 && length($parts[-1] . $line) > 4000;
+              $parts[-1] .= $line;
+            }
+            print "::warning::The patch has ", scalar(@parts), " parts; only 10 are shown.\n"
+              if @parts > 10;
+            for my $index (0 .. $#parts) {
+              (my $body = $parts[$index]) =~ s/%/%25/g;
+              $body =~ s/\r/%0D/g;
+              $body =~ s/\n/%0A/g;
+              printf "::notice title=swift-format patch %d of %d::%s\n", $index + 1, scalar(@parts), $body;
+            }
+          ' < "$RUNNER_TEMP/format.patch"
 
       - name: Unit tests
         if: ${{ !cancelled() }}
