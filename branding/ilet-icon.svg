@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title">
+  <title id="title">ilet</title>
+  <defs>
+    <linearGradient id="background" x1="96" y1="64" x2="928" y2="960" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3B82F6"/>
+      <stop offset="1" stop-color="#6D28D9"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="228" fill="url(#background)"/>
+
+  <!-- Phone: white body; screen and home indicator cut out to the background -->
+  <rect x="120" y="268" width="220" height="488" rx="52" fill="#FFFFFF"/>
+  <rect x="146" y="318" width="168" height="342" rx="16" fill="url(#background)"/>
+  <rect x="202" y="694" width="56" height="18" rx="9" fill="url(#background)"/>
+
+  <!-- Computer: monitor, neck and base -->
+  <rect x="560" y="310" width="344" height="270" rx="34" fill="#FFFFFF"/>
+  <rect x="586" y="336" width="292" height="218" rx="12" fill="url(#background)"/>
+  <rect x="708" y="578" width="48" height="82" fill="#FFFFFF"/>
+  <rect x="622" y="652" width="220" height="40" rx="20" fill="#FFFFFF"/>
+
+  <!-- Arrows from the phone to the computer, fading in to show the direction -->
+  <g fill="none" stroke="#FFFFFF" stroke-width="38" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="372,410 418,460 372,510" opacity="0.4"/>
+    <polyline points="430,410 476,460 430,510" opacity="0.7"/>
+    <polyline points="488,410 534,460 488,510"/>
+  </g>
+</svg>
