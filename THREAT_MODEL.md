@@ -81,11 +81,13 @@ every file anyway), a jailbroken or compromised iOS, and physical access to an u
 | T8  | Guessing an access token                                   | 256-bit random tokens; constant-time hash comparison; per-address rate limit on failures.                    | 1 |
 | T9  | Stealing tokens from the PC's disk                         | Only SHA-256 hashes are stored. A hash cannot be used to authenticate, and a 256-bit random value cannot be recovered from its hash. | 1 |
 | T10 | Stealing the token from the phone                          | Keychain only (after first unlock, this device only), shared with the Share Extension through a Keychain access group. Never in UserDefaults, App Group files or logs. | 3, 5 |
-| T11 | ADV4 reads the QR code and pairs first                     | The secret exists only after an explicit click, expires after 120 s, works once and is invalidated when the QR window closes. The desktop shows every new pairing, and the user can revoke it. | 2 |
+| T11 | ADV4 reads the QR code and pairs first                     | The secret exists only after an explicit click, expires after 120 s, works once and is invalidated when the QR window closes. The window warns against showing the code in screen shares or photos and shows which device paired, so the user can revoke it. | 2 (revoke UI: 6) |
 | T12 | Guessing the pairing secret                                | 256-bit secret, single active secret, rate-limited failures.                                                 | 2 |
 | T13 | ADV5 injects a fake pairing (attacker's address and fingerprint) | No URL scheme for pairing. The pairing payload is accepted only from the in-app camera scanner and is validated strictly. | 3 |
 | T14 | A revoked device keeps sending                             | Revocation removes the token hash immediately and aborts that device's uploads in progress.                  | 1 (core), 6 (UI) |
 | T15 | Stealing the TLS private key from the PC's disk            | The key is encrypted with Electron `safeStorage` (DPAPI, bound to the Windows user). The app refuses to store it if encryption is unavailable. On load, the key must match the certificate. | 1 |
+| T31 | Abusing the unauthenticated pairing endpoint (slow or large bodies, probing) | The endpoint is closed unless a code is on screen and then answers without reading the body; JSON bodies are limited to 4 KiB and must arrive within 10 s; every failure counts towards the rate limit. | 2 |
+| T32 | The pairing secret leaks on the PC                         | Only its hash is kept for checking; the plaintext exists only to draw the QR code and is never written to disk or logged. Use, expiry, a new code or closing the window discards it. | 2 |
 
 ### 4.3 Received files (the PC's file system and shell)
 
@@ -105,10 +107,10 @@ every file anyway), a jailbroken or compromised iOS, and physical access to an u
 | ID  | Threat                                                     | Mitigation                                                                                                   | Phase |
 | --- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ----- |
 | T24 | Information leaks through errors or logs                   | Error bodies contain only a code. Logs never contain tokens, secrets, `Authorization` headers or file content; logged values are escaped so they cannot forge log lines. | 1 |
-| T25 | A compromised renderer (XSS) reaches Node.js               | `contextIsolation`, `sandbox`, no `nodeIntegration`, minimal preload API with validated IPC, strict CSP, no remote content, navigation and new windows blocked. | 2, 6 |
+| T25 | A compromised renderer (XSS) reaches Node.js or the network | `contextIsolation`, `sandbox`, no `nodeIntegration`. The page is served from a custom `ilet://` protocol with a fixed list of bundled files and a strict CSP (`default-src 'none'`). The preload exposes three functions; the main process accepts IPC only from the top frame of its own window and validates every message. Navigation, new windows, `<webview>`, all permission requests and all http(s)/ws requests are blocked. Text from outside (device names) is only ever set with `textContent`. | 2 |
 | T26 | Code injection into the app binary (`ELECTRON_RUN_AS_NODE`, `NODE_OPTIONS`, edited ASAR) | Electron fuses: RunAsNode and NODE_OPTIONS disabled, app loaded only from ASAR, ASAR integrity validation. Code signing later. | 7 |
 | T27 | The dev-only token script ships in the product, or its token is used from the network | It is a separate entry point, compiled to a separate folder (`dist-dev/`) that the installer never includes; it uses a separate data folder, listens only on `127.0.0.1` and refuses to run in a packaged app. | 1 |
-| T28 | Supply-chain attack through npm packages                   | No runtime dependencies on the desktop; dev tools justified in the README; exact versions and a committed lock file; install scripts disabled; only releases at least 14 days old. | 1 |
+| T28 | Supply-chain attack through npm packages                   | One runtime dependency (`qr`, zero dependencies of its own); every package justified in the README; exact versions and a committed lock file; install scripts disabled; only releases at least 14 days old. | 1, 2 |
 
 ### 4.5 Privacy
 
@@ -131,6 +133,8 @@ These must always be true. The Phase 7 review checks each one against the code.
    from the pin.
 6. ilet never opens or executes a received file.
 7. Existing files are never overwritten.
+8. The pairing endpoint reads no request body unless a pairing code is on screen.
+9. The window can load only the bundled files and has no direct access to Node.js.
 
 ## 6. Accepted risks
 

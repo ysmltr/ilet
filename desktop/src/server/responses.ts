@@ -3,7 +3,7 @@ import type { OutgoingHttpHeaders, ServerResponse } from 'node:http';
 import {
   BEARER_SCHEME,
   ERROR_HTTP_STATUS,
-  MediaType,
+  JSON_RESPONSE_CONTENT_TYPE,
   SECURITY_RESPONSE_HEADERS,
 } from '../protocol/constants';
 import { ProtocolError } from '../shared/errors';
@@ -21,7 +21,7 @@ export function sendJson(
   response.writeHead(status, {
     ...SECURITY_RESPONSE_HEADERS,
     ...headers,
-    'Content-Type': MediaType.json,
+    'Content-Type': JSON_RESPONSE_CONTENT_TYPE,
     'Content-Length': Buffer.byteLength(payload),
   });
   response.end(payload);

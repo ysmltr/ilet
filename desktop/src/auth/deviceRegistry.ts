@@ -25,11 +25,13 @@ interface StoredDevice extends PairedDevice {
   readonly tokenHash: Buffer;
 }
 
+type RegistrationListener = (device: PairedDevice) => void;
 type RevocationListener = (deviceId: string) => void;
 
 /** Paired devices and the hashes of their access tokens. */
 export class DeviceRegistry {
   private devices: readonly StoredDevice[];
+  private readonly registrationListeners = new Set<RegistrationListener>();
   private readonly revocationListeners = new Set<RevocationListener>();
   private pendingWrite: Promise<void> = Promise.resolve();
 
@@ -51,6 +53,7 @@ export class DeviceRegistry {
     return this.devices.map(toPairedDevice);
   }
 
+  /** Listeners hear about the new device only after it has been saved. */
   async register(requestedName: string): Promise<RegisteredDevice> {
     const name = sanitizeDisplayName(requestedName);
     if (name === '') {
@@ -65,7 +68,11 @@ export class DeviceRegistry {
     };
     this.devices = [...this.devices, device];
     await this.persist();
-    return { device: toPairedDevice(device), token };
+    const pairedDevice = toPairedDevice(device);
+    for (const listener of this.registrationListeners) {
+      listener(pairedDevice);
+    }
+    return { device: pairedDevice, token };
   }
 
   /** Returns the device that owns `token`, or `undefined`. */
@@ -99,6 +106,10 @@ export class DeviceRegistry {
     }
     await this.persist();
     return true;
+  }
+
+  onRegistered(listener: RegistrationListener): void {
+    this.registrationListeners.add(listener);
   }
 
   onRevoked(listener: RevocationListener): void {

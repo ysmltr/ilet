@@ -8,6 +8,7 @@ import { createUntrustedFileMarker } from '../files/markOfTheWeb';
 import { removeStalePartFiles } from '../files/partialFiles';
 import { loadOrCreateIdentity, type TlsIdentity } from '../identity/identityStore';
 import type { SecretCipher } from '../identity/secretCipher';
+import { PairingCodes } from '../pairing/pairingCodes';
 import { closeServer, listen, type ListenAddress } from '../server/httpsServer';
 import { createIletServer } from '../server/iletServer';
 import { defaultSettings, loadOrCreateSettings, type Settings } from '../settings/settings';
@@ -34,6 +35,7 @@ export interface ServerCore {
   readonly identity: TlsIdentity;
   readonly settings: Settings;
   readonly devices: DeviceRegistry;
+  readonly pairingCodes: PairingCodes;
   stop(): Promise<void>;
 }
 
@@ -70,11 +72,13 @@ export async function startServerCore(environment: ServerCoreEnvironment): Promi
   devices.onRevoked((deviceId) => {
     receiver.abortUploadsFrom(deviceId);
   });
+  const pairingCodes = new PairingCodes(Date.now);
 
   const server = createIletServer({
     identity,
     settings,
     devices,
+    pairingCodes,
     receiver,
     onFileReceived: (file, device) => {
       logger.info('file received', { device: device.name, bytes: file.sizeBytes });
@@ -85,5 +89,5 @@ export async function startServerCore(environment: ServerCoreEnvironment): Promi
   await listen(server, environment.listenAddress, settings.port, logger);
   logger.info('server listening', { port: settings.port, fingerprint: identity.fingerprint });
 
-  return { identity, settings, devices, stop: () => closeServer(server) };
+  return { identity, settings, devices, pairingCodes, stop: () => closeServer(server) };
 }

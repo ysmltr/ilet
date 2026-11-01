@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -65,6 +66,18 @@ describe('DeviceRegistry', () => {
     const reopened = await DeviceRegistry.open(filePath, () => PAIRED_AT);
     expect(reopened.authenticate(token)).toBeUndefined();
     expect(reopened.list()).toEqual([]);
+  });
+
+  it('tells listeners about a new device once it is saved', async () => {
+    const { registry, filePath } = await openRegistry();
+    const savedWhenNotified: boolean[] = [];
+    registry.onRegistered((device) => {
+      savedWhenNotified.push(readFileSync(filePath, 'utf8').includes(device.id));
+    });
+
+    await registry.register('iPhone');
+
+    expect(savedWhenNotified).toEqual([true]);
   });
 
   it('reports revoking an unknown device', async () => {

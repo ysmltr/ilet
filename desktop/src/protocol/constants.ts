@@ -35,7 +35,7 @@ export const CERTIFICATE_IP_ADDRESSES = [
 /** [3.1] Access tokens and pairing secrets: random bytes, base64url without padding. */
 export const SECRET_BYTES = 32;
 
-/** [3.1] Failed authentications allowed per client address within one window. */
+/** [3.1, 4.1] Failed authentications and pairing attempts allowed per client address and window. */
 export const AUTH_FAILURE_LIMIT = { maxFailures: 10, windowMs: 60_000 } as const;
 
 /** [3.3] */
@@ -46,6 +46,8 @@ export const SERVER_LIMITS = {
   keepAliveTimeoutMs: 5_000,
   maxHeaderBytes: 16 * 1024,
   maxConnections: 32,
+  maxJsonBodyBytes: 4 * 1024,
+  jsonBodyTimeoutMs: 10_000,
 } as const;
 
 export const DEFAULT_MAX_FILE_SIZE_BYTES = 8 * 1024 ** 3;
@@ -57,9 +59,17 @@ export const UPLOAD_RETRY_AFTER_SECONDS = 2;
 /** [4.2] Display and device names, in UTF-16 code units (fits a 255-byte mDNS TXT entry). */
 export const MAX_DISPLAY_NAME_LENGTH = 64;
 
+/** [4.1] */
+export const PAIRING_SECRET_TTL_MS = 120_000;
+
+/** [4.2] The `ilet` key of the QR code payload. */
+export const PAIRING_PAYLOAD_VERSION = 1;
+export const MAX_PAIRING_ADDRESSES = 8;
+
 /** [5] */
 export const ApiPath = {
   info: '/api/info',
+  pair: '/api/v1/pair',
   status: '/api/v1/status',
   files: '/api/v1/files',
 } as const;
@@ -77,9 +87,11 @@ export const RequestHeader = {
 } as const;
 
 export const MediaType = {
-  json: 'application/json; charset=utf-8',
+  json: 'application/json',
   upload: 'application/octet-stream',
 } as const;
+
+export const JSON_RESPONSE_CONTENT_TYPE = `${MediaType.json}; charset=utf-8`;
 
 export const EXPECT_CONTINUE = '100-continue';
 export const BEARER_SCHEME = 'Bearer';
@@ -97,6 +109,7 @@ export const ERROR_HTTP_STATUS = {
   incomplete_upload: 400,
   unauthorized: 401,
   forbidden: 403,
+  pairing_rejected: 403,
   not_found: 404,
   method_not_allowed: 405,
   length_required: 411,

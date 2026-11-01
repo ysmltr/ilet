@@ -5,7 +5,7 @@
 Share a photo on your iPhone, tap **ilet**, and the file is in a folder on your PC: directly
 over your Wi-Fi, with no accounts, no cloud and no analytics.
 
-> **Status:** Phase 1 of 7: wire protocol, threat model and the desktop server core (no UI yet).
+> **Status:** Phase 2 of 7: the desktop server and QR pairing are done; the iPhone app comes next.
 
 ## Security first
 
@@ -37,7 +37,13 @@ automatically.
 | `auth/`     | Access tokens, paired devices, rate limiting                                          |
 | `files/`    | File name sanitizing, safe saving (`.part` → rename), Mark-of-the-Web, disk checks    |
 | `settings/` | Settings with validation                                                              |
+| `pairing/`  | One-time pairing codes, QR code payload, which addresses to advertise                 |
 | `server/`   | HTTPS server, request rules, routes                                                   |
+| `ipc/`      | The contract between the window and the main process                                  |
+| `ui/`       | Window, `ilet://` protocol, Electron security guards, IPC handlers                    |
+| `preload/`  | The three functions the window may call (`window.ilet`)                               |
+| `renderer/` | The window's page: HTML, CSS and a script with no access to Node.js                   |
+| `i18n/`     | English and Turkish texts                                                             |
 | `app/`      | Composition root: wires the modules together                                          |
 | `shared/`   | Errors, logging, text helpers, JSON files                                             |
 
@@ -50,24 +56,31 @@ cd desktop
 npm ci              # install exact versions from package-lock.json
 npm run check       # type check + lint (zero warnings) + tests
 npm run dev:token   # DEVELOPMENT ONLY: server + a test token for curl
-npm start           # the real app (Phase 1: server only, no window)
+npm run dev:pair    # DEVELOPMENT ONLY: server + a pairing code that curl can use
+npm start           # the real app: server + pairing window
 ```
 
 Electron downloads its runtime the first time it starts (about 110 MB).
 
-`npm run dev:token` keeps its data in `%APPDATA%\ilet-dev`, apart from the real app, listens only
-on `127.0.0.1`, and prints ready-to-paste `curl.exe` commands. It is compiled to `dist-dev/`,
-which the installer never includes, and it refuses to run in a packaged app.
+The dev scripts keep their data in `%APPDATA%\ilet-dev`, apart from the real app, listen only on
+`127.0.0.1`, and print ready-to-paste `curl.exe` commands. They are compiled to `dist-dev/`, which
+the installer never includes, and they refuse to run in a packaged app.
 
 ## Dependencies
 
-The desktop app has **no runtime dependencies**: it uses only Node.js and Electron built-ins.
+Runtime (shipped with the app):
+
+| Package | Why                                                                                                                  |
+| ------- | -------------------------------------------------------------------------------------------------------------------- |
+| `qr`    | Encodes the pairing QR code. Zero dependencies, actively maintained, by the author of the audited `noble` crypto libraries. |
+
 Development tools:
 
 | Package                  | Why                                                                          |
 | ------------------------ | ---------------------------------------------------------------------------- |
 | `electron`               | The desktop runtime (required by the tech stack).                            |
 | `electron-builder`       | Packages the NSIS installer; its file whitelist keeps dev code out of builds. |
+| `esbuild`                | Bundles the sandboxed preload script and the page, which cannot load other files at run time. |
 | `typescript`             | Type checking in strict mode (6.0: the newest version typescript-eslint supports). |
 | `@types/node`            | Type definitions for the Node.js 24 runtime inside Electron 44.              |
 | `vitest`                 | Test runner that runs TypeScript directly, without a separate build step.    |

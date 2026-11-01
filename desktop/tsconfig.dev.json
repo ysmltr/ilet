@@ -4,5 +4,6 @@
     "rootDir": ".",
     "outDir": "dist-dev"
   },
-  "include": ["src", "dev"]
+  "include": ["src", "dev"],
+  "exclude": ["src/renderer", "src/preload"]
 }

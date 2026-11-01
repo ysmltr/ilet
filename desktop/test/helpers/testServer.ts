@@ -13,6 +13,7 @@ import {
   certificateFingerprint,
   createSelfSignedCertificate,
 } from '../../src/identity/certificate';
+import { PairingCodes } from '../../src/pairing/pairingCodes';
 import { SERVER_LIMITS } from '../../src/protocol/constants';
 import {
   closeServer,
@@ -53,6 +54,7 @@ export interface TestServer {
   readonly deviceId: string;
   readonly receiveFolder: string;
   readonly devices: DeviceRegistry;
+  readonly pairingCodes: PairingCodes;
   readonly device: PairedDevice;
   readonly token: string;
   readonly logger: MemoryLogger;
@@ -101,10 +103,15 @@ export async function startTestServer(options: TestServerOptions = {}): Promise<
     receiver.abortUploadsFrom(deviceId);
   });
   const received: ReceivedFile[] = [];
+  const pairingCodes = new PairingCodes(Date.now);
+  afterEach(() => {
+    pairingCodes.cancel();
+  });
   const server = createIletServer({
     identity,
     settings,
     devices,
+    pairingCodes,
     receiver,
     onFileReceived: (file) => received.push(file),
     logger,
@@ -129,6 +136,7 @@ export async function startTestServer(options: TestServerOptions = {}): Promise<
     deviceId: identity.deviceId,
     receiveFolder: settings.receiveFolder,
     devices,
+    pairingCodes,
     device,
     token,
     logger,

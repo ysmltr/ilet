@@ -1,24 +1,37 @@
 import { BlockList, isIP } from 'node:net';
 
-const LOCAL_NETWORK_RANGES = [
-  // RFC 1918 private networks
+interface NetworkRange {
+  readonly network: string;
+  readonly prefix: number;
+  readonly family: 'ipv4' | 'ipv6';
+}
+
+/** RFC 1918 private IPv4 networks and RFC 4193 unique local IPv6 addresses. */
+const PRIVATE_RANGES: readonly NetworkRange[] = [
   { network: '10.0.0.0', prefix: 8, family: 'ipv4' },
   { network: '172.16.0.0', prefix: 12, family: 'ipv4' },
   { network: '192.168.0.0', prefix: 16, family: 'ipv4' },
-  // Link-local (RFC 3927, RFC 4291)
+  { network: 'fc00::', prefix: 7, family: 'ipv6' },
+];
+
+/** Link-local (RFC 3927, RFC 4291) and loopback ranges. */
+const LINK_LOCAL_AND_LOOPBACK_RANGES: readonly NetworkRange[] = [
   { network: '169.254.0.0', prefix: 16, family: 'ipv4' },
   { network: 'fe80::', prefix: 10, family: 'ipv6' },
-  // Loopback
   { network: '127.0.0.0', prefix: 8, family: 'ipv4' },
   { network: '::1', prefix: 128, family: 'ipv6' },
-  // IPv6 unique local addresses (RFC 4193)
-  { network: 'fc00::', prefix: 7, family: 'ipv6' },
-] as const;
+];
 
-const localNetworks = new BlockList();
-for (const range of LOCAL_NETWORK_RANGES) {
-  localNetworks.addSubnet(range.network, range.prefix, range.family);
+function blockListOf(ranges: readonly NetworkRange[]): BlockList {
+  const list = new BlockList();
+  for (const range of ranges) {
+    list.addSubnet(range.network, range.prefix, range.family);
+  }
+  return list;
 }
+
+const localNetworks = blockListOf([...PRIVATE_RANGES, ...LINK_LOCAL_AND_LOOPBACK_RANGES]);
+const privateNetworks = blockListOf(PRIVATE_RANGES);
 
 const IPV4_MAPPED_IPV6_PREFIX = '::ffff:';
 const IPV6_ZONE_SEPARATOR = '%';
@@ -33,17 +46,26 @@ export function normalizeAddress(address: string): string {
     : withoutZone;
 }
 
-/** True for private, link-local and loopback addresses: the peers ilet talks to. */
+/** True for private, link-local and loopback addresses: the peers ilet accepts. */
 export function isLocalNetworkAddress(address: string | undefined): boolean {
-  if (address === undefined) {
-    return false;
-  }
+  return address !== undefined && isInRanges(localNetworks, address);
+}
+
+/**
+ * True for this PC's addresses that a phone on the same network can reach and that need no
+ * zone ID: private IPv4 and unique local IPv6. These go into the pairing QR code.
+ */
+export function isAdvertisableAddress(address: string): boolean {
+  return isInRanges(privateNetworks, address);
+}
+
+function isInRanges(ranges: BlockList, address: string): boolean {
   const normalized = normalizeAddress(address);
   switch (isIP(normalized)) {
     case 4:
-      return localNetworks.check(normalized, 'ipv4');
+      return ranges.check(normalized, 'ipv4');
     case 6:
-      return localNetworks.check(normalized, 'ipv6');
+      return ranges.check(normalized, 'ipv6');
     default:
       return false;
   }

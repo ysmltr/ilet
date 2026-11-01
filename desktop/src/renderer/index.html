@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>ilet</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="renderer.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <header class="brand">
+        <img class="brand-icon" src="icon.svg" alt="" />
+        <div>
+          <h1 class="brand-name">ilet</h1>
+          <p class="brand-tagline" data-i18n="tagline"></p>
+        </div>
+      </header>
+
+      <section id="idle-view" class="card">
+        <p data-i18n="pairIntro"></p>
+        <button
+          id="start-button"
+          class="button primary"
+          type="button"
+          data-i18n="pairNewDevice"
+        ></button>
+      </section>
+
+      <section id="code-view" class="card" hidden>
+        <p class="instruction" data-i18n="scanInstruction"></p>
+        <canvas id="qr-canvas" class="qr-code" role="img" data-i18n-label="qrCodeLabel"></canvas>
+        <p id="countdown" class="countdown" aria-live="polite"></p>
+        <p class="notice" data-i18n="screenWarning"></p>
+        <button id="cancel-button" class="button" type="button" data-i18n="cancel"></button>
+      </section>
+
+      <section id="result-view" class="card" hidden>
+        <p id="result-message" class="result" role="status"></p>
+        <button id="result-button" class="button primary" type="button"></button>
+      </section>
+    </main>
+  </body>
+</html>

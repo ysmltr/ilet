@@ -133,7 +133,7 @@ Clients should expect the server to enforce these values:
 | Keep-alive between requests           | 5 s        |
 | Total size of request headers         | 16 KiB     |
 | Simultaneous connections              | 32         |
-| JSON request body                     | 4 KiB      |
+| JSON request body                     | 4 KiB, complete within 10 s |
 | File size                             | configurable, default 8 GiB |
 | Concurrent uploads (all devices)      | configurable, default 4     |
 
@@ -151,6 +151,8 @@ Pairing happens only by scanning a QR code that the desktop shows after the user
   the rest of the pairing fails.
 - Failed pairing attempts count towards the same per-address rate limit as failed
   authentications (section 3.1).
+- While no pairing code is on screen, `POST /api/v1/pair` is closed: it answers
+  `403 pairing_rejected` without reading the request body.
 
 ### 4.2 QR code payload
 
@@ -180,10 +182,16 @@ The QR code contains one line of UTF-8 JSON:
 
 The client MUST reject the payload if any rule fails. It MUST ignore unknown keys.
 
+The JSON contains no whitespace (the example is formatted for reading). The QR code uses error
+correction level M and a quiet zone of four modules. Addresses are listed most likely first:
+IPv4 before IPv6, and physical network adapters before virtual ones (Hyper-V, WSL, VirtualBox,
+VMware).
+
 ### 4.3 Pairing flow
 
 1. The client parses and validates the QR payload.
-2. It tries each address in order: `https://<address>:<port>`, with the pin from `fingerprint`.
+2. It connects to `https://<address>:<port>` with the pin from `fingerprint`, trying the
+   addresses in order or in parallel.
 3. `GET /api/info`. The returned `deviceId` MUST equal `id`.
 4. `POST /api/v1/pair` (below). On success the client stores the token in the Keychain (in the
    access group shared with the Share Extension) and stores `id`, `name`, `fingerprint`,
@@ -205,8 +213,19 @@ Success: `201 Created`
 { "token": "<access token>" }
 ```
 
-Errors: `400 invalid_request`, `403 pairing_rejected`, `413 payload_too_large`,
-`415 unsupported_media_type`, `429 too_many_requests`.
+The server checks, in this order:
+
+1. Rate limit: `429 too_many_requests`.
+2. A pairing code is on screen; otherwise `403 pairing_rejected`, without reading the body.
+3. `Content-Type: application/json`, otherwise `415 unsupported_media_type`.
+4. `Content-Length` is present and at most 4 KiB: `411 length_required`, `413 payload_too_large`.
+5. The body arrives within 10 seconds (otherwise the connection is closed) and is a JSON object
+   with the string fields `secret` and `deviceName`, and the cleaned `deviceName` is not empty:
+   `400 invalid_request`. Unknown fields are ignored.
+6. The secret matches and has not expired: `403 pairing_rejected`.
+
+Steps 1–5 never use up the pairing code; only a successful step 6 does. Every failed attempt
+counts towards the rate limit.
 
 The desktop then shows which device was paired, so the user notices an unexpected pairing and
 can revoke it.

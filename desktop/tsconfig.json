@@ -3,5 +3,6 @@
   "compilerOptions": {
     "noEmit": true
   },
-  "include": ["src", "dev", "test", "vitest.config.mts"]
+  "include": ["src", "dev", "test", "vitest.config.mts"],
+  "exclude": ["src/renderer"]
 }

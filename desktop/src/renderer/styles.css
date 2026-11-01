@@ -1,0 +1,134 @@
+:root {
+  color-scheme: light dark;
+  --background: #f5f6fa;
+  --surface: #ffffff;
+  --text: #111827;
+  --muted: #4b5563;
+  --border: #e5e7eb;
+  --accent-start: #3b82f6;
+  --accent-end: #6d28d9;
+  --notice-background: #fff7ed;
+  --notice-text: #9a3412;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0b1020;
+    --surface: #141a2e;
+    --text: #f3f4f6;
+    --muted: #a3aab8;
+    --border: #262f4a;
+    --notice-background: #3a2410;
+    --notice-text: #fdba74;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.5;
+  user-select: none;
+}
+
+main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 28px 24px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.brand-icon {
+  width: 56px;
+  height: 56px;
+}
+
+.brand-name {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.brand-tagline {
+  margin: 0;
+  color: var(--muted);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  text-align: center;
+}
+
+.card[hidden] {
+  display: none;
+}
+
+.card p {
+  margin: 0;
+}
+
+.instruction,
+.result {
+  font-weight: 600;
+}
+
+/* Dark modules on white in every theme: some scanners cannot read inverted codes. */
+.qr-code {
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.countdown {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.notice {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--notice-background);
+  color: var(--notice-text);
+  font-size: 13px;
+}
+
+.button {
+  min-width: 220px;
+  padding: 10px 18px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.button.primary {
+  border: none;
+  background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+  color: #ffffff;
+}
+
+.button:focus-visible {
+  outline: 3px solid var(--accent-start);
+  outline-offset: 2px;
+}
