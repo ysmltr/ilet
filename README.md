@@ -27,6 +27,7 @@ automatically.
 | `desktop/`         | Windows app: Electron + TypeScript                    |
 | `ios/`             | iPhone app: Swift + SwiftUI (Share Extension: Phase 5) |
 | `branding/`        | App icon (SVG master)                                 |
+| `.github/`         | CI: checks the iPhone app on GitHub's Macs            |
 | `PROTOCOL.md`      | Wire protocol                                         |
 | `THREAT_MODEL.md`  | Threat model                                          |
 
@@ -77,7 +78,8 @@ the installer never includes, and they refuse to run in a packaged app.
 ## iPhone development
 
 Requirements: a Mac with Xcode 16 or later, an iPhone with iOS 16 or later, and the build tools
-below (`brew install xcodegen swiftlint swift-format`).
+below (`brew install xcodegen swiftlint`; swift-format comes with Xcode). No Mac? See
+[Without a Mac](#without-a-mac).
 
 1. In `ios/Config/Shared.xcconfig`, set `ILET_BUNDLE_ID_PREFIX` to a reverse-DNS name you own
    (for example `com.yourname.ilet`) and `DEVELOPMENT_TEAM` to your Apple team ID.
@@ -93,8 +95,23 @@ Checks:
 ```bash
 cd ios/IletKit && swift test                              # unit tests, run on the Mac itself
 cd ios && swiftlint --strict                               # lint, zero warnings
-cd ios && swift-format lint --strict --recursive Ilet IletKit
+cd ios && xcrun swift-format lint --strict --recursive Ilet IletKit
 ```
+
+### Without a Mac
+
+**Checking the code.** [`.github/workflows/ios.yml`](.github/workflows/ios.yml) runs the checks
+above on one of GitHub's Macs whenever `ios/` changes: lint, the unit tests and a full build of
+the app for the simulator. It needs the repository on GitHub. Public repositories get these Mac
+minutes for free; private ones get a limited number of free minutes each month.
+
+**Installing on an iPhone.** Every app on an iPhone must be signed with an Apple certificate.
+Without a Mac there are two ways:
+
+| Route | Cost | How it works | Watch out |
+| ----- | ---- | ------------ | --------- |
+| TestFlight (recommended) | Apple Developer Program, 99 USD a year (local prices vary) | A release workflow, added once you choose this route, signs the app on GitHub's Mac with an App Store Connect API key kept as an encrypted GitHub secret, and uploads it. You install it with Apple's TestFlight app. | Apple's official route. The key can be revoked at any time in App Store Connect. |
+| Sideloading with a free Apple ID | Free | A Windows tool (for example AltStore or Sideloadly) signs an unsigned build with your Apple ID and installs it over USB. | You type an Apple ID password into a third-party program: use a separate Apple ID for this, never your main one. The app stops opening after 7 days until you sign it again. |
 
 ### iOS modules
 

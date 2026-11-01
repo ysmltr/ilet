@@ -27,6 +27,8 @@ targets:
     dependencies:
       - package: IletKit
         product: IletCore
+    # A shared scheme, so command-line builds find it without opening Xcode first.
+    scheme: {}
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(ILET_BUNDLE_ID_PREFIX)
