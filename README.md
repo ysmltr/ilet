@@ -6,8 +6,8 @@ Share a photo on your iPhone, tap **ilet**, and the file is in a folder on your 
 over your Wi-Fi, with no accounts, no cloud and no analytics.
 
 > **Status:** Phase 4 of 7. Windows: the server, QR pairing and the Bonjour announcement are
-> done. iPhone: pairing and sending are written but not built yet, and its half of Phase 4
-> (finding the PC again) is not written yet; both need a Mac.
+> done. iPhone: pairing and sending build and pass their unit tests on GitHub's Macs, but have
+> not run on an iPhone yet; its half of Phase 4 (finding the PC again) is not written yet.
 
 ## Security first
 
