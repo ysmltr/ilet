@@ -66,6 +66,18 @@ export const PAIRING_SECRET_TTL_MS = 120_000;
 export const PAIRING_PAYLOAD_VERSION = 1;
 export const MAX_PAIRING_ADDRESSES = 8;
 
+/** [6] Announced as `_ilet._tcp`; mDNS libraries take the type without underscore and protocol. */
+export const DNS_SD_SERVICE_TYPE = APP_NAME;
+
+/** [6] The only keys of the TXT record. */
+export const TxtKey = { deviceId: 'id', displayName: 'name' } as const;
+
+/** [6] RFC 6763 §4.1.1: an instance name is a single DNS label, at most 63 bytes of UTF-8. */
+export const MAX_INSTANCE_NAME_BYTES = 63;
+
+/** [6] The host name is `ilet-` plus this many leading characters of the device ID. */
+export const HOSTNAME_DEVICE_ID_LENGTH = 8;
+
 /** [5] */
 export const ApiPath = {
   info: '/api/info',

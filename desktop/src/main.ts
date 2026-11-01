@@ -1,6 +1,7 @@
 import os from 'node:os';
 import path from 'node:path';
 
+import { getResponder } from '@homebridge/ciao';
 import { app, type BrowserWindow, safeStorage, session } from 'electron';
 
 import { type ServerCore, startServerCore } from './app/serverCore';
@@ -26,6 +27,7 @@ async function run(): Promise<void> {
     dataFolder: app.getPath('userData'),
     downloadsFolder: app.getPath('downloads'),
     listenAddress: ListenAddress.allInterfaces,
+    createMdnsResponder: getResponder,
     hostname: os.hostname(),
     platform: process.platform,
     secretCipher: createSafeStorageCipher(safeStorage),

@@ -48,6 +48,7 @@ export async function startDevServer(logger: Logger): Promise<DevServer> {
     dataFolder,
     downloadsFolder: app.getPath('downloads'),
     listenAddress: ListenAddress.loopback,
+    createMdnsResponder: undefined,
     hostname: os.hostname(),
     platform: process.platform,
     secretCipher: createSafeStorageCipher(safeStorage),

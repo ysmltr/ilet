@@ -2,6 +2,8 @@ import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
 import { DeviceRegistry } from '../auth/deviceRegistry';
+import { type MdnsResponderFactory, startAdvertising } from '../discovery/serviceAdvertiser';
+import { serviceAnnouncement } from '../discovery/serviceAnnouncement';
 import { availableBytes } from '../files/diskSpace';
 import { FileReceiver } from '../files/fileReceiver';
 import { createUntrustedFileMarker } from '../files/markOfTheWeb';
@@ -25,6 +27,11 @@ export interface ServerCoreEnvironment {
   readonly dataFolder: string;
   readonly downloadsFolder: string;
   readonly listenAddress: ListenAddress;
+  /**
+   * Announces the server on the local network, so phones find it after its address changes.
+   * Undefined when the server listens on this PC only (development scripts and tests).
+   */
+  readonly createMdnsResponder: MdnsResponderFactory | undefined;
   readonly hostname: string;
   readonly platform: NodeJS.Platform;
   readonly secretCipher: SecretCipher;
@@ -89,5 +96,29 @@ export async function startServerCore(environment: ServerCoreEnvironment): Promi
   await listen(server, environment.listenAddress, settings.port, logger);
   logger.info('server listening', { port: settings.port, fingerprint: identity.fingerprint });
 
-  return { identity, settings, devices, pairingCodes, stop: () => closeServer(server) };
+  const { createMdnsResponder } = environment;
+  const advertiser =
+    createMdnsResponder === undefined
+      ? undefined
+      : startAdvertising(
+          serviceAnnouncement({
+            deviceId: identity.deviceId,
+            displayName: settings.displayName,
+            port: settings.port,
+          }),
+          createMdnsResponder,
+          logger,
+        );
+
+  return {
+    identity,
+    settings,
+    devices,
+    pairingCodes,
+    stop: async () => {
+      // Withdrawn first, so phones are told the PC is gone before its port stops answering.
+      await advertiser?.stop();
+      await closeServer(server);
+    },
+  };
 }

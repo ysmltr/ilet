@@ -9,6 +9,7 @@ import { newPartFileName } from '../../src/files/partialFiles';
 import { ListenAddress } from '../../src/server/httpsServer';
 import { defaultSettings } from '../../src/settings/settings';
 import { StartupError } from '../../src/shared/errors';
+import { FakeMdnsResponder } from '../helpers/fakeMdns';
 import { createMemoryLogger, createTempFolder, fakeCipher } from '../helpers/fakes';
 import { sendRequest } from '../helpers/testServer';
 
@@ -53,6 +54,7 @@ async function createEnvironment(
     dataFolder,
     downloadsFolder,
     listenAddress: ListenAddress.loopback,
+    createMdnsResponder: undefined,
     hostname: 'TEST-PC',
     platform,
     secretCipher: fakeCipher,
@@ -81,6 +83,31 @@ describe('startServerCore', () => {
       await core.stop();
     }
   });
+
+  it.runIf(runsOnWindows)(
+    'announces the server and withdraws the announcement on stop',
+    async () => {
+      const port = await freePort();
+      const responder = new FakeMdnsResponder();
+      const core = await startServerCore({
+        ...(await createEnvironment(port)),
+        createMdnsResponder: () => responder,
+      });
+      const { deviceId } = core.identity;
+      await core.stop();
+
+      expect(responder.definitions).toEqual([
+        {
+          name: 'TEST-PC',
+          type: 'ilet',
+          hostname: `ilet-${deviceId.slice(0, 8)}`,
+          port,
+          txt: { id: deviceId, name: 'TEST-PC' },
+        },
+      ]);
+      expect(responder.calls).toEqual(['advertise', 'destroy', 'shutdown']);
+    },
+  );
 
   it.runIf(runsOnWindows)('removes partial files left by a crash', async () => {
     const environment = await createEnvironment(await freePort());

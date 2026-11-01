@@ -26,6 +26,20 @@ export function truncateToLength(text: string, maxLength: number): string {
   return result;
 }
 
+/** Shortens text to at most `maxBytes` bytes of UTF-8 without splitting a character. */
+export function truncateToUtf8Bytes(text: string, maxBytes: number): string {
+  let result = '';
+  let byteCount = 0;
+  for (const codePoint of text) {
+    byteCount += Buffer.byteLength(codePoint);
+    if (byteCount > maxBytes) {
+      break;
+    }
+    result += codePoint;
+  }
+  return result;
+}
+
 /** Cleans a human-readable device or display name. The result can be empty. */
 export function sanitizeDisplayName(name: string): string {
   const cleaned = removeInvisibleCharacters(name).replace(REPEATED_SPACES, ' ').trim();

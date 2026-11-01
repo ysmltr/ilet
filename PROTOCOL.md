@@ -303,19 +303,30 @@ reject.
 
 ## 6. Discovery
 
-The desktop advertises a DNS-SD service over mDNS on the local network:
+The desktop advertises a DNS-SD service (RFC 6763) over Multicast DNS (RFC 6762) on the local
+network, so that a phone can find a paired PC again after its IP address changes:
 
-| Item          | Value                                                            |
-| ------------- | ---------------------------------------------------------------- |
-| Service type  | `_ilet._tcp`                                                     |
-| Instance name | The display name (may be shortened; informational only)          |
-| Port          | The server port                                                  |
-| TXT `id`      | Desktop device ID                                                |
-| TXT `name`    | Desktop display name                                             |
+| Item          | Value                                                                                 |
+| ------------- | ------------------------------------------------------------------------------------- |
+| Service type  | `_ilet._tcp`                                                                          |
+| Instance name | The display name, with dots replaced by spaces and shortened to fit one DNS label (at most 57 bytes of UTF-8, which leaves room for a rename). If another device already uses the name, it becomes `<name> (2)`, `<name> (3)`, …. Informational only. |
+| Host name     | `ilet-` and the first 8 characters of the device ID, for example `ilet-6f1c2a8e.local`: a name of its own, so it never clashes with the name Windows announces for the PC |
+| Port          | The server port                                                                       |
+| TXT `id`      | Desktop device ID                                                                     |
+| TXT `name`    | Desktop display name, 1–64 UTF-16 code units                                          |
 
-The TXT record contains nothing else. Anyone on the network can advertise any TXT record, so
-the client uses discovery only to find a new IP address and port for a desktop it already paired
-with (matched by `id`). Trust still comes only from the certificate pin.
+The TXT record contains nothing else. The desktop announces the service only while its server
+listens on the network (the development scripts listen on `127.0.0.1` and announce nothing). It
+receives queries on UDP port 5353 and sends goodbye packets (TTL 0) when it stops.
+
+Anyone on the network can advertise any service with any TXT record. The client therefore uses
+discovery only to find a new address and port for a desktop it already paired with, matched by
+`id`:
+
+- It MUST check every resolved address against the rules for the QR code's `addresses`
+  (section 4.2) and connect only to IP literals (section 2).
+- It MUST still pin the certificate (section 2.2). Trust comes only from the pin, so a fake
+  announcement can at worst make a connection fail.
 
 ## 7. Implementation status
 
@@ -325,4 +336,4 @@ with (matched by `id`). Trust still comes only from the certificate pin.
 | `GET /api/info`, `GET /api/v1/status`  | Phase 1 | Phase 3 |
 | `POST /api/v1/files`                   | Phase 1 | Phase 3 |
 | Pairing (QR, `POST /api/v1/pair`)      | Phase 2 | Phase 3 |
-| Discovery                              | Phase 4 | Phase 4 |
+| Discovery                              | Phase 4 | Phase 4 (not written yet: needs a Mac) |

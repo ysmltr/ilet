@@ -5,6 +5,7 @@ import {
   removeInvisibleCharacters,
   sanitizeDisplayName,
   truncateToLength,
+  truncateToUtf8Bytes,
 } from '../../src/shared/text';
 
 describe('removeInvisibleCharacters', () => {
@@ -21,6 +22,15 @@ describe('truncateToLength', () => {
   it('stops before a surrogate pair that does not fit', () => {
     expect(truncateToLength('ab😀', 3)).toBe('ab');
     expect(truncateToLength('ab😀', 4)).toBe('ab😀');
+  });
+});
+
+describe('truncateToUtf8Bytes', () => {
+  it('stops before a character that does not fit', () => {
+    expect(truncateToUtf8Bytes('aşb', 2)).toBe('a');
+    expect(truncateToUtf8Bytes('aşb', 3)).toBe('aş');
+    expect(truncateToUtf8Bytes('a😀', 4)).toBe('a');
+    expect(truncateToUtf8Bytes('a😀', 5)).toBe('a😀');
   });
 });
 

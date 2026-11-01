@@ -5,8 +5,9 @@
 Share a photo on your iPhone, tap **ilet**, and the file is in a folder on your PC: directly
 over your Wi-Fi, with no accounts, no cloud and no analytics.
 
-> **Status:** Phase 3 of 7: desktop server, QR pairing and the iPhone app (pairing and sending)
-> are done; the iOS code has not been built yet (it needs a Mac).
+> **Status:** Phase 4 of 7. Windows: the server, QR pairing and the Bonjour announcement are
+> done. iPhone: pairing and sending are written but not built yet, and its half of Phase 4
+> (finding the PC again) is not written yet; both need a Mac.
 
 ## Security first
 
@@ -31,22 +32,23 @@ automatically.
 
 ### Desktop modules (`desktop/src`)
 
-| Module      | Responsibility                                                                        |
-| ----------- | ------------------------------------------------------------------------------------- |
-| `protocol/` | Wire constants, matching PROTOCOL.md                                                  |
-| `identity/` | Self-signed TLS certificate, encrypted private key storage                            |
-| `auth/`     | Access tokens, paired devices, rate limiting                                          |
-| `files/`    | File name sanitizing, safe saving (`.part` → rename), Mark-of-the-Web, disk checks    |
-| `settings/` | Settings with validation                                                              |
-| `pairing/`  | One-time pairing codes, QR code payload, which addresses to advertise                 |
-| `server/`   | HTTPS server, request rules, routes                                                   |
-| `ipc/`      | The contract between the window and the main process                                  |
-| `ui/`       | Window, `ilet://` protocol, Electron security guards, IPC handlers                    |
-| `preload/`  | The three functions the window may call (`window.ilet`)                               |
-| `renderer/` | The window's page: HTML, CSS and a script with no access to Node.js                   |
-| `i18n/`     | English and Turkish texts                                                             |
-| `app/`      | Composition root: wires the modules together                                          |
-| `shared/`   | Errors, logging, text helpers, JSON files                                             |
+| Module       | Responsibility                                                                     |
+| ------------ | ---------------------------------------------------------------------------------- |
+| `protocol/`  | Wire constants, matching PROTOCOL.md                                               |
+| `identity/`  | Self-signed TLS certificate, encrypted private key storage                         |
+| `auth/`      | Access tokens, paired devices, rate limiting                                       |
+| `files/`     | File name sanitizing, safe saving (`.part` → rename), Mark-of-the-Web, disk checks |
+| `settings/`  | Settings with validation                                                           |
+| `pairing/`   | One-time pairing codes, QR code payload, which addresses to advertise              |
+| `server/`    | HTTPS server, request rules, routes                                                |
+| `discovery/` | Announces the PC on the local network (Bonjour), so phones find its new address    |
+| `ipc/`       | The contract between the window and the main process                               |
+| `ui/`        | Window, `ilet://` protocol, Electron security guards, IPC handlers                 |
+| `preload/`   | The three functions the window may call (`window.ilet`)                            |
+| `renderer/`  | The window's page: HTML, CSS and a script with no access to Node.js                |
+| `i18n/`      | English and Turkish texts                                                          |
+| `app/`       | Composition root: wires the modules together                                       |
+| `shared/`    | Errors, logging, text helpers, JSON files                                          |
 
 ## Desktop development
 
@@ -62,6 +64,11 @@ npm start           # the real app: server + pairing window
 ```
 
 Electron downloads its runtime the first time it starts (about 110 MB).
+
+The phone can reach ilet only on a network that Windows treats as **Private** (Settings →
+Network & Internet → your Wi-Fi or Ethernet connection → Network profile). On a Public network
+the firewall blocks it, which is what you want in a café. The first `npm start` makes Windows
+Firewall ask whether Electron may use the network: allow **Private networks** only.
 
 The dev scripts keep their data in `%APPDATA%\ilet-dev`, apart from the real app, listen only on
 `127.0.0.1`, and print ready-to-paste `curl.exe` commands. They are compiled to `dist-dev/`, which
@@ -107,9 +114,10 @@ cd ios && swift-format lint --strict --recursive Ilet IletKit
 
 Runtime (shipped with the app):
 
-| Package | Why                                                                                                                  |
-| ------- | -------------------------------------------------------------------------------------------------------------------- |
-| `qr`    | Encodes the pairing QR code. Zero dependencies, actively maintained, by the author of the audited `noble` crypto libraries. |
+| Package            | Why                                                                                                       |
+| ------------------ | --------------------------------------------------------------------------------------------------------- |
+| `qr`               | Encodes the pairing QR code. Zero dependencies, actively maintained, by the author of the audited `noble` crypto libraries. |
+| `@homebridge/ciao` | Announces the PC with Bonjour (DNS-SD over mDNS), which iPhones browse with Apple's own APIs. It only announces and never browses, follows RFC 6762 and RFC 6763, passes Apple's Bonjour Conformance Test and is maintained by the Homebridge project. A self-written mDNS responder (probing, name conflicts, goodbyes, network changes) would be riskier. It brings seven small, widely used packages: `debug`, `ms`, `fast-deep-equal`, `source-map-support`, `source-map`, `buffer-from` and `tslib`. `source-map-support` changes only how error stack traces are printed. |
 
 Development tools:
 
