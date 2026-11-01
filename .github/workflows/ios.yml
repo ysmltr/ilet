@@ -45,6 +45,7 @@ jobs:
           persist-credentials: false
 
       - name: Install XcodeGen and SwiftLint
+        id: tools
         run: |
           tools="$RUNNER_TEMP/tools"
           mkdir -p "$tools"
@@ -73,20 +74,34 @@ jobs:
           swiftlint version
           xcrun swift-format --version
 
+      # From here on, each check also runs when an earlier one failed, so one run reports every
+      # problem. Problems are reported as annotations, which can be read through GitHub's API
+      # without signing in.
+      - name: SwiftLint (zero warnings)
+        if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
+        run: swiftlint lint --strict --reporter github-actions-logging
+
       # Before the tests, so swift-format never sees the files that `swift test` writes to .build.
-      - name: Lint (zero warnings)
+      - name: swift-format (zero warnings)
+        if: ${{ !cancelled() }}
         run: |
-          swiftlint lint --strict
-          xcrun swift-format lint --strict --recursive Ilet IletKit
+          xcrun swift-format lint --strict --recursive Ilet IletKit 2>&1 \
+            | sed -E 's|^([^:]+):([0-9]+):([0-9]+): [a-z]+: (.*)$|::error file=ios/\1,line=\2,col=\3::\4|'
 
       - name: Unit tests
-        run: swift test --package-path IletKit -Xswiftc -warnings-as-errors
+        if: ${{ !cancelled() }}
+        run: |
+          swift test --package-path IletKit -Xswiftc -warnings-as-errors 2>&1 \
+            | xcbeautify --renderer github-actions
 
       - name: Generate the Xcode project
+        id: project
+        if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
         run: xcodegen generate
 
       # Signing needs an Apple developer account; a simulator build checks everything else.
       - name: Build the app
+        if: ${{ !cancelled() && steps.project.outcome == 'success' }}
         run: |
           xcodebuild build \
             -project Ilet.xcodeproj -scheme Ilet -configuration Debug \
