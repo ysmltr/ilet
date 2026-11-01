@@ -30,7 +30,9 @@ actor FakeDesktopClient: DesktopClient {
         }
     }
 
-    func pair(at endpoint: DesktopEndpoint, secret: String, deviceName: String) async throws
+    func pair(
+        at endpoint: DesktopEndpoint, secret: String, deviceName: String
+    ) async throws
         -> String
     {
         try pairResult.get()

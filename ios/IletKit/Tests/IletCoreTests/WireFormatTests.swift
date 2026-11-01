@@ -24,7 +24,8 @@ final class WireFormatTests: XCTestCase {
         XCTAssertEqual(
             try ipv4.url(path: "/api/info").absoluteString, "https://192.168.1.20:45380/api/info")
         XCTAssertEqual(
-            try ipv6.url(path: "/api/info").absoluteString, "https://[fd12:3456::20]:45380/api/info")
+            try ipv6.url(path: "/api/info").absoluteString, "https://[fd12:3456::20]:45380/api/info"
+        )
     }
 
     func testMapsServerErrorCodes() {
@@ -36,7 +37,9 @@ final class WireFormatTests: XCTestCase {
     }
 
     func testAllowsOnlyPrivateAndUniqueLocalAddresses() {
-        for address in ["10.0.0.5", "172.16.0.1", "172.31.255.254", "192.168.1.20", "fd12:3456::20"] {
+        for address in [
+            "10.0.0.5", "172.16.0.1", "172.31.255.254", "192.168.1.20", "fd12:3456::20",
+        ] {
             XCTAssertTrue(LocalNetworkAddress.isAllowed(address), address)
         }
         let refused = [

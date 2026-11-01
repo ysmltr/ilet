@@ -5,7 +5,9 @@ import Security
 /// the certificate whose fingerprint came from the QR code. No certificate authority or system
 /// trust store is consulted, so even a certificate signed by a trusted CA is rejected.
 public enum CertificatePinning {
-    public static func leafCertificate(of trust: SecTrust, matches pinned: CertificateFingerprint)
+    public static func leafCertificate(
+        of trust: SecTrust, matches pinned: CertificateFingerprint
+    )
         -> Bool
     {
         guard let chain = SecTrustCopyCertificateChain(trust) as? [SecCertificate],
@@ -13,6 +15,7 @@ public enum CertificatePinning {
         else {
             return false
         }
-        return CertificateFingerprint(certificateData: SecCertificateCopyData(leaf) as Data) == pinned
+        return CertificateFingerprint(certificateData: SecCertificateCopyData(leaf) as Data)
+            == pinned
     }
 }

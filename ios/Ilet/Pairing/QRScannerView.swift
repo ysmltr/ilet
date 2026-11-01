@@ -60,7 +60,8 @@ final class QRScannerViewController: UIViewController, AVCaptureMetadataOutputOb
         _ output: AVCaptureMetadataOutput, didOutput metadataObjects: [AVMetadataObject],
         from connection: AVCaptureConnection
     ) {
-        let code = metadataObjects
+        let code =
+            metadataObjects
             .compactMap { $0 as? AVMetadataMachineReadableCodeObject }
             .first { $0.type == .qr }?
             .stringValue

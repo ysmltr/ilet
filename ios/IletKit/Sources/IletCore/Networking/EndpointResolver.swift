@@ -14,7 +14,9 @@ public struct EndpointResolver: Sendable {
         self.client = client
     }
 
-    public func resolve(desktopID: UUID, addresses: [String], port: Int) async throws
+    public func resolve(
+        desktopID: UUID, addresses: [String], port: Int
+    ) async throws
         -> DesktopEndpoint
     {
         let result = await withTaskGroup(

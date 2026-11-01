@@ -7,7 +7,9 @@ enum FileNameHeader {
         charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.!~*'()")
 
     static func encode(_ fileName: String) throws -> String {
-        guard let encoded = fileName.addingPercentEncoding(withAllowedCharacters: unreservedCharacters)
+        guard
+            let encoded = fileName.addingPercentEncoding(
+                withAllowedCharacters: unreservedCharacters)
         else {
             throw IletError.fileUnreadable
         }

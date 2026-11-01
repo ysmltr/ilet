@@ -45,7 +45,9 @@ public struct DesktopConnection: Sendable {
 
     /// Uploads one file and returns the name the PC saved it under. Files over the PC's limit
     /// are refused here, before any byte is sent.
-    public func upload(_ file: PreparedFile, progress: @escaping @Sendable (Double) -> Void)
+    public func upload(
+        _ file: PreparedFile, progress: @escaping @Sendable (Double) -> Void
+    )
         async throws -> String
     {
         guard file.sizeBytes <= limits.maxFileSizeBytes else {

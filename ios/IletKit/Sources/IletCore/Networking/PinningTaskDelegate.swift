@@ -22,10 +22,12 @@ final class PinningTaskDelegate: NSObject, URLSessionTaskDelegate, Sendable {
     }
 
     func urlSession(
-        _ session: URLSession, task: URLSessionTask, didReceive challenge: URLAuthenticationChallenge
+        _ session: URLSession, task: URLSessionTask,
+        didReceive challenge: URLAuthenticationChallenge
     ) async -> (URLSession.AuthChallengeDisposition, URLCredential?) {
         // ilet servers never ask for any other kind of authentication.
-        guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
+        guard
+            challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
             let trust = challenge.protectionSpace.serverTrust
         else {
             return (.cancelAuthenticationChallenge, nil)

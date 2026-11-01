@@ -41,13 +41,16 @@ public struct FilePreparer: FilePreparing {
         do {
             try FileManager.default.copyItem(at: url, to: copy)
         } catch {
-            Log.files.error("picked file not copied: \(error.localizedDescription, privacy: .public)")
+            Log.files.error(
+                "picked file not copied: \(error.localizedDescription, privacy: .public)")
             throw IletError.fileUnreadable
         }
         return copy
     }
 
-    public func prepareForSending(_ file: URL, convertHEICToJPEG: Bool) async throws
+    public func prepareForSending(
+        _ file: URL, convertHEICToJPEG: Bool
+    ) async throws
         -> PreparedFile
     {
         let upload = try convertHEICToJPEG && Self.isHEIC(file) ? convertToJPEG(file) : file
@@ -77,14 +80,16 @@ public struct FilePreparer: FilePreparing {
             throw IletError.fileUnreadable
         }
         let options = [kCGImageDestinationLossyCompressionQuality: Self.jpegQuality] as CFDictionary
-        CGImageDestinationAddImageFromSource(imageDestination, imageSource, Self.firstImage, options)
+        CGImageDestinationAddImageFromSource(
+            imageDestination, imageSource, Self.firstImage, options)
         guard CGImageDestinationFinalize(imageDestination) else {
             throw IletError.fileUnreadable
         }
         do {
             try FileManager.default.removeItem(at: source)
         } catch {
-            Log.files.error("HEIC copy not deleted: \(error.localizedDescription, privacy: .public)")
+            Log.files.error(
+                "HEIC copy not deleted: \(error.localizedDescription, privacy: .public)")
         }
         return destination
     }

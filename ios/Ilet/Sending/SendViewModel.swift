@@ -18,7 +18,8 @@ final class SendViewModel: ObservableObject {
     private let preparer: any FilePreparing
     private let settings: any SettingsStore
 
-    init(connector: any DesktopConnecting, preparer: any FilePreparing, settings: any SettingsStore) {
+    init(connector: any DesktopConnecting, preparer: any FilePreparing, settings: any SettingsStore)
+    {
         self.connector = connector
         self.preparer = preparer
         self.settings = settings
@@ -61,13 +62,16 @@ final class SendViewModel: ObservableObject {
             Transfer(name: String(localized: "transfer.file"), state: .failed(message: message)))
     }
 
-    private func sendPending(_ pending: PendingTransfers, over connection: DesktopConnection) async {
+    private func sendPending(_ pending: PendingTransfers, over connection: DesktopConnection) async
+    {
         while let next = pending.next() {
             await send(next.source, as: next.id, over: connection)
         }
     }
 
-    private func send(_ source: TransferSource, as id: Transfer.ID, over connection: DesktopConnection)
+    private func send(
+        _ source: TransferSource, as id: Transfer.ID, over connection: DesktopConnection
+    )
         async
     {
         do {

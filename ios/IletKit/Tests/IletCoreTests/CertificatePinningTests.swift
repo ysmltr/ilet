@@ -5,12 +5,14 @@ import XCTest
 
 final class CertificatePinningTests: XCTestCase {
     func testFingerprintMatchesTheDesktopsComputation() throws {
-        let fingerprint = CertificateFingerprint(certificateData: try Fixtures.desktopCertificateData())
+        let fingerprint = CertificateFingerprint(
+            certificateData: try Fixtures.desktopCertificateData())
         XCTAssertEqual(fingerprint.hex, Fixtures.desktopCertificateFingerprint)
     }
 
     func testAcceptsTheServerWithThePinnedCertificate() throws {
-        let pinned = try XCTUnwrap(CertificateFingerprint(hex: Fixtures.desktopCertificateFingerprint))
+        let pinned = try XCTUnwrap(
+            CertificateFingerprint(hex: Fixtures.desktopCertificateFingerprint))
         XCTAssertTrue(CertificatePinning.leafCertificate(of: try serverTrust(), matches: pinned))
     }
 
@@ -21,14 +23,17 @@ final class CertificatePinningTests: XCTestCase {
 
     func testParsesOnlyTheProtocolsFingerprintFormat() {
         XCTAssertNotNil(CertificateFingerprint(hex: Fixtures.desktopCertificateFingerprint))
-        XCTAssertNil(CertificateFingerprint(hex: Fixtures.desktopCertificateFingerprint.uppercased()))
-        XCTAssertNil(CertificateFingerprint(hex: String(Fixtures.desktopCertificateFingerprint.dropLast())))
+        XCTAssertNil(
+            CertificateFingerprint(hex: Fixtures.desktopCertificateFingerprint.uppercased()))
+        XCTAssertNil(
+            CertificateFingerprint(hex: String(Fixtures.desktopCertificateFingerprint.dropLast())))
         XCTAssertNil(CertificateFingerprint(hex: String(repeating: "g", count: 64)))
         XCTAssertNil(CertificateFingerprint(hex: String(repeating: "０", count: 64)))
     }
 
     func testFingerprintSurvivesStorage() throws {
-        let fingerprint = try XCTUnwrap(CertificateFingerprint(hex: Fixtures.desktopCertificateFingerprint))
+        let fingerprint = try XCTUnwrap(
+            CertificateFingerprint(hex: Fixtures.desktopCertificateFingerprint))
         let decoded = try JSONDecoder().decode(
             CertificateFingerprint.self, from: try JSONEncoder().encode(fingerprint))
         XCTAssertEqual(decoded, fingerprint)

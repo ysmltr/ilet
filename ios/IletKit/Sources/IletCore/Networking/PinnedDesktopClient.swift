@@ -44,13 +44,16 @@ final class PinnedDesktopClient: DesktopClient {
         return try decode(ServerInfo.self, from: try await send(request))
     }
 
-    func pair(at endpoint: DesktopEndpoint, secret: String, deviceName: String) async throws
+    func pair(
+        at endpoint: DesktopEndpoint, secret: String, deviceName: String
+    ) async throws
         -> String
     {
         var request = URLRequest(url: try endpoint.url(path: ProtocolConstants.Path.pair))
         request.httpMethod = HTTPMethod.post
         request.setValue(
-            ProtocolConstants.MediaType.json, forHTTPHeaderField: ProtocolConstants.Header.contentType)
+            ProtocolConstants.MediaType.json,
+            forHTTPHeaderField: ProtocolConstants.Header.contentType)
         request.httpBody = try encode(PairRequest(secret: secret, deviceName: deviceName))
         return try decode(PairResponse.self, from: try await send(request)).token
     }
@@ -69,7 +72,8 @@ final class PinnedDesktopClient: DesktopClient {
         request.httpMethod = HTTPMethod.post
         request.setValue(bearer(token), forHTTPHeaderField: ProtocolConstants.Header.authorization)
         request.setValue(
-            ProtocolConstants.MediaType.upload, forHTTPHeaderField: ProtocolConstants.Header.contentType)
+            ProtocolConstants.MediaType.upload,
+            forHTTPHeaderField: ProtocolConstants.Header.contentType)
         request.setValue(
             try FileNameHeader.encode(file.fileName),
             forHTTPHeaderField: ProtocolConstants.Header.fileName)
@@ -133,7 +137,8 @@ final class PinnedDesktopClient: DesktopClient {
         do {
             return try JSONDecoder().decode(type, from: data)
         } catch {
-            Log.network.error("unexpected response: \(error.localizedDescription, privacy: .public)")
+            Log.network.error(
+                "unexpected response: \(error.localizedDescription, privacy: .public)")
             throw IletError.unexpectedResponse
         }
     }

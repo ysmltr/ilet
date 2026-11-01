@@ -20,7 +20,8 @@ struct AppDependencies {
         TemporaryFiles.outgoing.removeAll()
 
         let desktopStore = AppGroupDesktopStore(defaults: defaults)
-        let credentialStore = KeychainCredentialStore(accessGroup: configuration.keychainAccessGroup)
+        let credentialStore = KeychainCredentialStore(
+            accessGroup: configuration.keychainAccessGroup)
         let clientFactory = PinnedClientFactory()
         return AppDependencies(
             desktopStore: desktopStore,

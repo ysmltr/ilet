@@ -42,7 +42,8 @@ public struct CertificateFingerprint: Hashable, Sendable {
 extension CertificateFingerprint: Codable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
-        guard let fingerprint = CertificateFingerprint(hex: try container.decode(String.self)) else {
+        guard let fingerprint = CertificateFingerprint(hex: try container.decode(String.self))
+        else {
             throw DecodingError.dataCorruptedError(
                 in: container, debugDescription: "not a certificate fingerprint")
         }

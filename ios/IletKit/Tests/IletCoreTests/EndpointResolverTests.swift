@@ -58,7 +58,9 @@ final class EndpointResolverTests: XCTestCase {
         }
     }
 
-    private func resolve(with client: FakeDesktopClient, addresses: [String]) async throws
+    private func resolve(
+        with client: FakeDesktopClient, addresses: [String]
+    ) async throws
         -> DesktopEndpoint
     {
         try await EndpointResolver(client: client).resolve(

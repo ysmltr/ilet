@@ -43,7 +43,8 @@ final class PairingAndSendingTests: XCTestCase {
             credentialStore: InMemoryCredentialStore())
 
         await assertThrows(.notPaired) {
-            _ = try await connector.connect(to: Desktop(pairing: try Fixtures.payload(), pairedAt: Date()))
+            _ = try await connector.connect(
+                to: Desktop(pairing: try Fixtures.payload(), pairedAt: Date()))
         }
     }
 
