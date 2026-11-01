@@ -81,7 +81,8 @@ extension XCTestCase {
     func makeDesktopStore() throws -> AppGroupDesktopStore {
         let suiteName = "ilet-tests-\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-        addTeardownBlock { defaults.removePersistentDomain(forName: suiteName) }
+        // Only the name goes into the teardown block, which must be Sendable; UserDefaults is not.
+        addTeardownBlock { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
         return AppGroupDesktopStore(defaults: defaults)
     }
 

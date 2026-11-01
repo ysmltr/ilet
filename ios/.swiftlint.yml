@@ -33,6 +33,10 @@ line_length:
   warning: 120
   ignores_comments: false
 
+# A switch that maps each case of an enum to a message is long, but not complex.
+cyclomatic_complexity:
+  ignores_case_statements: true
+
 identifier_name:
   min_length:
     warning: 2

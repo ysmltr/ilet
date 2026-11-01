@@ -25,9 +25,10 @@ struct HomeView: View {
             }
             .navigationTitle(Text(verbatim: "ilet"))
         }
-        .sheet(isPresented: $isPairing, onDismiss: { desktops.reload() }) {
-            PairingView(viewModel: makePairingViewModel())
-        }
+        .sheet(
+            isPresented: $isPairing, onDismiss: { desktops.reload() },
+            content: { PairingView(viewModel: makePairingViewModel()) }
+        )
         .sheet(isPresented: $sender.isSecurityWarningPresented) {
             SecurityWarningSheet()
         }

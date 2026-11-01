@@ -44,7 +44,8 @@ enum Fixtures {
     }
 
     static func pairingText(_ fields: [String: Any]) throws -> String {
-        String(decoding: try JSONSerialization.data(withJSONObject: fields), as: UTF8.self)
+        let json = try JSONSerialization.data(withJSONObject: fields)
+        return try XCTUnwrap(String(bytes: json, encoding: .utf8))
     }
 
     static func payload() throws -> PairingPayload {

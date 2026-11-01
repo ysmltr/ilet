@@ -47,8 +47,8 @@ final class PairingPayloadTests: XCTestCase {
             var fields = Fixtures.pairingFields()
             fields[key] = value
             let text = try Fixtures.pairingText(fields)
-            XCTAssertThrowsError(try PairingPayload.parse(text), "\(key): \(String(describing: value))") {
-                error in
+            let message = "\(key): \(String(describing: value))"
+            XCTAssertThrowsError(try PairingPayload.parse(text), message) { error in
                 XCTAssertEqual(error as? IletError, .invalidPairingCode)
             }
         }

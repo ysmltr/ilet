@@ -83,10 +83,32 @@ jobs:
 
       # Before the tests, so swift-format never sees the files that `swift test` writes to .build.
       - name: swift-format (zero warnings)
+        id: format
         if: ${{ !cancelled() }}
         run: |
           xcrun swift-format lint --strict --recursive Ilet IletKit 2>&1 \
             | sed -E 's|^([^:]+):([0-9]+):([0-9]+): [a-z]+: (.*)$|::error file=ios/\1,line=\2,col=\3::\4|'
+
+      # swift-format needs a Mac, so the run publishes the changes it wants as a patch, in notices
+      # titled "swift-format patch N of M"; joined in order, they apply with `git apply`. The files
+      # are restored afterwards, so the later steps check exactly what was committed.
+      - name: Show swift-format's changes
+        if: ${{ !cancelled() && steps.format.outcome == 'failure' }}
+        run: |
+          xcrun swift-format format --in-place --recursive Ilet IletKit
+          git diff > "$RUNNER_TEMP/format.patch"
+          git checkout -- .
+          if [ ! -s "$RUNNER_TEMP/format.patch" ]; then
+            echo "::notice title=swift-format patch::No layout changes; the findings above need fixing by hand."
+            exit 0
+          fi
+          split -l 250 "$RUNNER_TEMP/format.patch" "$RUNNER_TEMP/format-part-"
+          parts=("$RUNNER_TEMP"/format-part-*)
+          for index in "${!parts[@]}"; do
+            # A workflow command is one line, so %, CR and LF are escaped.
+            body=$(perl -pe 's/%/%25/g; s/\r/%0D/g; s/\n/%0A/g' "${parts[$index]}")
+            echo "::notice title=swift-format patch $((index + 1)) of ${#parts[@]}::$body"
+          done
 
       - name: Unit tests
         if: ${{ !cancelled() }}
