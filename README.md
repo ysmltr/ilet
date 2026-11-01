@@ -5,7 +5,8 @@
 Share a photo on your iPhone, tap **ilet**, and the file is in a folder on your PC: directly
 over your Wi-Fi, with no accounts, no cloud and no analytics.
 
-> **Status:** Phase 2 of 7: the desktop server and QR pairing are done; the iPhone app comes next.
+> **Status:** Phase 3 of 7: desktop server, QR pairing and the iPhone app (pairing and sending)
+> are done; the iOS code has not been built yet (it needs a Mac).
 
 ## Security first
 
@@ -23,7 +24,7 @@ automatically.
 | Path               | Contents                                              |
 | ------------------ | ----------------------------------------------------- |
 | `desktop/`         | Windows app: Electron + TypeScript                    |
-| `ios/`             | iPhone app and Share Extension (from Phase 3)         |
+| `ios/`             | iPhone app: Swift + SwiftUI (Share Extension: Phase 5) |
 | `branding/`        | App icon (SVG master)                                 |
 | `PROTOCOL.md`      | Wire protocol                                         |
 | `THREAT_MODEL.md`  | Threat model                                          |
@@ -66,7 +67,43 @@ The dev scripts keep their data in `%APPDATA%\ilet-dev`, apart from the real app
 `127.0.0.1`, and print ready-to-paste `curl.exe` commands. They are compiled to `dist-dev/`, which
 the installer never includes, and they refuse to run in a packaged app.
 
+## iPhone development
+
+Requirements: a Mac with Xcode 16 or later, an iPhone with iOS 16 or later, and the build tools
+below (`brew install xcodegen swiftlint swift-format`).
+
+1. In `ios/Config/Shared.xcconfig`, set `ILET_BUNDLE_ID_PREFIX` to a reverse-DNS name you own
+   (for example `com.yourname.ilet`) and `DEVELOPMENT_TEAM` to your Apple team ID.
+2. Generate the Xcode project (it is not committed; `ios/project.yml` is the source):
+   ```bash
+   cd ios && xcodegen generate
+   ```
+3. Open `ios/Ilet.xcodeproj`, choose your iPhone and run. Pairing needs the camera, so use a real
+   iPhone rather than the simulator.
+
+Checks:
+
+```bash
+cd ios/IletKit && swift test                              # unit tests, run on the Mac itself
+cd ios && swiftlint --strict                               # lint, zero warnings
+cd ios && swift-format lint --strict --recursive Ilet IletKit
+```
+
+### iOS modules
+
+| Path                       | Responsibility                                                                      |
+| -------------------------- | ----------------------------------------------------------------------------------- |
+| `IletKit/Sources/IletCore` | Protocol constants, certificate pinning, HTTPS client, pairing, Keychain and App Group storage, preparing files. No UI; the Share Extension will reuse it. |
+| `Ilet/App`                 | Composition root, configuration from Info.plist                                     |
+| `Ilet/Pairing`             | QR scanner and pairing flow                                                         |
+| `Ilet/Sending`             | Picking photos and files, uploads with progress                                     |
+| `Ilet/Home`                | Main screen and the list of PCs                                                     |
+| `Ilet/Shared`              | Error messages, the security warning, layout values                                 |
+| `Ilet/Resources`           | English and Turkish texts, privacy manifest                                         |
+
 ## Dependencies
+
+### Desktop
 
 Runtime (shipped with the app):
 
@@ -96,3 +133,13 @@ Supply-chain rules:
 - `ignore-scripts=true`: no package can run code while it is installed.
 - Releases are at least 14 days old when added (`npm install --before=<date>`). Newly published
   versions are where most npm supply-chain attacks happen.
+
+### iPhone
+
+The app uses only Apple's frameworks: no third-party code and no SDKs. Build tools on the Mac:
+
+| Tool           | Why                                                                                  |
+| -------------- | ------------------------------------------------------------------------------------ |
+| `xcodegen`     | Generates the Xcode project from the readable `ios/project.yml`, so no hand-edited project file is committed. |
+| `swiftlint`    | Lint rules, run with zero warnings allowed.                                          |
+| `swift-format` | Code formatting.                                                                     |

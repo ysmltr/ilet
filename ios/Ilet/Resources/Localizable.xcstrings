@@ -1,0 +1,870 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "common.close": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kapat"
+          }
+        }
+      }
+    },
+    "common.done": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitti"
+          }
+        }
+      }
+    },
+    "common.ok": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tamam"
+          }
+        }
+      }
+    },
+    "common.openSettings": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Settings"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ayarları Aç"
+          }
+        }
+      }
+    },
+    "desktops.footer": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap a PC to send to it. Swipe left to remove it from this iPhone; to remove this iPhone from the PC too, use ilet on the PC."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Göndermek istediğiniz bilgisayara dokunun. Bu iPhone’dan kaldırmak için sola kaydırın; bu iPhone’u bilgisayardan da kaldırmak için bilgisayardaki ilet’i kullanın."
+          }
+        }
+      }
+    },
+    "desktops.pairAnother": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pair another PC"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Başka bir bilgisayar eşleştir"
+          }
+        }
+      }
+    },
+    "desktops.selected": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selected"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seçili"
+          }
+        }
+      }
+    },
+    "desktops.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your PCs"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilgisayarlarınız"
+          }
+        }
+      }
+    },
+    "error.cancelled": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancelled."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İptal edildi."
+          }
+        }
+      }
+    },
+    "error.certificateMismatch": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Security check failed: this is not the PC you paired with."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Güvenlik denetimi başarısız: Bu, eşleştirdiğiniz bilgisayar değil."
+          }
+        }
+      }
+    },
+    "error.desktopUnreachable": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your PC cannot be reached. Make sure ilet is running on it and both devices are on the same Wi-Fi. If you denied Local Network access, allow it in Settings."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilgisayarınıza ulaşılamıyor. ilet’in açık olduğundan ve iki cihazın aynı Wi-Fi ağında olduğundan emin olun. Yerel Ağ erişimini reddettiyseniz Ayarlar’dan izin verin."
+          }
+        }
+      }
+    },
+    "error.fileTooLarge %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The file is larger than your PC accepts (%@)."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dosya, bilgisayarınızın kabul ettiği boyuttan büyük (%@)."
+          }
+        }
+      }
+    },
+    "error.fileUnreadable": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The file could not be read."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dosya okunamadı."
+          }
+        }
+      }
+    },
+    "error.generic": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Something went wrong. Please try again."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bir sorun oluştu. Lütfen tekrar deneyin."
+          }
+        }
+      }
+    },
+    "error.invalidPairingCode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is not an ilet pairing code."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu bir ilet eşleştirme kodu değil."
+          }
+        }
+      }
+    },
+    "error.notPaired": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your PC no longer accepts this iPhone. Pair it again."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilgisayarınız artık bu iPhone’u kabul etmiyor. Yeniden eşleştirin."
+          }
+        }
+      }
+    },
+    "error.pairingRejected": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The code was not accepted. It may have expired or been used already. Create a new code on your PC."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kod kabul edilmedi. Süresi dolmuş ya da kullanılmış olabilir. Bilgisayarınızda yeni bir kod oluşturun."
+          }
+        }
+      }
+    },
+    "error.server.busy": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your PC is busy. Try again in a moment."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilgisayarınız meşgul. Biraz sonra tekrar deneyin."
+          }
+        }
+      }
+    },
+    "error.server.generic": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your PC could not accept the file."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilgisayarınız dosyayı kabul edemedi."
+          }
+        }
+      }
+    },
+    "error.server.insufficientStorage": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your PC does not have enough free disk space."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilgisayarınızda yeterli boş disk alanı yok."
+          }
+        }
+      }
+    },
+    "error.server.payloadTooLarge": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The file is larger than your PC accepts."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dosya, bilgisayarınızın kabul ettiği boyuttan büyük."
+          }
+        }
+      }
+    },
+    "error.server.tooManyRequests": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too many failed attempts. Wait a minute and try again."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çok fazla başarısız deneme. Bir dakika bekleyip tekrar deneyin."
+          }
+        }
+      }
+    },
+    "error.storage": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ilet could not save its data on this iPhone."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ilet verilerini bu iPhone’a kaydedemedi."
+          }
+        }
+      }
+    },
+    "error.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Something went wrong"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bir sorun oluştu"
+          }
+        }
+      }
+    },
+    "error.unexpectedResponse": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your PC sent an unexpected answer."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilgisayarınız beklenmeyen bir yanıt gönderdi."
+          }
+        }
+      }
+    },
+    "error.unsupportedVersion": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your PC and this iPhone use different versions of ilet. Update both."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilgisayarınız ve bu iPhone farklı ilet sürümleri kullanıyor. İkisini de güncelleyin."
+          }
+        }
+      }
+    },
+    "error.wrongDesktop": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A different PC answered. Scan the code again."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Farklı bir bilgisayar yanıt verdi. Kodu tekrar tarayın."
+          }
+        }
+      }
+    },
+    "home.clearFinished": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Temizle"
+          }
+        }
+      }
+    },
+    "home.sendFiles": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send files"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dosya gönder"
+          }
+        }
+      }
+    },
+    "home.sendPhotos": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send photos and videos"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğraf ve video gönder"
+          }
+        }
+      }
+    },
+    "home.sendTo %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send to %@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gönderilecek bilgisayar: %@"
+          }
+        }
+      }
+    },
+    "home.transfers": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transfers"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktarımlar"
+          }
+        }
+      }
+    },
+    "pairing.cameraDenied": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ilet needs the camera to scan the pairing code. Allow camera access in Settings."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ilet, eşleştirme kodunu taramak için kameraya ihtiyaç duyar. Ayarlar’dan kamera erişimine izin verin."
+          }
+        }
+      }
+    },
+    "pairing.cameraUnavailable": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No camera is available."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kullanılabilir bir kamera yok."
+          }
+        }
+      }
+    },
+    "pairing.confirmQuestion": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pair with this PC?"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu bilgisayarla eşleştirilsin mi?"
+          }
+        }
+      }
+    },
+    "pairing.deviceName": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This iPhone’s name"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu iPhone’un adı"
+          }
+        }
+      }
+    },
+    "pairing.deviceNameFooter": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your PC shows this name."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilgisayarınız bu adı gösterir."
+          }
+        }
+      }
+    },
+    "pairing.inProgress": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pairing…"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eşleştiriliyor…"
+          }
+        }
+      }
+    },
+    "pairing.pair": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pair"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eşleştir"
+          }
+        }
+      }
+    },
+    "pairing.scanAgain": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scan again"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tekrar tara"
+          }
+        }
+      }
+    },
+    "pairing.scanHint": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Point the camera at the QR code on your PC."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kamerayı bilgisayarınızdaki QR koda doğrultun."
+          }
+        }
+      }
+    },
+    "pairing.success %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paired with %@."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ile eşleştirildi."
+          }
+        }
+      }
+    },
+    "pairing.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pair with PC"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilgisayarla eşleştir"
+          }
+        }
+      }
+    },
+    "security.message": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your PC answered with a different identity than the one you paired with, so ilet stopped. Nothing was sent. If you reinstalled ilet on your PC, remove the PC here and pair again. Otherwise, someone on your network may be trying to intercept your files."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilgisayarınız, eşleştirdiğiniz kimlikten farklı bir kimlikle yanıt verdiği için ilet durdu. Hiçbir şey gönderilmedi. ilet’i bilgisayarınıza yeniden yüklediyseniz bilgisayarı buradan kaldırıp yeniden eşleştirin. Aksi hâlde ağınızdaki biri dosyalarınızı ele geçirmeye çalışıyor olabilir."
+          }
+        }
+      }
+    },
+    "security.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Security warning"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Güvenlik uyarısı"
+          }
+        }
+      }
+    },
+    "settings.sendAsJPEG": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send photos as JPG"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğrafları JPG olarak gönder"
+          }
+        }
+      }
+    },
+    "settings.sendAsJPEGFooter": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Windows cannot open HEIC photos without an extra app."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Windows, HEIC fotoğrafları ek bir uygulama olmadan açamaz."
+          }
+        }
+      }
+    },
+    "transfer.file": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "File"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dosya"
+          }
+        }
+      }
+    },
+    "transfer.photo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photo"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğraf"
+          }
+        }
+      }
+    },
+    "transfer.preparing": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparing…"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hazırlanıyor…"
+          }
+        }
+      }
+    },
+    "transfer.sent %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved as %@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ olarak kaydedildi"
+          }
+        }
+      }
+    },
+    "welcome.message": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open ilet on your PC, click “Pair new device” and scan the QR code it shows."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilgisayarınızda ilet’i açın, “Yeni cihaz eşleştir”e tıklayın ve gösterilen QR kodu tarayın."
+          }
+        }
+      }
+    },
+    "welcome.pair": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scan pairing code"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eşleştirme kodunu tara"
+          }
+        }
+      }
+    },
+    "welcome.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send photos to your PC"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğrafları bilgisayarınıza gönderin"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

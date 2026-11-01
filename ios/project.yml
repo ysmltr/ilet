@@ -1,0 +1,58 @@
+# XcodeGen spec: `xcodegen generate` creates Ilet.xcodeproj from this file.
+name: Ilet
+options:
+  deploymentTarget:
+    iOS: "16.0"
+  developmentLanguage: en
+  createIntermediateGroups: true
+configFiles:
+  Debug: Config/Shared.xcconfig
+  Release: Config/Shared.xcconfig
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    LOCALIZATION_PREFERS_STRING_CATALOGS: true
+    SWIFT_EMIT_LOC_STRINGS: true
+    ENABLE_USER_SCRIPT_SANDBOXING: true
+packages:
+  IletKit:
+    path: IletKit
+targets:
+  Ilet:
+    type: application
+    platform: iOS
+    sources:
+      - path: Ilet
+    dependencies:
+      - package: IletKit
+        product: IletCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(ILET_BUNDLE_ID_PREFIX)
+        TARGETED_DEVICE_FAMILY: "1"
+        CODE_SIGN_STYLE: Automatic
+    info:
+      path: Ilet/Info.plist
+      properties:
+        CFBundleDisplayName: ilet
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        NSCameraUsageDescription: ilet uses the camera only to scan the pairing QR code shown on your PC.
+        NSLocalNetworkUsageDescription: ilet sends your files directly to your PC over your local network.
+        # Only the local-network exception: ATS stays on for everything else. Local PCs cannot
+        # have certificates from a public CA; the app's certificate pin replaces that check.
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+        IletAppGroupIdentifier: group.$(ILET_BUNDLE_ID_PREFIX)
+        IletKeychainAccessGroup: $(AppIdentifierPrefix)$(ILET_BUNDLE_ID_PREFIX).shared
+    entitlements:
+      path: Ilet/Ilet.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.$(ILET_BUNDLE_ID_PREFIX)
+        keychain-access-groups:
+          - $(AppIdentifierPrefix)$(ILET_BUNDLE_ID_PREFIX).shared
