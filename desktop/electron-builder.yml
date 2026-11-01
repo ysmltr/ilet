@@ -1,0 +1,11 @@
+appId: com.ilet.desktop
+productName: ilet
+directories:
+  output: release
+# Whitelist: only the production build output ships. dist-dev/ (the dev token script),
+# sources, tests and tooling are never packaged.
+files:
+  - dist/**/*.js
+  - package.json
+win:
+  target: nsis

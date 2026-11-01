@@ -1,0 +1,15 @@
+# Dependencies and build output
+node_modules/
+dist/
+dist-dev/
+release/
+coverage/
+
+# Logs and OS files
+*.log
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/

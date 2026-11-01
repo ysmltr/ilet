@@ -1,0 +1,37 @@
+{
+  "name": "ilet-desktop",
+  "productName": "ilet",
+  "version": "0.1.0",
+  "description": "ilet: Send Files to Your PC",
+  "private": true,
+  "license": "UNLICENSED",
+  "main": "dist/main.js",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "clean": "node scripts/clean.mjs",
+    "build": "npm run clean && tsc -p tsconfig.build.json",
+    "build:dev": "tsc -p tsconfig.dev.json",
+    "start": "npm run build && electron .",
+    "dev:token": "npm run build:dev && electron dist-dev/dev/devServerWithToken.js",
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "eslint . --max-warnings 0 && prettier --check .",
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "check": "npm run typecheck && npm run lint && npm test",
+    "package:dir": "npm run build && electron-builder --dir"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "24.19.2",
+    "electron": "44.9.0",
+    "electron-builder": "26.17.0",
+    "eslint": "10.13.0",
+    "eslint-config-prettier": "10.1.8",
+    "prettier": "3.9.10",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.2",
+    "vitest": "5.0.5"
+  }
+}
