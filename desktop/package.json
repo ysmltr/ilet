@@ -23,6 +23,7 @@
     "test": "vitest run",
     "check": "npm run typecheck && npm run lint && npm test",
     "package:dir": "npm run build && electron-builder --dir",
+    "package": "npm run build && electron-builder --win nsis",
     "icons": "node scripts/render-icons.mjs"
   },
   "devDependencies": {

@@ -2,11 +2,46 @@ appId: com.ilet.desktop
 productName: ilet
 directories:
   output: release
+  buildResources: installer
 # Whitelist: only the production build output ships. dist-dev/ (the dev scripts), sources,
 # source maps, tests and tooling are never packaged.
 files:
   - dist/**/*
   - '!dist/**/*.map'
   - package.json
+
+# Electron fuses (THREAT_MODEL.md T26) are switches inside ilet.exe itself, so no environment
+# variable or command-line flag can turn these features back on.
+electronFuses:
+  # ELECTRON_RUN_AS_NODE would turn ilet.exe into a plain Node.js that runs any script.
+  runAsNode: false
+  # NODE_OPTIONS and NODE_EXTRA_CA_CERTS could load code or trust extra certificates.
+  enableNodeOptionsEnvironmentVariable: false
+  # --inspect would open a debugger that controls the main process.
+  enableNodeCliInspectArguments: false
+  # app.asar must match the hash recorded in ilet.exe, so an edited archive does not load.
+  enableEmbeddedAsarIntegrityValidation: true
+  # Only app.asar, never a loose app folder placed next to it.
+  onlyLoadAppFromAsar: true
+  # The window uses ilet://, never file://, so file pages need no extra rights.
+  grantFileProtocolExtraPrivileges: false
+  # ilet stores no cookies; if anything ever does, it is encrypted like in Chrome.
+  enableCookieEncryption: true
+  loadBrowserProcessSpecificV8Snapshot: false
+
 win:
   target: nsis
+  icon: ../branding/ilet.ico
+  # Not signed yet. To sign later, set CSC_LINK (the .pfx certificate) and CSC_KEY_PASSWORD, or
+  # add azureSignOptions for Azure Trusted Signing; electron-builder then signs ilet.exe and the
+  # installer.
+
+nsis:
+  # For all users, in Program Files: ordinary programs cannot change ilet's files there, and the
+  # firewall rules need administrator rights anyway.
+  perMachine: true
+  oneClick: false
+  allowToChangeInstallationDirectory: false
+  include: installer/installer.nsh
+  artifactName: ${productName}-Setup-${version}.${ext}
+  shortcutName: ilet
