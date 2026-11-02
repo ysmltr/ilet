@@ -1,28 +1,71 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title">
   <title id="title">ilet</title>
   <defs>
-    <linearGradient id="background" x1="96" y1="64" x2="928" y2="960" gradientUnits="userSpaceOnUse">
+    <linearGradient id="phone-screen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7DD3FC"/>
+      <stop offset="1" stop-color="#3B82F6"/>
+    </linearGradient>
+    <linearGradient id="monitor-screen" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#3B82F6"/>
       <stop offset="1" stop-color="#6D28D9"/>
     </linearGradient>
+    <clipPath id="phone-glass">
+      <rect x="186" y="406" width="96" height="212" rx="17"/>
+    </clipPath>
   </defs>
-  <rect width="1024" height="1024" rx="228" fill="url(#background)"/>
+  <rect width="1024" height="1024" rx="228" fill="#EEECE7"/>
 
-  <!-- Phone: white body; screen and home indicator cut out to the background -->
-  <rect x="120" y="268" width="220" height="488" rx="52" fill="#FFFFFF"/>
-  <rect x="146" y="318" width="168" height="342" rx="16" fill="url(#background)"/>
-  <rect x="202" y="694" width="56" height="18" rx="9" fill="url(#background)"/>
+  <g transform="translate(512 500) scale(1.08) translate(-512 -512)">
+    <!-- Phone -->
+    <rect x="176" y="396" width="116" height="232" rx="26" fill="#1E1B4B"/>
+    <rect x="186" y="406" width="96" height="212" rx="17" fill="url(#phone-screen)"/>
+    <g clip-path="url(#phone-glass)" fill="#FFFFFF" opacity="0.35">
+      <polygon points="186,552 282,460 282,486 186,578"/>
+      <polygon points="186,598 282,506 282,516 186,608"/>
+    </g>
+    <rect x="218" y="414" width="32" height="9" rx="4.5" fill="#1E1B4B"/>
 
-  <!-- Computer: monitor, neck and base -->
-  <rect x="560" y="310" width="344" height="270" rx="34" fill="#FFFFFF"/>
-  <rect x="586" y="336" width="292" height="218" rx="12" fill="url(#background)"/>
-  <rect x="708" y="578" width="48" height="82" fill="#FFFFFF"/>
-  <rect x="622" y="652" width="220" height="40" rx="20" fill="#FFFFFF"/>
+    <!-- Arrows: phone to computer over the top, computer to phone underneath -->
+    <g fill="none" stroke="#1E1B4B" stroke-width="18" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M353.3 461 A114 102 0 0 1 560.4 480.5 M572.2 444.3 L560.4 480.5 L528.2 460.3"/>
+      <path d="M550.7 563 A114 102 0 0 1 343.6 543.5 M331.8 579.7 L343.6 543.5 L375.8 563.7"/>
+    </g>
 
-  <!-- Arrows from the phone to the computer, fading in to show the direction -->
-  <g fill="none" stroke="#FFFFFF" stroke-width="38" stroke-linecap="round" stroke-linejoin="round">
-    <polyline points="372,410 418,460 372,510" opacity="0.4"/>
-    <polyline points="430,410 476,460 430,510" opacity="0.7"/>
-    <polyline points="488,410 534,460 488,510"/>
+    <!-- Computer: monitor with a violet chin, stand, keyboard and mouse -->
+    <rect x="612" y="398" width="236" height="180" rx="16" fill="#8B5CF6"/>
+    <path d="M612 556 V414 a16 16 0 0 1 16 -16 H832 a16 16 0 0 1 16 16 V556 Z" fill="#1E1B4B"/>
+    <rect x="624" y="410" width="212" height="134" rx="6" fill="url(#monitor-screen)"/>
+    <g fill="#FFFFFF" opacity="0.9">
+      <rect x="636" y="422" width="12" height="12" rx="3"/>
+      <rect x="636" y="440" width="12" height="12" rx="3"/>
+      <rect x="636" y="458" width="12" height="12" rx="3"/>
+    </g>
+    <rect x="718" y="578" width="24" height="22" fill="#1E1B4B"/>
+    <rect x="688" y="598" width="84" height="12" rx="6" fill="#8B5CF6"/>
+    <rect x="632" y="622" width="176" height="30" rx="8" fill="#1E1B4B"/>
+    <g fill="#C7D2FE">
+      <rect x="641" y="629" width="12" height="6" rx="2"/>
+      <rect x="657" y="629" width="12" height="6" rx="2"/>
+      <rect x="673" y="629" width="12" height="6" rx="2"/>
+      <rect x="689" y="629" width="12" height="6" rx="2"/>
+      <rect x="705" y="629" width="12" height="6" rx="2"/>
+      <rect x="721" y="629" width="12" height="6" rx="2"/>
+      <rect x="737" y="629" width="12" height="6" rx="2"/>
+      <rect x="753" y="629" width="12" height="6" rx="2"/>
+      <rect x="769" y="629" width="12" height="6" rx="2"/>
+      <rect x="785" y="629" width="12" height="6" rx="2"/>
+      <rect x="641" y="639" width="12" height="6" rx="2"/>
+      <rect x="657" y="639" width="12" height="6" rx="2"/>
+      <rect x="673" y="639" width="12" height="6" rx="2"/>
+      <rect x="689" y="639" width="12" height="6" rx="2"/>
+      <rect x="705" y="639" width="12" height="6" rx="2"/>
+      <rect x="721" y="639" width="12" height="6" rx="2"/>
+      <rect x="737" y="639" width="12" height="6" rx="2"/>
+      <rect x="753" y="639" width="12" height="6" rx="2"/>
+      <rect x="769" y="639" width="12" height="6" rx="2"/>
+      <rect x="785" y="639" width="12" height="6" rx="2"/>
+    </g>
+    <ellipse cx="834" cy="637" rx="12" ry="16" fill="#1E1B4B"/>
+    <line x1="834" y1="624" x2="834" y2="633" stroke="#C7D2FE" stroke-width="2" stroke-linecap="round"/>
   </g>
 </svg>
