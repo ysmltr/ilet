@@ -47,6 +47,9 @@ targets:
           - UIInterfaceOrientationPortrait
         NSCameraUsageDescription: ilet uses the camera only to scan the pairing QR code shown on your PC.
         NSLocalNetworkUsageDescription: ilet sends your files directly to your PC over your local network.
+        # iOS lets the app look for exactly these Bonjour services, and no others.
+        NSBonjourServices:
+          - _ilet._tcp
         # Only the local-network exception: ATS stays on for everything else. Local PCs cannot
         # have certificates from a public CA; the app's certificate pin replaces that check.
         NSAppTransportSecurity:

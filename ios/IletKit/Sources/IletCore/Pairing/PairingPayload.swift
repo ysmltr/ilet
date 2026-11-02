@@ -34,6 +34,7 @@ public struct PairingPayload: Equatable, Sendable {
             let desktopID = UUID(uuidString: fields.id),
             validNameLengths.contains(fields.name.utf16.count),
             !fields.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+            isVisibleText(fields.name),
             validAddressCounts.contains(fields.addresses.count),
             fields.addresses.allSatisfy(LocalNetworkAddress.isAllowed),
             validPorts.contains(fields.port),
@@ -45,6 +46,19 @@ public struct PairingPayload: Equatable, Sendable {
         return PairingPayload(
             desktopID: desktopID, desktopName: fields.name, addresses: fields.addresses,
             port: fields.port, fingerprint: fingerprint, secret: fields.secret)
+    }
+
+    /// Control, format (such as the right-to-left override) and line separator characters. The PC
+    /// never puts them into its name, and the user relies on the name to recognize the PC, so a
+    /// code with one is forged.
+    private static let invisibleCategories: Set<Unicode.GeneralCategory> = [
+        .control, .format, .surrogate, .lineSeparator, .paragraphSeparator,
+    ]
+
+    private static func isVisibleText(_ text: String) -> Bool {
+        text.unicodeScalars.allSatisfy {
+            !invisibleCategories.contains($0.properties.generalCategory)
+        }
     }
 
     private static func isWellFormedSecret(_ secret: String) -> Bool {

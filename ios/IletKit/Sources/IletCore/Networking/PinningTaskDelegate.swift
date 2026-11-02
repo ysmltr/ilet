@@ -40,6 +40,16 @@ final class PinningTaskDelegate: NSObject, URLSessionTaskDelegate, Sendable {
         return (.useCredential, URLCredential(trust: trust))
     }
 
+    /// The protocol never redirects. Following one could take the request, with its token or
+    /// file, away from the pinned connection, even to plain HTTP on the local network.
+    func urlSession(
+        _ session: URLSession, task: URLSessionTask,
+        willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest
+    ) async -> URLRequest? {
+        Log.network.error("refused a redirect from the PC")
+        return nil
+    }
+
     func urlSession(
         _ session: URLSession, task: URLSessionTask, didSendBodyData bytesSent: Int64,
         totalBytesSent: Int64, totalBytesExpectedToSend: Int64
