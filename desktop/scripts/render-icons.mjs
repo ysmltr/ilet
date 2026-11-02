@@ -1,5 +1,6 @@
-// Renders the .ico files the app ships from the SVG masters in ../branding, with Microsoft Edge
-// in headless mode, which comes with Windows. Run it after changing an SVG: npm run icons
+// Renders the icon files from the SVG masters in ../branding, with Microsoft Edge in headless
+// mode, which comes with Windows: the .ico files of the desktop app and the iPhone app icon.
+// Run it after changing an SVG: npm run icons
 import { Buffer } from 'node:buffer';
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -26,8 +27,17 @@ const ICONS = [
   },
 ];
 
+const IOS_APP_ICON = path.resolve(
+  '../ios/Ilet/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon.png',
+);
+const IOS_APP_ICON_SIZE = 1024;
+/** The background colour of ilet-icon.svg. iOS rounds the corners itself, so they are filled. */
+const IOS_APP_ICON_BACKGROUND = '#EEECE7';
+
 const PNG_WIDTH_OFFSET = 16;
 const PNG_HEIGHT_OFFSET = 20;
+const PNG_COLOR_TYPE_OFFSET = 25;
+const PNG_COLOR_TYPE_RGB = 2;
 const ICO_HEADER_BYTES = 6;
 const ICO_ENTRY_BYTES = 16;
 const ICO_TYPE_ICON = 1;
@@ -47,14 +57,15 @@ function findEdge() {
   return edge;
 }
 
-function renderPng(edge, workFolder, { size, svg }) {
+function renderPng(edge, workFolder, { size, svg, background = 'transparent' }) {
   const source = readFileSync(path.join(BRANDING_FOLDER, svg)).toString('base64');
   const page = path.join(workFolder, `${svg}-${size}.html`);
   const png = path.join(workFolder, `${svg}-${size}.png`);
   writeFileSync(
     page,
-    `<!doctype html><body style="margin:0"><img src="data:image/svg+xml;base64,${source}" ` +
-      `width="${size}" height="${size}" style="display:block"></body>`,
+    `<!doctype html><body style="margin:0;background:${background}">` +
+      `<img src="data:image/svg+xml;base64,${source}" width="${size}" height="${size}" ` +
+      'style="display:block"></body>',
   );
   execFileSync(
     edge,
@@ -110,6 +121,23 @@ try {
     writeFileSync(path.join(BRANDING_FOLDER, icon.file), icoFile(images));
     process.stdout.write(`${icon.file}: ${images.map(({ size }) => size).join(', ')} px\n`);
   }
+
+  const drawing = readFileSync(path.join(BRANDING_FOLDER, FULL_DRAWING), 'utf8');
+  if (!drawing.includes(`fill="${IOS_APP_ICON_BACKGROUND}"`)) {
+    throw new Error(`${FULL_DRAWING} has a new background colour: update IOS_APP_ICON_BACKGROUND`);
+  }
+  const { data } = renderPng(edge, workFolder, {
+    size: IOS_APP_ICON_SIZE,
+    svg: FULL_DRAWING,
+    background: IOS_APP_ICON_BACKGROUND,
+  });
+  // The App Store refuses an icon with an alpha channel, even a fully opaque one. Edge writes an
+  // opaque page as RGB; this check catches it if that ever changes.
+  if (data[PNG_COLOR_TYPE_OFFSET] !== PNG_COLOR_TYPE_RGB) {
+    throw new Error('the iPhone app icon must be an RGB PNG without an alpha channel');
+  }
+  writeFileSync(IOS_APP_ICON, data);
+  process.stdout.write(`${path.basename(IOS_APP_ICON)}: ${IOS_APP_ICON_SIZE} px, opaque RGB\n`);
 } finally {
   rmSync(workFolder, { recursive: true, force: true });
 }

@@ -34,6 +34,8 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: $(ILET_BUNDLE_ID_PREFIX)
         TARGETED_DEVICE_FAMILY: "1"
         CODE_SIGN_STYLE: Automatic
+        # Made from branding/ilet-icon.svg by desktop/scripts/render-icons.mjs.
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     info:
       path: Ilet/Info.plist
       properties:
@@ -49,6 +51,9 @@ targets:
         # have certificates from a public CA; the app's certificate pin replaces that check.
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
+        # Only the system's HTTPS (TLS) and hashing are used, which are exempt from export
+        # documentation; App Store Connect then does not ask about encryption for each build.
+        ITSAppUsesNonExemptEncryption: false
         IletAppGroupIdentifier: group.$(ILET_BUNDLE_ID_PREFIX)
         IletKeychainAccessGroup: $(AppIdentifierPrefix)$(ILET_BUNDLE_ID_PREFIX).shared
     entitlements:
