@@ -28,9 +28,9 @@ runDevScript(async (logger) => {
   const { secret, expiresAt } = core.pairingCodes.start();
   const payload = pairingPayload({
     deviceId: core.identity.deviceId,
-    displayName: core.settings.displayName,
+    displayName: core.settings.current.displayName,
     addresses: selectPairingAddresses(os.networkInterfaces()),
-    port: core.settings.port,
+    port: core.settings.current.port,
     fingerprint: core.identity.fingerprint,
     secret,
   });

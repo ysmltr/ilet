@@ -108,6 +108,23 @@ export class DeviceRegistry {
     return true;
   }
 
+  /** Resolves to the renamed device, or `undefined` when no device has this ID. */
+  async rename(deviceId: string, requestedName: string): Promise<PairedDevice | undefined> {
+    const name = sanitizeDisplayName(requestedName);
+    if (name === '') {
+      // Callers check names before renaming; an empty one here is a bug.
+      throw new RangeError('device name is empty');
+    }
+    const device = this.devices.find((candidate) => candidate.id === deviceId);
+    if (device === undefined) {
+      return undefined;
+    }
+    const renamed: StoredDevice = { ...device, name };
+    this.devices = this.devices.map((candidate) => (candidate === device ? renamed : candidate));
+    await this.persist();
+    return toPairedDevice(renamed);
+  }
+
   onRegistered(listener: RegistrationListener): void {
     this.registrationListeners.add(listener);
   }

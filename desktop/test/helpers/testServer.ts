@@ -16,6 +16,7 @@ import {
 import { PairingCodes } from '../../src/pairing/pairingCodes';
 import { SERVER_LIMITS } from '../../src/protocol/constants';
 import {
+  type BlockedLocalAddressCheck,
   closeServer,
   listen,
   ListenAddress,
@@ -46,6 +47,7 @@ export interface TestServerOptions {
   readonly settings?: Partial<Settings>;
   readonly limits?: Partial<ServerLimits>;
   readonly markUntrusted?: UntrustedFileMarker;
+  readonly isBlockedLocalAddress?: BlockedLocalAddressCheck;
 }
 
 export interface TestServer {
@@ -93,7 +95,7 @@ export async function startTestServer(options: TestServerOptions = {}): Promise<
   );
   const { device, token } = await devices.register('Test iPhone');
   const receiver = new FileReceiver({
-    policy: settings,
+    policy: () => settings,
     markUntrusted: options.markUntrusted ?? markIfSupported,
     availableBytes: () => Promise.resolve(Number.MAX_SAFE_INTEGER),
     now: () => new Date(),
@@ -114,6 +116,7 @@ export async function startTestServer(options: TestServerOptions = {}): Promise<
     pairingCodes,
     receiver,
     onFileReceived: (file) => received.push(file),
+    isBlockedLocalAddress: options.isBlockedLocalAddress ?? (() => false),
     logger,
     now: Date.now,
     limits: { ...SERVER_LIMITS, ...options.limits },

@@ -6,9 +6,14 @@ import { APP_ENTRY_URL } from './appUrl';
 
 const WINDOW_SIZE = { width: 440, height: 720 } as const;
 
-export function createMainWindow(preloadPath: string, logger: Logger): BrowserWindow {
+export function createMainWindow(
+  preloadPath: string,
+  iconPath: string,
+  logger: Logger,
+): BrowserWindow {
   const window = new BrowserWindow({
     ...WINDOW_SIZE,
+    icon: iconPath,
     // The size is the page area, without the Windows title bar.
     useContentSize: true,
     resizable: false,

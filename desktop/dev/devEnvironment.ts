@@ -2,15 +2,18 @@
  * DEVELOPMENT ONLY. Shared setup for the dev scripts. They are compiled to dist-dev/, which the
  * installer never includes, and they refuse to run in a packaged app.
  */
-import { writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
 import { app, safeStorage } from 'electron';
 
+import { receiveFolderRulesFor } from '../src/app/receiveFolderRules';
 import { type ServerCore, startServerCore } from '../src/app/serverCore';
 import type { DeviceRegistry } from '../src/auth/deviceRegistry';
 import { createSafeStorageCipher } from '../src/identity/safeStorageCipher';
+import { UNKNOWN_EXPOSURE } from '../src/network/networkExposure';
+import { ApiPath } from '../src/protocol/constants';
 import { ListenAddress } from '../src/server/httpsServer';
 import { createConsoleLogger, errorFields, type Logger } from '../src/shared/logger';
 
@@ -35,31 +38,45 @@ export function runDevScript(main: (logger: Logger) => Promise<void>): void {
   });
 }
 
-/** Starts the server core with dev data, listening on this PC only. */
-export async function startDevServer(logger: Logger): Promise<DevServer> {
+/** Points the app at the dev data folder and returns it. Refuses to run in a packaged app. */
+export async function useDevDataFolder(): Promise<string> {
   if (app.isPackaged) {
     throw new Error('Development scripts must never run in a packaged app.');
   }
-  app.setPath('userData', path.join(app.getPath('appData'), DEV_DATA_FOLDER_NAME));
-  await app.whenReady();
+  const dataFolder = path.join(app.getPath('appData'), DEV_DATA_FOLDER_NAME);
+  app.setPath('userData', dataFolder);
+  await mkdir(dataFolder, { recursive: true });
+  return dataFolder;
+}
 
-  const dataFolder = app.getPath('userData');
+/** Starts the server core with dev data, listening on this PC only. */
+export async function startDevServer(logger: Logger): Promise<DevServer> {
+  const dataFolder = await useDevDataFolder();
+  await app.whenReady();
   const core = await startServerCore({
     dataFolder,
     downloadsFolder: app.getPath('downloads'),
     listenAddress: ListenAddress.loopback,
     createMdnsResponder: undefined,
+    // Loopback only: no network can reach the server, so there is nothing to protect.
+    networkExposure: UNKNOWN_EXPOSURE,
+    receiveFolderRules: receiveFolderRulesFor(app),
     hostname: os.hostname(),
     platform: process.platform,
     secretCipher: createSafeStorageCipher(safeStorage),
     logger,
   });
+  return describeDevServer(core, dataFolder);
+}
+
+/** What the printed curl commands need; writes the certificate for `curl --cacert`. */
+export async function describeDevServer(core: ServerCore, dataFolder: string): Promise<DevServer> {
   const certificatePath = path.join(dataFolder, DEV_CERTIFICATE_FILE_NAME);
   await writeFile(certificatePath, core.identity.certificatePem);
   return {
     core,
     dataFolder,
-    baseUrl: `https://${ListenAddress.loopback}:${String(core.settings.port)}`,
+    baseUrl: `https://${ListenAddress.loopback}:${String(core.settings.current.port)}`,
     certificatePath: forwardSlashes(certificatePath),
   };
 }
@@ -72,6 +89,18 @@ export async function revokeDevicesNamed(devices: DeviceRegistry, name: string):
 
 export function curlCommand(server: DevServer, ...args: string[]): string {
   return ['curl.exe', '--cacert', `"${server.certificatePath}"`, ...args].join(' ');
+}
+
+/** Sends photo.jpg from the current folder, as a paired phone would. */
+export function uploadCommand(server: DevServer, token: string): string {
+  return curlCommand(
+    server,
+    `-H "Authorization: Bearer ${token}"`,
+    '-H "Content-Type: application/octet-stream"',
+    '-H "Ilet-File-Name: photo.jpg"',
+    '--data-binary "@photo.jpg"',
+    `${server.baseUrl}${ApiPath.files}`,
+  );
 }
 
 export function forwardSlashes(filePath: string): string {

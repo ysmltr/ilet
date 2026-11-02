@@ -1,31 +1,8 @@
-import type { NetworkInterfaceInfo } from 'node:os';
-
 import { describe, expect, it } from 'vitest';
 
-import { type NetworkInterfaces, selectPairingAddresses } from '../../src/pairing/pairingAddresses';
-
-function ipv4(address: string, internal = false): NetworkInterfaceInfo {
-  return {
-    address,
-    family: 'IPv4',
-    internal,
-    netmask: '255.255.255.0',
-    mac: '00:00:00:00:00:00',
-    cidr: `${address}/24`,
-  };
-}
-
-function ipv6(address: string): NetworkInterfaceInfo {
-  return {
-    address,
-    family: 'IPv6',
-    internal: false,
-    netmask: 'ffff:ffff:ffff:ffff::',
-    mac: '00:00:00:00:00:00',
-    cidr: `${address}/64`,
-    scopeid: 0,
-  };
-}
+import type { NetworkInterfaces } from '../../src/network/networkInterfaces';
+import { selectPairingAddresses } from '../../src/pairing/pairingAddresses';
+import { ipv4, ipv6 } from '../helpers/networkFakes';
 
 describe('selectPairingAddresses', () => {
   it('keeps private IPv4 and unique local IPv6 addresses only', () => {

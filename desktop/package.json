@@ -16,12 +16,14 @@
     "start": "npm run build && electron .",
     "dev:token": "npm run build:dev && electron dist-dev/dev/devServerWithToken.js",
     "dev:pair": "npm run build:dev && electron dist-dev/dev/devPairing.js",
+    "dev:app": "npm run build && npm run build:dev && electron dist-dev/dev/devApp.js",
     "typecheck": "tsc -p tsconfig.json && tsc -p src/renderer/tsconfig.json",
     "lint": "eslint . --max-warnings 0 && prettier --check .",
     "format": "prettier --write .",
     "test": "vitest run",
     "check": "npm run typecheck && npm run lint && npm test",
-    "package:dir": "npm run build && electron-builder --dir"
+    "package:dir": "npm run build && electron-builder --dir",
+    "icons": "node scripts/render-icons.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

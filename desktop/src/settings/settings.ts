@@ -47,7 +47,7 @@ export async function loadOrCreateSettings(
 ): Promise<Settings> {
   const stored = await readJsonFile(filePath);
   if (stored === undefined) {
-    await writeJsonFileAtomic(filePath, { formatVersion: SETTINGS_FORMAT_VERSION, ...defaults });
+    await saveSettings(filePath, defaults);
     return defaults;
   }
   const settings = parseSettings(stored);
@@ -55,6 +55,15 @@ export async function loadOrCreateSettings(
     throw new StartupError('data_file_invalid', { detail: filePath });
   }
   return settings;
+}
+
+export async function saveSettings(filePath: string, settings: Settings): Promise<void> {
+  await writeJsonFileAtomic(filePath, { formatVersion: SETTINGS_FORMAT_VERSION, ...settings });
+}
+
+/** The same rules that a settings file must pass when it is loaded. */
+export function areValidSettings(settings: Settings): boolean {
+  return parseSettings({ formatVersion: SETTINGS_FORMAT_VERSION, ...settings }) !== undefined;
 }
 
 function parseSettings(value: unknown): Settings | undefined {

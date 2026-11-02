@@ -59,6 +59,19 @@ describe('HTTPS server', () => {
       expect(response.headers['content-security-policy']).toBe("default-src 'none'");
     });
 
+    it('drops connections that arrive on a blocked address of this PC', async () => {
+      const blocked: string[] = [];
+      const server = await startTestServer({
+        isBlockedLocalAddress: (address) => {
+          blocked.push(address);
+          return true;
+        },
+      });
+
+      await expect(server.send({ path: '/api/info' })).rejects.toThrow();
+      expect(blocked).toEqual(['127.0.0.1']);
+    });
+
     it('rejects any request with an Origin header', async () => {
       const server = await startTestServer();
       const response = await server.send({

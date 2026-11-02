@@ -105,6 +105,30 @@ describe('DeviceRegistry', () => {
     expect((error as ProtocolError).code).toBe('invalid_request');
   });
 
+  it('renames a device, cleans the name and keeps its token working', async () => {
+    const { registry, filePath } = await openRegistry();
+    const { device, token } = await registry.register('iPhone');
+
+    const renamed = await registry.rename(device.id, '  Yeşim’s   iPhone‮ ');
+
+    expect(renamed).toEqual({ ...device, name: 'Yeşim’s iPhone' });
+    expect(registry.authenticate(token)?.name).toBe('Yeşim’s iPhone');
+    const reopened = await DeviceRegistry.open(filePath, () => PAIRED_AT);
+    expect(reopened.list()).toEqual([renamed]);
+  });
+
+  it('reports renaming an unknown device', async () => {
+    const { registry } = await openRegistry();
+    expect(await registry.rename('0b9c6a51-1f0e-4f35-a3e5-1b2c3d4e5f60', 'iPhone')).toBeUndefined();
+  });
+
+  it('refuses a name that is empty once cleaned', async () => {
+    const { registry } = await openRegistry();
+    const { device } = await registry.register('iPhone');
+    await expect(registry.rename(device.id, ' ​ ')).rejects.toThrow(RangeError);
+    expect(registry.list()[0]?.name).toBe('iPhone');
+  });
+
   it('serializes concurrent writes so the last state wins', async () => {
     const { registry, filePath } = await openRegistry();
     await Promise.all(['A', 'B', 'C'].map((name) => registry.register(name)));

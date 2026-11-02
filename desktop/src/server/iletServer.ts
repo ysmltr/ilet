@@ -9,7 +9,7 @@ import { AUTH_FAILURE_LIMIT, SERVER_LIMITS } from '../protocol/constants';
 import type { Settings } from '../settings/settings';
 import type { Logger } from '../shared/logger';
 import { createTokenAuthenticator } from './authentication';
-import { createHttpsServer, type ServerLimits } from './httpsServer';
+import { type BlockedLocalAddressCheck, createHttpsServer, type ServerLimits } from './httpsServer';
 import { infoRoute } from './routes/infoRoute';
 import { pairRoute } from './routes/pairRoute';
 import { statusRoute } from './routes/statusRoute';
@@ -23,6 +23,7 @@ export interface IletServerDependencies {
   readonly pairingCodes: PairingCodes;
   readonly receiver: FileReceiver;
   readonly onFileReceived: FileReceivedListener;
+  readonly isBlockedLocalAddress: BlockedLocalAddressCheck;
   readonly logger: Logger;
   readonly now: () => number;
   readonly limits?: ServerLimits;
@@ -44,5 +45,11 @@ export function createIletServer(dependencies: IletServerDependencies): Server {
     authenticate: createTokenAuthenticator(devices, failureLimiter, logger),
     logger,
   });
-  return createHttpsServer(identity, handleRequest, logger, limits);
+  return createHttpsServer(
+    identity,
+    handleRequest,
+    dependencies.isBlockedLocalAddress,
+    logger,
+    limits,
+  );
 }

@@ -1,12 +1,6 @@
-import type { NetworkInterfaceInfo } from 'node:os';
-
+import { isVirtualAdapter, type NetworkInterfaces } from '../network/networkInterfaces';
 import { MAX_PAIRING_ADDRESSES } from '../protocol/constants';
 import { isAdvertisableAddress } from '../server/networkAddress';
-
-export type NetworkInterfaces = NodeJS.Dict<NetworkInterfaceInfo[]>;
-
-/** Adapters of virtual machines and WSL. A phone usually cannot reach them, so they go last. */
-const VIRTUAL_ADAPTER_NAMES = /virtual|vethernet|vmware|vbox|hyper-v|wsl/i;
 
 interface Candidate {
   readonly address: string;
@@ -25,7 +19,7 @@ export function selectPairingAddresses(interfaces: NetworkInterfaces): string[] 
       .map((info) => ({
         address: info.address,
         isIpv4: info.family === 'IPv4',
-        isVirtual: VIRTUAL_ADAPTER_NAMES.test(name),
+        isVirtual: isVirtualAdapter(name),
       })),
   );
   candidates.sort(

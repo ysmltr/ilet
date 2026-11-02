@@ -5,6 +5,8 @@ import { copyFileSync, mkdirSync } from 'node:fs';
 import { build } from 'esbuild';
 
 const RENDERER_OUTPUT = 'dist/renderer';
+/** The window, tray and notification icons, made by scripts/render-icons.mjs. */
+const ICON_OUTPUT = 'dist/icons';
 const common = { bundle: true, target: 'es2023', platform: 'browser', logLevel: 'warning' };
 
 await build({
@@ -25,3 +27,8 @@ mkdirSync(RENDERER_OUTPUT, { recursive: true });
 copyFileSync('src/renderer/index.html', `${RENDERER_OUTPUT}/index.html`);
 copyFileSync('src/renderer/styles.css', `${RENDERER_OUTPUT}/styles.css`);
 copyFileSync('../branding/ilet-icon.svg', `${RENDERER_OUTPUT}/icon.svg`);
+
+mkdirSync(ICON_OUTPUT, { recursive: true });
+for (const icon of ['ilet.ico', 'ilet-tray.ico']) {
+  copyFileSync(`../branding/${icon}`, `${ICON_OUTPUT}/${icon}`);
+}

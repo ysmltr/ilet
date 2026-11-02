@@ -5,9 +5,10 @@
 Share a photo on your iPhone, tap **ilet**, and the file is in a folder on your PC: directly
 over your Wi-Fi, with no accounts, no cloud and no analytics.
 
-> **Status:** Phase 4 of 7. Windows: the server, QR pairing and the Bonjour announcement are
-> done. iPhone: pairing and sending build and pass their unit tests on GitHub's Macs, but have
-> not run on an iPhone yet; its half of Phase 4 (finding the PC again) is not written yet.
+> **Status:** Phase 6 of 7. Windows: the server, QR pairing, the Bonjour announcement and the
+> desktop app (tray, notifications, settings, paired devices) are done. iPhone: pairing and
+> sending build and pass their unit tests on GitHub's Macs, but have not run on an iPhone yet;
+> its half of Phase 4 (finding the PC again) is not written yet.
 
 ## Security first
 
@@ -26,7 +27,7 @@ automatically.
 | ------------------ | ----------------------------------------------------- |
 | `desktop/`         | Windows app: Electron + TypeScript                    |
 | `ios/`             | iPhone app: Swift + SwiftUI (Share Extension: Phase 5) |
-| `branding/`        | App icon (SVG master)                                 |
+| `branding/`        | App and tray icons: SVG masters and the .ico files    |
 | `.github/`         | CI: checks the iPhone app on GitHub's Macs            |
 | `PROTOCOL.md`      | Wire protocol                                         |
 | `THREAT_MODEL.md`  | Threat model                                          |
@@ -39,13 +40,14 @@ automatically.
 | `identity/`  | Self-signed TLS certificate, encrypted private key storage                         |
 | `auth/`      | Access tokens, paired devices, rate limiting                                       |
 | `files/`     | File name sanitizing, safe saving (`.part` → rename), Mark-of-the-Web, disk checks |
-| `settings/`  | Settings with validation                                                           |
+| `settings/`  | Settings, which folders may receive files, starting with Windows                   |
 | `pairing/`   | One-time pairing codes, QR code payload, which addresses to advertise              |
 | `server/`    | HTTPS server, request rules, routes                                                |
 | `discovery/` | Announces the PC on the local network (Bonjour), so phones find its new address    |
+| `network/`   | Which networks Windows treats as Public: no connections or announcements there     |
 | `ipc/`       | The contract between the window and the main process                               |
-| `ui/`        | Window, `ilet://` protocol, Electron security guards, IPC handlers                 |
-| `preload/`   | The three functions the window may call (`window.ilet`)                            |
+| `ui/`        | Window, tray, notifications, `ilet://` protocol, security guards, IPC handlers      |
+| `preload/`   | The functions the window may call (`window.ilet`)                                  |
 | `renderer/`  | The window's page: HTML, CSS and a script with no access to Node.js                |
 | `i18n/`      | English and Turkish texts                                                          |
 | `app/`       | Composition root: wires the modules together                                       |
@@ -61,15 +63,21 @@ npm ci              # install exact versions from package-lock.json
 npm run check       # type check + lint (zero warnings) + tests
 npm run dev:token   # DEVELOPMENT ONLY: server + a test token for curl
 npm run dev:pair    # DEVELOPMENT ONLY: server + a pairing code that curl can use
-npm start           # the real app: server + pairing window
+npm run dev:app     # DEVELOPMENT ONLY: the whole app with a paired test phone, on this PC only
+npm start           # the real app: tray, window, server
 ```
 
 Electron downloads its runtime the first time it starts (about 110 MB).
 
+Closing the window keeps ilet running in the notification area next to the clock; quit it
+from its icon there. The icon files in `branding/` are made from the SVGs with `npm run icons`,
+which uses Microsoft Edge (part of Windows).
+
 The phone can reach ilet only on a network that Windows treats as **Private** (Settings →
 Network & Internet → your Wi-Fi or Ethernet connection → Network profile). On a Public network
-the firewall blocks it, which is what you want in a café. The first `npm start` makes Windows
-Firewall ask whether Electron may use the network: allow **Private networks** only.
+ilet refuses connections and does not announce itself, and its window says so: that is what you
+want in a café. The first `npm start` makes Windows Firewall ask whether Electron may use the
+network: allow **Private networks** only.
 
 The dev scripts keep their data in `%APPDATA%\ilet-dev`, apart from the real app, listen only on
 `127.0.0.1`, and print ready-to-paste `curl.exe` commands. They are compiled to `dist-dev/`, which

@@ -29,7 +29,11 @@ export interface MdnsResponder {
   shutdown(): Promise<void>;
 }
 
-export type MdnsResponderFactory = () => MdnsResponder;
+/**
+ * Creates a responder bound to these adapters, or to every adapter for `undefined`: ciao's
+ * `getResponder` in the app, a fake in tests.
+ */
+export type MdnsResponderFactory = (adapters: readonly string[] | undefined) => MdnsResponder;
 
 export interface Advertiser {
   /** Withdraws the announcement and closes the sockets. Never rejects; later calls do nothing. */
@@ -42,7 +46,7 @@ export interface Advertiser {
  */
 export function startAdvertising(
   announcement: ServiceAnnouncement,
-  createResponder: MdnsResponderFactory,
+  createResponder: () => MdnsResponder,
   logger: Logger,
 ): Advertiser {
   let responder: MdnsResponder | undefined;

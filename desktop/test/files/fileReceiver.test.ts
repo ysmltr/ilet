@@ -20,6 +20,8 @@ const PLENTY_OF_SPACE = Number.MAX_SAFE_INTEGER;
 interface ReceiverSetup {
   readonly folder: string;
   readonly receiver: FileReceiver;
+  /** Changes the receive folder, as the settings window can at any time. */
+  readonly changeFolder: (folder: string) => void;
   readonly markUntrusted: ReturnType<typeof vi.fn<(filePath: string) => Promise<void>>>;
 }
 
@@ -28,18 +30,22 @@ async function setUp(
 ): Promise<ReceiverSetup> {
   const folder = path.join(await createTempFolder(), 'receive');
   const markUntrusted = vi.fn<(filePath: string) => Promise<void>>(() => Promise.resolve());
+  let receiveFolder = folder;
   const receiver = new FileReceiver({
-    policy: {
-      receiveFolder: folder,
+    policy: () => ({
+      receiveFolder,
       maxFileSizeBytes: overrides.maxFileSizeBytes ?? 1024,
       maxConcurrentUploads: overrides.maxConcurrentUploads ?? 2,
-    },
+    }),
     markUntrusted,
     availableBytes: () => Promise.resolve(overrides.availableBytes ?? PLENTY_OF_SPACE),
     now: () => new Date(2026, 10, 1, 15, 30, 12),
     logger: createMemoryLogger(),
   });
-  return { folder, receiver, markUntrusted };
+  const changeFolder = (newFolder: string): void => {
+    receiveFolder = newFolder;
+  };
+  return { folder, receiver, markUntrusted, changeFolder };
 }
 
 function incoming(content: Readable | string, overrides: Partial<IncomingFile> = {}): IncomingFile {
@@ -204,6 +210,24 @@ describe('FileReceiver', () => {
     const onAccepted = vi.fn();
     await receiver.receive(incoming('data', { onAccepted }));
     expect(onAccepted).toHaveBeenCalledOnce();
+  });
+
+  it('finishes an upload in the folder it started in', async () => {
+    const { folder, receiver, changeFolder } = await setUp();
+    const otherFolder = path.join(await createTempFolder(), 'other');
+    const content = new PassThrough();
+    const upload = receiver.receive(incoming(content, { sizeBytes: 4 }));
+    content.write('ab');
+    await vi.waitFor(async () => {
+      expect((await filesIn(folder)).length).toBe(1);
+    });
+
+    changeFolder(otherFolder);
+    content.end('cd');
+
+    expect((await upload).path).toBe(path.join(folder, 'photo.jpg'));
+    expect(await readFile(path.join(folder, 'photo.jpg'), 'utf8')).toBe('abcd');
+    expect(await filesIn(otherFolder)).toEqual([]);
   });
 
   it('aborts and deletes the uploads of a revoked device', async () => {

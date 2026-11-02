@@ -26,7 +26,11 @@ export interface ReceivePolicy {
 }
 
 export interface FileReceiverDependencies {
-  readonly policy: ReceivePolicy;
+  /**
+   * Read once per upload, so a folder changed during an upload cannot put its .part file and its
+   * final name in two different folders.
+   */
+  readonly policy: () => ReceivePolicy;
   readonly markUntrusted: UntrustedFileMarker;
   readonly availableBytes: AvailableSpaceProbe;
   readonly now: () => Date;
@@ -58,11 +62,12 @@ export class FileReceiver {
   private readonly slots: UploadSlots;
 
   constructor(private readonly dependencies: FileReceiverDependencies) {
-    this.slots = new UploadSlots(dependencies.policy.maxConcurrentUploads);
+    this.slots = new UploadSlots(dependencies.policy().maxConcurrentUploads);
   }
 
   async receive(file: IncomingFile): Promise<ReceivedFile> {
-    if (file.sizeBytes > this.dependencies.policy.maxFileSizeBytes) {
+    const { receiveFolder, maxFileSizeBytes } = this.dependencies.policy();
+    if (file.sizeBytes > maxFileSizeBytes) {
       throw new ProtocolError('payload_too_large');
     }
     const slot = this.slots.tryAcquire(file.deviceId, file.sizeBytes);
@@ -72,10 +77,10 @@ export class FileReceiver {
       });
     }
     try {
-      await mkdir(this.dependencies.policy.receiveFolder, { recursive: true });
-      await this.ensureFreeSpace();
+      await mkdir(receiveFolder, { recursive: true });
+      await this.ensureFreeSpace(receiveFolder);
       file.onAccepted();
-      return await this.store(file, slot.signal);
+      return await this.store(file, receiveFolder, slot.signal);
     } finally {
       slot.release();
     }
@@ -85,8 +90,7 @@ export class FileReceiver {
     this.slots.abortUploadsFrom(deviceId);
   }
 
-  private async ensureFreeSpace(): Promise<void> {
-    const { receiveFolder } = this.dependencies.policy;
+  private async ensureFreeSpace(receiveFolder: string): Promise<void> {
     const available = await this.dependencies.availableBytes(receiveFolder);
     // reservedBytes() includes this upload and every other upload in progress.
     if (available < this.slots.reservedBytes() + FREE_SPACE_RESERVE_BYTES) {
@@ -94,13 +98,17 @@ export class FileReceiver {
     }
   }
 
-  private async store(file: IncomingFile, signal: AbortSignal): Promise<ReceivedFile> {
-    const partPath = resolveInsideFolder(this.dependencies.policy.receiveFolder, newPartFileName());
+  private async store(
+    file: IncomingFile,
+    receiveFolder: string,
+    signal: AbortSignal,
+  ): Promise<ReceivedFile> {
+    const partPath = resolveInsideFolder(receiveFolder, newPartFileName());
     try {
       await this.writePartFile(file, partPath, signal);
       await this.dependencies.markUntrusted(partPath);
       signal.throwIfAborted();
-      return await this.publish(partPath, file);
+      return await this.publish(partPath, receiveFolder, file);
     } catch (error) {
       await this.removeFile(partPath);
       const abortReason: unknown = signal.reason;
@@ -122,8 +130,11 @@ export class FileReceiver {
     }
   }
 
-  private async publish(partPath: string, file: IncomingFile): Promise<ReceivedFile> {
-    const { receiveFolder } = this.dependencies.policy;
+  private async publish(
+    partPath: string,
+    receiveFolder: string,
+    file: IncomingFile,
+  ): Promise<ReceivedFile> {
     const fileName = sanitizeFileName(
       file.requestedName,
       fallbackFileName(this.dependencies.now()),

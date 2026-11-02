@@ -9,6 +9,9 @@ import type { RequestListener } from './routing';
 
 export type ServerLimits = { readonly [Limit in keyof typeof SERVER_LIMITS]: number };
 
+/** True for an address of this PC that must not accept connections: one on a Public network. */
+export type BlockedLocalAddressCheck = (localAddress: string) => boolean;
+
 export interface TlsCredentials {
   readonly certificatePem: string;
   readonly privateKeyPem: string;
@@ -30,6 +33,7 @@ export type ListenAddress = (typeof ListenAddress)[keyof typeof ListenAddress];
 export function createHttpsServer(
   credentials: TlsCredentials,
   handleRequest: RequestListener,
+  isBlockedLocalAddress: BlockedLocalAddressCheck,
   logger: Logger,
   limits: ServerLimits = SERVER_LIMITS,
 ): Server {
@@ -54,7 +58,12 @@ export function createHttpsServer(
   server.on('checkContinue', handleRequest);
   // Runs before any TLS bytes are processed, so other networks see nothing.
   server.on('connection', (socket: Socket) => {
-    if (!isLocalNetworkAddress(socket.remoteAddress)) {
+    const { remoteAddress, localAddress } = socket;
+    if (
+      !isLocalNetworkAddress(remoteAddress) ||
+      localAddress === undefined ||
+      isBlockedLocalAddress(localAddress)
+    ) {
       socket.destroy();
     }
   });

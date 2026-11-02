@@ -1,5 +1,6 @@
 import type { StartPairingResult } from '../ipc/contract';
-import { type NetworkInterfaces, selectPairingAddresses } from '../pairing/pairingAddresses';
+import type { NetworkInterfaces } from '../network/networkInterfaces';
+import { selectPairingAddresses } from '../pairing/pairingAddresses';
 import type { PairingCodes } from '../pairing/pairingCodes';
 import { pairingPayload } from '../pairing/pairingPayload';
 import { encodeQrMatrix } from './qrMatrix';

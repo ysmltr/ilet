@@ -7,8 +7,14 @@
   --border: #e5e7eb;
   --accent-start: #3b82f6;
   --accent-end: #6d28d9;
+  --link: #4f46e5;
+  --danger: #b91c1c;
   --notice-background: #fff7ed;
   --notice-text: #9a3412;
+  --warning-background: #fef3c7;
+  --warning-border: #f59e0b;
+  --warning-text: #78350f;
+  --scrollbar: #c7cbd4;
   font-family: 'Segoe UI', system-ui, sans-serif;
 }
 
@@ -19,8 +25,14 @@
     --text: #f3f4f6;
     --muted: #a3aab8;
     --border: #262f4a;
+    --link: #a5b4fc;
+    --danger: #fca5a5;
     --notice-background: #3a2410;
     --notice-text: #fdba74;
+    --warning-background: #3a2a0a;
+    --warning-border: #b45309;
+    --warning-text: #fde68a;
+    --scrollbar: #3a4360;
   }
 }
 
@@ -40,8 +52,22 @@ body {
 main {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 28px 24px;
+  gap: 16px;
+  padding: 24px;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  border: 3px solid var(--background);
+  border-radius: 5px;
+  background: var(--scrollbar);
 }
 
 .brand {
@@ -66,24 +92,43 @@ main {
   color: var(--muted);
 }
 
+p {
+  margin: 0;
+}
+
+.view {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .card {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 14px;
-  padding: 20px;
+  gap: 12px;
+  padding: 18px;
   border: 1px solid var(--border);
   border-radius: 16px;
   background: var(--surface);
+}
+
+.card.centered {
+  align-items: center;
   text-align: center;
 }
 
-.card[hidden] {
-  display: none;
+.card-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
 }
 
-.card p {
-  margin: 0;
+.muted {
+  color: var(--muted);
+}
+
+.small {
+  font-size: 13px;
 }
 
 .instruction,
@@ -110,9 +155,129 @@ main {
   font-size: 13px;
 }
 
+.warning {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--warning-border);
+  border-radius: 16px;
+  background: var(--warning-background);
+  color: var(--warning-text);
+}
+
+.warning-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.problem {
+  color: var(--danger);
+  font-size: 13px;
+}
+
+.device-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.device {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.device-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.device-name {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.device-date {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.device-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 4px;
+}
+
+.rename-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.rename-form .problem {
+  flex-basis: 100%;
+}
+
+.text-input {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--text);
+  font: inherit;
+  user-select: text;
+}
+
+.setting-label {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* Paths can be long; they wrap anywhere rather than widen the window. */
+.folder-path {
+  overflow-wrap: anywhere;
+  font-weight: 600;
+  user-select: text;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.toggle input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--accent-start);
+}
+
 .button {
-  min-width: 220px;
-  padding: 10px 18px;
+  padding: 8px 16px;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--surface);
@@ -122,13 +287,46 @@ main {
   cursor: pointer;
 }
 
+.card.centered .button {
+  min-width: 220px;
+}
+
 .button.primary {
   border: none;
   background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
   color: #ffffff;
 }
 
-.button:focus-visible {
+.button.compact {
+  padding: 6px 12px;
+}
+
+.link-button {
+  padding: 4px 6px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--link);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.link-button.danger {
+  color: var(--danger);
+}
+
+.button:focus-visible,
+.link-button:focus-visible,
+.text-input:focus-visible,
+.toggle input:focus-visible {
   outline: 3px solid var(--accent-start);
   outline-offset: 2px;
+}
+
+.button:disabled,
+.toggle input:disabled {
+  cursor: default;
+  opacity: 0.5;
 }
