@@ -74,7 +74,7 @@ These rules apply to every endpoint.
 | Error responses      | Always close the connection (`Connection: close`).                                                         |
 | Response headers     | `Content-Type: application/json; charset=utf-8`, `Cache-Control: no-store`, `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none'` |
 | Client source address| The server drops connections from addresses outside local-network ranges (RFC 1918, link-local, loopback, IPv6 ULA) before the TLS handshake. |
-| Public networks      | On Windows, the server also drops connections that arrive on one of its addresses on a network that Windows classifies as Public, before the TLS handshake. |
+| Public networks      | On Windows, the server accepts connections only on its addresses on networks that Windows classifies as Private (and on loopback). Connections to any other address, on a Public or Domain network or one not classified yet, are dropped before the TLS handshake. |
 
 ### 3.1 Authentication
 
@@ -175,7 +175,7 @@ The QR code contains one line of UTF-8 JSON:
 | ------------- | ---------------- | ----------------------------------------------------------------------- |
 | `ilet`        | integer          | Payload format version, currently `1`. Also identifies the QR as ilet's. |
 | `id`          | string           | Desktop device ID (UUID v4, lowercase)                                  |
-| `name`        | string           | Desktop display name, 1–64 UTF-16 code units                            |
+| `name`        | string           | Desktop display name, 1–64 UTF-16 code units, without control, format or line separator characters (clients refuse a code that has them) |
 | `addresses`   | array of strings | 1–8 IP literals of the desktop in local-network ranges (no link-local IPv6, which needs a zone ID) |
 | `port`        | integer          | 1–65535                                                                 |
 | `fingerprint` | string           | Certificate fingerprint (section 2.2)                                   |
@@ -318,7 +318,7 @@ network, so that a phone can find a paired PC again after its IP address changes
 
 The TXT record contains nothing else. The desktop announces the service only while its server
 listens on the network (the development scripts listen on `127.0.0.1` and announce nothing), and
-on Windows only on networks classified as Private or Domain, never on Public ones. It receives
+on Windows only on networks classified as Private, never on Public or Domain ones. It receives
 queries on UDP port 5353 and sends goodbye packets (TTL 0) when it stops.
 
 Anyone on the network can advertise any service with any TXT record. The client therefore uses
@@ -339,4 +339,4 @@ discovery only to find a new address and port for a desktop it already paired wi
 | `POST /api/v1/files`                   | Phase 1 | Phase 3 |
 | Pairing (QR, `POST /api/v1/pair`)      | Phase 2 | Phase 3 |
 | Discovery                              | Phase 4 | Phase 4 (not written yet) |
-| No connections or announcements on Public networks | Phase 6 | – |
+| No connections or announcements outside Private networks | Phase 6, 7 | – |

@@ -5,6 +5,7 @@ import { app, safeStorage, session } from 'electron';
 
 import { createTranslator, resolveLanguage, type Translate } from '../i18n/messages';
 import { createSafeStorageCipher } from '../identity/safeStorageCipher';
+import type { NetworkExposure } from '../network/networkExposure';
 import { NetworkMonitor } from '../network/networkMonitor';
 import { createWindowsProfileReader, type NetworkProfileReader } from '../network/networkProfiles';
 import { ListenAddress } from '../server/httpsServer';
@@ -152,9 +153,9 @@ function createTray(
       app.quit();
     },
   });
-  tray.showPublicNetworkWarning(monitor.current.publicNetworks.length > 0);
+  tray.showBlockedNetworkWarning(isBlockedSomewhere(monitor.current));
   monitor.onChange((exposure) => {
-    tray.showPublicNetworkWarning(exposure.publicNetworks.length > 0);
+    tray.showBlockedNetworkWarning(isBlockedSomewhere(exposure));
   });
   return tray;
 }
@@ -192,4 +193,8 @@ function networkProfileReader(logger: Logger): NetworkProfileReader {
     return () => Promise.resolve(undefined);
   }
   return createWindowsProfileReader(process.env['SystemRoot'] ?? DEFAULT_SYSTEM_ROOT, logger);
+}
+
+function isBlockedSomewhere({ publicNetworks, domainNetworks }: NetworkExposure): boolean {
+  return publicNetworks.length > 0 || domainNetworks.length > 0;
 }

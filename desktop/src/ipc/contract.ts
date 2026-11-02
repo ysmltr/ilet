@@ -67,6 +67,8 @@ export type ChooseReceiveFolderResult =
 export interface NetworkStatus {
   /** Network adapters (not virtual ones) on networks that Windows classifies as Public. */
   readonly publicNetworks: readonly string[];
+  /** Network adapters on networks managed by an organization (Domain), which stay blocked. */
+  readonly domainNetworks: readonly string[];
 }
 
 export interface IletBridge {

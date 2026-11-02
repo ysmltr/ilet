@@ -27,7 +27,7 @@ export class AppTray {
       ]),
     );
     this.tray.on('click', actions.open);
-    this.showPublicNetworkWarning(false);
+    this.showBlockedNetworkWarning(false);
   }
 
   /** Removes the icon at once; otherwise Windows may show it until the mouse passes over it. */
@@ -35,10 +35,10 @@ export class AppTray {
     this.tray.destroy();
   }
 
-  /** The tooltip tells when a Public network keeps phones out. */
-  showPublicNetworkWarning(onPublicNetwork: boolean): void {
+  /** The tooltip tells when a network that is not Private keeps phones out. */
+  showBlockedNetworkWarning(onBlockedNetwork: boolean): void {
     this.tray.setToolTip(
-      this.translate(onPublicNetwork ? 'trayTooltipPublicNetwork' : 'trayTooltip'),
+      this.translate(onBlockedNetwork ? 'trayTooltipBlockedNetwork' : 'trayTooltip'),
     );
   }
 }

@@ -8,14 +8,17 @@ export interface NetworkActions {
   readonly openNetworkSettings: () => Promise<void>;
 }
 
-/** The warning about Public networks, and the way to fix it. */
+/** The warning about Public and Domain networks, and the way to fix it. */
 export function connectNetwork(
   guard: IpcGuard,
   monitor: NetworkMonitor,
   window: AppWindow,
   actions: NetworkActions,
 ): void {
-  const status = (): NetworkStatus => ({ publicNetworks: monitor.current.publicNetworks });
+  const status = (): NetworkStatus => ({
+    publicNetworks: monitor.current.publicNetworks,
+    domainNetworks: monitor.current.domainNetworks,
+  });
 
   guard.handle(IpcChannel.checkNetwork, noArguments, async () => {
     await monitor.refresh();

@@ -28,12 +28,18 @@ interface StoredDevice extends PairedDevice {
 type RegistrationListener = (device: PairedDevice) => void;
 type RevocationListener = (deviceId: string) => void;
 
+/** A new list of devices, and what the caller learns from the change. */
+interface DevicesChange<Result> {
+  readonly devices: readonly StoredDevice[];
+  readonly result: Result;
+}
+
 /** Paired devices and the hashes of their access tokens. */
 export class DeviceRegistry {
   private devices: readonly StoredDevice[];
   private readonly registrationListeners = new Set<RegistrationListener>();
   private readonly revocationListeners = new Set<RevocationListener>();
-  private pendingWrite: Promise<void> = Promise.resolve();
+  private pendingChange: Promise<void> = Promise.resolve();
 
   private constructor(
     private readonly filePath: string,
@@ -66,8 +72,7 @@ export class DeviceRegistry {
       pairedAt: this.now().toISOString(),
       tokenHash: hash,
     };
-    this.devices = [...this.devices, device];
-    await this.persist();
+    await this.change((devices) => ({ devices: [...devices, device], result: undefined }));
     const pairedDevice = toPairedDevice(device);
     for (const listener of this.registrationListeners) {
       listener(pairedDevice);
@@ -92,20 +97,22 @@ export class DeviceRegistry {
   }
 
   /**
-   * Revocation takes effect in memory before the file is written, so the very next request is
-   * rejected, and listeners abort that device's uploads in progress.
+   * The removal is saved first, then the token stops working at once and listeners abort that
+   * device's uploads in progress. If saving fails, nothing changes and the error is thrown.
    */
   async revoke(deviceId: string): Promise<boolean> {
-    const remaining = this.devices.filter((device) => device.id !== deviceId);
-    if (remaining.length === this.devices.length) {
-      return false;
+    const revoked = await this.change((devices) => {
+      const remaining = devices.filter((device) => device.id !== deviceId);
+      return remaining.length === devices.length
+        ? { devices, result: false }
+        : { devices: remaining, result: true };
+    });
+    if (revoked) {
+      for (const listener of this.revocationListeners) {
+        listener(deviceId);
+      }
     }
-    this.devices = remaining;
-    for (const listener of this.revocationListeners) {
-      listener(deviceId);
-    }
-    await this.persist();
-    return true;
+    return revoked;
   }
 
   /** Resolves to the renamed device, or `undefined` when no device has this ID. */
@@ -115,14 +122,18 @@ export class DeviceRegistry {
       // Callers check names before renaming; an empty one here is a bug.
       throw new RangeError('device name is empty');
     }
-    const device = this.devices.find((candidate) => candidate.id === deviceId);
-    if (device === undefined) {
-      return undefined;
-    }
-    const renamed: StoredDevice = { ...device, name };
-    this.devices = this.devices.map((candidate) => (candidate === device ? renamed : candidate));
-    await this.persist();
-    return toPairedDevice(renamed);
+    const renamed = await this.change((devices) => {
+      const device = devices.find((candidate) => candidate.id === deviceId);
+      if (device === undefined) {
+        return { devices, result: undefined };
+      }
+      const updated: StoredDevice = { ...device, name };
+      return {
+        devices: devices.map((candidate) => (candidate === device ? updated : candidate)),
+        result: updated,
+      };
+    });
+    return renamed && toPairedDevice(renamed);
   }
 
   onRegistered(listener: RegistrationListener): void {
@@ -133,18 +144,29 @@ export class DeviceRegistry {
     this.revocationListeners.add(listener);
   }
 
-  /** Writes run one at a time, and each writes the latest state. */
-  private persist(): Promise<void> {
-    const write = this.pendingWrite.then(() =>
-      writeJsonFileAtomic(this.filePath, toDevicesFile(this.devices)),
-    );
-    // The caller receives this write's error through `write`; the queue only needs to know it
-    // finished, so that a failed write does not block later ones.
-    this.pendingWrite = write.then(
+  /**
+   * Changes run one at a time, each on the latest list. A change is saved before it takes
+   * effect, so memory never holds a change the file lacks: a removal that could not be saved
+   * must not look done and then be undone by a restart.
+   */
+  private change<Result>(
+    apply: (devices: readonly StoredDevice[]) => DevicesChange<Result>,
+  ): Promise<Result> {
+    const step = this.pendingChange.then(async () => {
+      const { devices, result } = apply(this.devices);
+      if (devices !== this.devices) {
+        await writeJsonFileAtomic(this.filePath, toDevicesFile(devices));
+        this.devices = devices;
+      }
+      return result;
+    });
+    // The caller receives this change's error through `step`; the queue only needs to know it
+    // finished, so that a failed change does not block later ones.
+    this.pendingChange = step.then(
       () => undefined,
       () => undefined,
     );
-    return write;
+    return step;
   }
 }
 

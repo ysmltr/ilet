@@ -47,7 +47,8 @@ const SHELL_PARSED_EXTENSIONS = [
   '.themepack',
   '.desktopthemepackfile',
 ];
-const SHELL_PARSED_FILE_NAMES = ['desktop.ini'];
+/** Explorer reads autorun.inf at a drive's root for the drive's icon and name. */
+const SHELL_PARSED_FILE_NAMES = ['desktop.ini', 'autorun.inf'];
 const NEUTRAL_EXTENSION = '.txt';
 
 /**

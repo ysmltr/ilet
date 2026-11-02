@@ -118,8 +118,10 @@ export async function startServerCore(environment: ServerCoreEnvironment): Promi
         listener(file, device);
       }
     },
-    isBlockedLocalAddress: (address) =>
-      exposure.blockedLocalAddresses.has(normalizeAddress(address)),
+    isBlockedLocalAddress: (address) => {
+      const accepted = exposure.acceptedLocalAddresses;
+      return accepted !== undefined && !accepted.has(normalizeAddress(address));
+    },
     logger,
     now: Date.now,
   });

@@ -16,6 +16,9 @@ const CONTENT_SECURITY_POLICY = [
   "base-uri 'none'",
   "form-action 'none'",
   "frame-ancestors 'none'",
+  // Trusted Types: the page can never write HTML (innerHTML and the like), only text.
+  "require-trusted-types-for 'script'",
+  "trusted-types 'none'",
 ].join('; ');
 
 /**

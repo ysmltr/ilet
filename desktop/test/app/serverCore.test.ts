@@ -142,8 +142,9 @@ describe('startServerCore', () => {
     const created: { adapters: readonly string[] | undefined; responder: FakeMdnsResponder }[] = [];
     const exposure: NetworkExposure = {
       announceOn: ['Ethernet'],
-      blockedLocalAddresses: new Set(),
+      acceptedLocalAddresses: undefined,
       publicNetworks: [],
+      domainNetworks: [],
     };
     const core = await startServerCore({
       ...(await createEnvironment(await freePort())),
@@ -163,15 +164,16 @@ describe('startServerCore', () => {
     expect(created[0]?.responder.calls).toEqual(['advertise', 'destroy', 'shutdown']);
   });
 
-  it.runIf(runsOnWindows)('refuses connections on addresses of Public networks', async () => {
+  it.runIf(runsOnWindows)('refuses connections on addresses outside Private networks', async () => {
     const port = await freePort();
     const core = await startServerCore(await createEnvironment(port));
     const fetchInfo = () => sendRequest(port, core.identity.certificatePem, { path: '/api/info' });
     try {
       await core.applyNetworkExposure({
         announceOn: [],
-        blockedLocalAddresses: new Set(['127.0.0.1']),
+        acceptedLocalAddresses: new Set(['192.168.1.20']),
         publicNetworks: ['Wi-Fi'],
+        domainNetworks: [],
       });
       await expect(fetchInfo()).rejects.toThrow();
 

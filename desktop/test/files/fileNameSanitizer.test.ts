@@ -102,6 +102,7 @@ describe('sanitizeFileName', () => {
     ['dark.themepack', 'dark.themepack.txt'],
     ['desktop.ini', 'desktop.ini.txt'],
     ['Desktop.INI', 'Desktop.INI.txt'],
+    ['AUTORUN.INF', 'AUTORUN.INF.txt'],
     ['shortcut.url. ', 'shortcut.url.txt'],
   ])('neutralizes the shell-parsed file %j', (name, expected) => {
     expect(sanitize(name)).toBe(expected);

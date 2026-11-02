@@ -44,16 +44,22 @@ function showDevice(item: HTMLLIElement, device: DeviceSummary): void {
       translate('pairedOn', { date: dateFormat.format(new Date(device.pairedAt)) }),
     ),
   );
+  const problem = createElement('p', 'problem');
+  problem.hidden = true;
+  problem.setAttribute('role', 'alert');
   const actions = createElement('div', 'device-actions');
   actions.append(
     createButton('link-button', translate('rename'), () => {
       showRenameForm(item, device);
     }),
     createButton('link-button danger', translate('remove'), () => {
-      void window.ilet.removeDevice(device.id);
+      // On success the shorter list arrives through onDevicesChanged.
+      window.ilet.removeDevice(device.id).catch(() => {
+        showProblem(problem, translate('removeDeviceFailed'));
+      });
     }),
   );
-  item.replaceChildren(info, actions);
+  item.replaceChildren(info, actions, problem);
 }
 
 function showRenameForm(item: HTMLLIElement, device: DeviceSummary): void {

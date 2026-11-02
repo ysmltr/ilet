@@ -28,6 +28,7 @@ const english = {
   deviceNameLabel: 'Device name',
   deviceNameEmpty: 'Enter a name.',
   deviceGone: 'This device is no longer paired.',
+  removeDeviceFailed: 'ilet could not remove this device, so it can still send files. Try again.',
   removeDeviceTitle: 'Remove device',
   removeDeviceQuestion: 'Remove “{name}”?',
   removeDeviceDetail: 'It can no longer send files to this PC. To use it again, pair it again.',
@@ -51,11 +52,13 @@ const english = {
   publicNetworkTitle: 'Phones cannot reach this PC',
   publicNetworkBody:
     'Windows treats {networks} as a Public network, so ilet accepts no files there. If you trust this network (at home, for example), set its network profile to Private.',
+  domainNetworkBody:
+    'Windows treats {networks} as a network managed by an organization (a Domain network). ilet accepts files only on Private networks, so it accepts none there.',
   openNetworkSettings: 'Open network settings',
   checkAgain: 'Check again',
 
   trayTooltip: 'ilet: ready to receive files',
-  trayTooltipPublicNetwork: 'ilet: phones are blocked on a Public network',
+  trayTooltipBlockedNetwork: 'ilet: phones are blocked on a network that is not Private',
   trayOpen: 'Open ilet',
   trayOpenFolder: 'Open received files',
   trayQuit: 'Quit ilet',
@@ -109,6 +112,8 @@ const turkish: Messages = {
   deviceNameLabel: 'Cihaz adı',
   deviceNameEmpty: 'Bir ad girin.',
   deviceGone: 'Bu cihaz artık eşleştirilmiş değil.',
+  removeDeviceFailed:
+    'ilet bu cihazı kaldıramadı, bu yüzden cihaz hâlâ dosya gönderebilir. Yeniden deneyin.',
   removeDeviceTitle: 'Cihazı kaldır',
   removeDeviceQuestion: '“{name}” kaldırılsın mı?',
   removeDeviceDetail:
@@ -133,11 +138,13 @@ const turkish: Messages = {
   publicNetworkTitle: 'Telefonlar bu bilgisayara ulaşamıyor',
   publicNetworkBody:
     'Windows {networks} ağını Ortak ağ olarak görüyor, bu yüzden ilet orada dosya kabul etmiyor. Bu ağa güveniyorsanız (örneğin evde), ağ profilini Özel olarak ayarlayın.',
+  domainNetworkBody:
+    'Windows {networks} ağını bir kuruluşun yönettiği ağ (Etki alanı ağı) olarak görüyor. ilet yalnızca Özel ağlarda dosya kabul ettiği için orada dosya kabul etmiyor.',
   openNetworkSettings: 'Ağ ayarlarını aç',
   checkAgain: 'Tekrar kontrol et',
 
   trayTooltip: 'ilet: dosya almaya hazır',
-  trayTooltipPublicNetwork: 'ilet: Ortak ağda telefonlar engelleniyor',
+  trayTooltipBlockedNetwork: 'ilet: Özel olmayan bir ağda telefonlar engelleniyor',
   trayOpen: 'ilet’i aç',
   trayOpenFolder: 'Gelen dosyaları aç',
   trayQuit: 'ilet’ten çık',

@@ -5,8 +5,9 @@
 Share a photo on your iPhone, tap **ilet**, and the file is in a folder on your PC: directly
 over your Wi-Fi, with no accounts, no cloud and no analytics.
 
-> **Status:** Phase 6 of 7. Windows: the server, QR pairing, the Bonjour announcement and the
-> desktop app (tray, notifications, settings, paired devices) are done. iPhone: pairing and
+> **Status:** Phase 7 of 7. Windows: the server, QR pairing, the Bonjour announcement, the
+> desktop app (tray, notifications, settings, paired devices) and the installer are done, and the
+> whole codebase passed a security review ([SECURITY_REVIEW.md](SECURITY_REVIEW.md)). iPhone: pairing and
 > sending build and pass their unit tests on GitHub's Macs, but have not run on an iPhone yet;
 > its half of Phase 4 (finding the PC again) is not written yet.
 
@@ -15,6 +16,9 @@ over your Wi-Fi, with no accounts, no cloud and no analytics.
 - [PROTOCOL.md](PROTOCOL.md): the wire protocol both apps follow (TLS, pinning, pairing, endpoints,
   error codes).
 - [THREAT_MODEL.md](THREAT_MODEL.md): what we protect, from whom, and how.
+- [SECURITY_REVIEW.md](SECURITY_REVIEW.md): the Phase 7 review of the code against the threat
+  model, and its fixes.
+- [PRIVACY.md](PRIVACY.md): the privacy policy (ilet collects nothing).
 
 In short: HTTPS only, with a self-signed certificate that the iPhone pins by its SHA-256
 fingerprint; pairing only by QR code; 256-bit tokens stored only as hashes; received files are
@@ -65,7 +69,16 @@ npm run dev:token   # DEVELOPMENT ONLY: server + a test token for curl
 npm run dev:pair    # DEVELOPMENT ONLY: server + a pairing code that curl can use
 npm run dev:app     # DEVELOPMENT ONLY: the whole app with a paired test phone, on this PC only
 npm start           # the real app: tray, window, server
+npm run package     # the installer: desktop/release/ilet-Setup-<version>.exe
 ```
+
+The installer installs for all users (Windows asks for administrator rights) and adds Windows
+Firewall rules that allow ilet on **Private** networks only and block it on Public and Domain
+networks; uninstalling removes them. The app's Electron fuses are set in
+`desktop/electron-builder.yml`: it cannot be run as plain Node.js, ignores `NODE_OPTIONS` and
+debugging flags, and loads only its own checked app archive. The installer is not code-signed
+yet, so Windows SmartScreen warns before it runs (More info → Run anyway). To sign it later, set
+`CSC_LINK` (the certificate file) and `CSC_KEY_PASSWORD` before `npm run package`.
 
 Electron downloads its runtime the first time it starts (about 110 MB).
 
@@ -76,7 +89,7 @@ which uses Microsoft Edge (part of Windows).
 The phone can reach ilet only on a network that Windows treats as **Private** (Settings →
 Network & Internet → your Wi-Fi or Ethernet connection → Network profile). On a Public network
 ilet refuses connections and does not announce itself, and its window says so: that is what you
-want in a café. The first `npm start` makes Windows Firewall ask whether Electron may use the
+want in a café. The same holds on a Domain network (one managed by an organization). The first `npm start` makes Windows Firewall ask whether Electron may use the
 network: allow **Private networks** only.
 
 The dev scripts keep their data in `%APPDATA%\ilet-dev`, apart from the real app, listen only on

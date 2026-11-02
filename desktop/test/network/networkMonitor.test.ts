@@ -46,7 +46,7 @@ describe('NetworkMonitor', () => {
 
     expect(listener).toHaveBeenCalledTimes(1);
     expect(monitor.current.publicNetworks).toEqual(['Wi-Fi']);
-    expect(monitor.current.blockedLocalAddresses).toEqual(new Set(['192.168.1.20']));
+    expect(monitor.current.acceptedLocalAddresses).toEqual(new Set());
   });
 
   it('keeps what it knew when a later query fails', async () => {
@@ -56,7 +56,7 @@ describe('NetworkMonitor', () => {
     setProfiles(undefined);
     await monitor.refresh();
 
-    expect(monitor.current.blockedLocalAddresses).toEqual(new Set(['192.168.1.20']));
+    expect(monitor.current.acceptedLocalAddresses).toEqual(new Set());
   });
 
   it('shares one query between overlapping refreshes', async () => {

@@ -6,22 +6,29 @@ import type { NetworkProfile } from './networkProfiles';
 export interface NetworkExposure {
   /** Adapters to announce on; `undefined` means all of them, because the categories are unknown. */
   readonly announceOn: readonly string[] | undefined;
-  /** This PC's addresses on Public networks (normalized): connections to them are refused. */
-  readonly blockedLocalAddresses: ReadonlySet<string>;
+  /**
+   * This PC's addresses (normalized) that accept connections: those on Private networks, and
+   * loopback. `undefined` means all of them, because the categories are unknown.
+   */
+  readonly acceptedLocalAddresses: ReadonlySet<string> | undefined;
   /** Physical adapters on Public networks, named in the warning the window shows. */
   readonly publicNetworks: readonly string[];
+  /** Physical adapters on Domain networks, which the user cannot switch to Private. */
+  readonly domainNetworks: readonly string[];
 }
 
 /** Without categories (another platform, or a failed query) ilet behaves as before: the firewall decides. */
 export const UNKNOWN_EXPOSURE: NetworkExposure = {
   announceOn: undefined,
-  blockedLocalAddresses: new Set(),
+  acceptedLocalAddresses: undefined,
   publicNetworks: [],
+  domainNetworks: [],
 };
 
 /**
- * On a network Windows classifies as Public, its firewall blocks ilet. ilet does the same on its
- * own, so a firewall rule that allows more (for example one clicked by accident) changes nothing.
+ * ilet trusts only Private networks, like the firewall rules its installer adds, so a firewall
+ * rule that allows more (for example one clicked by accident) changes nothing. Everything else
+ * is refused, also an adapter whose network Windows has not classified yet.
  */
 export function networkExposure(
   profiles: readonly NetworkProfile[] | undefined,
@@ -30,32 +37,46 @@ export function networkExposure(
   if (profiles === undefined) {
     return UNKNOWN_EXPOSURE;
   }
-  const publicAdapters = unique(
-    profiles
-      .filter((profile) => profile.category === 'public')
-      .map(({ interfaceName }) => interfaceName),
-  );
-  const trustedAdapters = unique(
-    profiles
-      .filter((profile) => profile.category !== 'public')
-      .map(({ interfaceName }) => interfaceName),
-  );
+  const adaptersIn = (category: NetworkProfile['category']): string[] =>
+    unique(
+      profiles
+        .filter((profile) => profile.category === category)
+        .map(({ interfaceName }) => interfaceName),
+    );
+  const untrustedAdapters = profiles
+    .filter((profile) => profile.category !== 'private')
+    .map(({ interfaceName }) => interfaceName);
+  // An adapter can have several profiles; one that is not Private is enough to distrust it.
+  const trustedAdapters = adaptersIn('private').filter((name) => !untrustedAdapters.includes(name));
   const addressesOf = (name: string): string[] =>
     (interfaces[name] ?? []).map((info) => normalizeAddress(info.address));
-  return {
-    announceOn: trustedAdapters.filter((name) => !publicAdapters.includes(name)),
-    blockedLocalAddresses: new Set(publicAdapters.flatMap(addressesOf)),
-    publicNetworks: publicAdapters.filter(
+  const loopbackAddresses = Object.values(interfaces).flatMap((infos = []) =>
+    infos.filter((info) => info.internal).map((info) => normalizeAddress(info.address)),
+  );
+  const shownInWarning = (names: readonly string[]): string[] =>
+    names.filter(
       (name) => !isVirtualAdapter(name) && addressesOf(name).some(isAdvertisableAddress),
-    ),
+    );
+  return {
+    announceOn: trustedAdapters,
+    acceptedLocalAddresses: new Set([
+      ...trustedAdapters.flatMap(addressesOf),
+      ...loopbackAddresses,
+    ]),
+    publicNetworks: shownInWarning(adaptersIn('public')),
+    domainNetworks: shownInWarning(adaptersIn('domain')),
   };
 }
 
 export function sameExposure(first: NetworkExposure, second: NetworkExposure): boolean {
   return (
     sameList(first.announceOn, second.announceOn) &&
-    sameList([...first.blockedLocalAddresses], [...second.blockedLocalAddresses]) &&
-    sameList(first.publicNetworks, second.publicNetworks)
+    sameList(
+      first.acceptedLocalAddresses && [...first.acceptedLocalAddresses],
+      second.acceptedLocalAddresses && [...second.acceptedLocalAddresses],
+    ) &&
+    sameList(first.publicNetworks, second.publicNetworks) &&
+    sameList(first.domainNetworks, second.domainNetworks)
   );
 }
 

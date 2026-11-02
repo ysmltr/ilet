@@ -60,6 +60,8 @@ describe.runIf(runsOnWindows)('isForbiddenReceiveFolder', () => {
     ['a hidden settings folder', 'C:\\Users\\Yesim\\.ssh'],
     ['a folder inside a hidden one', 'C:\\Users\\Yesim\\.config\\app'],
     ['a different spelling', 'c:\\users\\YESIM\\appdata\\local\\temp'],
+    ['a drive root', 'D:\\'],
+    ['a drive root without a backslash', 'E:'],
     ['a path that climbs back in', 'C:\\Users\\Yesim\\Desktop\\..\\AppData'],
   ])('forbids %s', (_case, folder) => {
     expect(isForbiddenReceiveFolder(folder, rules)).toBe(true);

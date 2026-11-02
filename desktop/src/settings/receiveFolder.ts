@@ -72,7 +72,11 @@ export function isForbiddenReceiveFolder(folder: string, rules: ReceiveFolderRul
   const hiddenFolderBelowHome = (pathInside(rules.homeFolder) ?? '')
     .split(path.sep)
     .some((segment) => segment.startsWith(HIDDEN_FOLDER_PREFIX));
+  // A drive's top folder: Windows reads autorun.inf there, and a program installed under a path
+  // with spaces but no quotes ("D:\Program Files\…") can be started as "D:\Program.exe".
+  const isDriveRoot = path.parse(target).root === target;
   return (
+    isDriveRoot ||
     rules.forbiddenTrees.some((tree) => pathInside(tree) !== undefined) ||
     rules.forbiddenFolders.some((forbidden) => comparable(forbidden) === target) ||
     hiddenFolderBelowHome

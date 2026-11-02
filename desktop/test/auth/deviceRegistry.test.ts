@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { describe, expect, it, vi } from 'vitest';
@@ -52,16 +52,15 @@ describe('DeviceRegistry', () => {
     expect(registry.authenticate(second.token)?.id).toBe(second.device.id);
   });
 
-  it('revokes immediately, notifies listeners and persists the change', async () => {
+  it('revokes once saved, notifies listeners and persists the change', async () => {
     const { registry, filePath } = await openRegistry();
     const { device, token } = await registry.register('iPhone');
     const listener = vi.fn();
     registry.onRevoked(listener);
 
-    const revocation = registry.revoke(device.id);
+    await expect(registry.revoke(device.id)).resolves.toBe(true);
     expect(registry.authenticate(token)).toBeUndefined();
     expect(listener).toHaveBeenCalledWith(device.id);
-    await expect(revocation).resolves.toBe(true);
 
     const reopened = await DeviceRegistry.open(filePath, () => PAIRED_AT);
     expect(reopened.authenticate(token)).toBeUndefined();
@@ -127,6 +126,21 @@ describe('DeviceRegistry', () => {
     const { device } = await registry.register('iPhone');
     await expect(registry.rename(device.id, ' ​ ')).rejects.toThrow(RangeError);
     expect(registry.list()[0]?.name).toBe('iPhone');
+  });
+
+  it('changes nothing when a removal or pairing cannot be saved', async () => {
+    const { registry, filePath } = await openRegistry();
+    const { device, token } = await registry.register('iPhone');
+    const listener = vi.fn();
+    registry.onRevoked(listener);
+    // A folder where the temporary file must go makes every write fail.
+    await mkdir(`${filePath}.tmp`);
+
+    await expect(registry.revoke(device.id)).rejects.toThrow();
+    await expect(registry.register('iPad')).rejects.toThrow();
+    expect(registry.authenticate(token)).toEqual(device);
+    expect(registry.list()).toEqual([device]);
+    expect(listener).not.toHaveBeenCalled();
   });
 
   it('serializes concurrent writes so the last state wins', async () => {

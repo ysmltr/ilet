@@ -8,14 +8,15 @@ const interfaces: NetworkInterfaces = {
   'Wi-Fi': [ipv4('192.168.1.20'), ipv6('fe80::1')],
   Ethernet: [ipv4('10.0.0.5')],
   'vEthernet (WSL)': [ipv4('172.20.0.1')],
+  'Loopback Pseudo-Interface 1': [ipv4('127.0.0.1', true)],
 };
 
 describe('networkExposure', () => {
-  it('announces everywhere and blocks nothing while the categories are unknown', () => {
+  it('announces everywhere and accepts everything while the categories are unknown', () => {
     expect(networkExposure(undefined, interfaces)).toBe(UNKNOWN_EXPOSURE);
   });
 
-  it('blocks the addresses on Public networks and announces only on the others', () => {
+  it('accepts and announces only on Private networks', () => {
     const exposure = networkExposure(
       [
         { interfaceName: 'Wi-Fi', category: 'public' },
@@ -26,46 +27,59 @@ describe('networkExposure', () => {
     );
 
     expect(exposure.announceOn).toEqual(['Ethernet']);
-    expect([...exposure.blockedLocalAddresses].sort()).toEqual([
-      '172.20.0.1',
-      '192.168.1.20',
-      'fe80::1',
-    ]);
+    expect(exposure.acceptedLocalAddresses).toEqual(new Set(['10.0.0.5', '127.0.0.1']));
     // A virtual adapter is not something the user can fix in the network settings.
     expect(exposure.publicNetworks).toEqual(['Wi-Fi']);
+    expect(exposure.domainNetworks).toEqual([]);
   });
 
-  it('trusts Domain networks like Private ones', () => {
+  it('treats Domain networks like Public ones, with their own warning', () => {
     const exposure = networkExposure(
       [{ interfaceName: 'Ethernet', category: 'domain' }],
       interfaces,
     );
-    expect(exposure.announceOn).toEqual(['Ethernet']);
-    expect(exposure.blockedLocalAddresses.size).toBe(0);
+    expect(exposure.announceOn).toEqual([]);
+    expect(exposure.acceptedLocalAddresses).toEqual(new Set(['127.0.0.1']));
+    expect(exposure.domainNetworks).toEqual(['Ethernet']);
+    expect(exposure.publicNetworks).toEqual([]);
   });
 
-  it('announces nowhere when every network is Public', () => {
-    const exposure = networkExposure([{ interfaceName: 'Wi-Fi', category: 'public' }], interfaces);
+  it('refuses an adapter that has no category yet', () => {
+    const exposure = networkExposure(
+      [{ interfaceName: 'Ethernet', category: 'private' }],
+      interfaces,
+    );
+    expect(exposure.acceptedLocalAddresses?.has('192.168.1.20')).toBe(false);
+  });
+
+  it('distrusts an adapter with a Private and a Public profile', () => {
+    const exposure = networkExposure(
+      [
+        { interfaceName: 'Wi-Fi', category: 'private' },
+        { interfaceName: 'Wi-Fi', category: 'public' },
+      ],
+      interfaces,
+    );
     expect(exposure.announceOn).toEqual([]);
+    expect(exposure.acceptedLocalAddresses?.has('192.168.1.20')).toBe(false);
   });
 
   it('warns only about adapters with an address a phone could use', () => {
     const exposure = networkExposure([{ interfaceName: 'Wi-Fi', category: 'public' }], {
       'Wi-Fi': [ipv6('fe80::1')],
     });
-    expect(exposure.blockedLocalAddresses).toEqual(new Set(['fe80::1']));
     expect(exposure.publicNetworks).toEqual([]);
   });
 });
 
 describe('sameExposure', () => {
-  const profiles = [{ interfaceName: 'Wi-Fi', category: 'public' } as const];
+  const profiles = [{ interfaceName: 'Ethernet', category: 'private' } as const];
 
   it('ignores the order of adapters and addresses', () => {
     const first = networkExposure(profiles, interfaces);
     const reordered = {
       ...first,
-      blockedLocalAddresses: new Set([...first.blockedLocalAddresses].reverse()),
+      acceptedLocalAddresses: new Set([...(first.acceptedLocalAddresses ?? [])].reverse()),
     };
     expect(sameExposure(first, reordered)).toBe(true);
   });
@@ -76,7 +90,7 @@ describe('sameExposure', () => {
 
   it('notices a changed address', () => {
     const before = networkExposure(profiles, interfaces);
-    const after = networkExposure(profiles, { ...interfaces, 'Wi-Fi': [ipv4('192.168.1.21')] });
+    const after = networkExposure(profiles, { ...interfaces, Ethernet: [ipv4('10.0.0.6')] });
     expect(sameExposure(before, after)).toBe(false);
   });
 });
