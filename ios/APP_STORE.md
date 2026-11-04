@@ -78,7 +78,8 @@ Store Connect.
 - [ ] Test the TestFlight build on a real iPhone: pairing, sending, and the warning for a wrong
       certificate.
 - [ ] Screenshots for the 6.9-inch iPhone (1320 × 2868 pixels), in English and Turkish.
-- [ ] Publish the Windows installer as a GitHub release, so reviewers and users can get it.
+- [ ] Publish the Windows installer as a GitHub release, so reviewers and users can get it (the
+      Desktop workflow makes the draft; see Releases in the README).
 
 ## Answers for App Store Connect
 

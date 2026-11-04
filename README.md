@@ -7,9 +7,22 @@ over your Wi-Fi, with no accounts, no cloud and no analytics.
 
 > **Status:** Phase 7 of 7. Windows: the server, QR pairing, the Bonjour announcement, the
 > desktop app (tray, notifications, settings, paired devices) and the installer are done, and the
-> whole codebase passed a security review ([SECURITY_REVIEW.md](SECURITY_REVIEW.md)). iPhone: pairing and
-> sending build and pass their unit tests on GitHub's Macs, but have not run on an iPhone yet;
-> its half of Phase 4 (finding the PC again) is not written yet.
+> whole codebase passed a security review ([SECURITY_REVIEW.md](SECURITY_REVIEW.md)). iPhone:
+> pairing and sending work on a real iPhone, installed through TestFlight. Not written yet: the
+> iPhone's half of Phase 4 (finding the PC again after it changes networks) and the Share
+> Extension (Phase 5).
+
+## Download
+
+- **Windows 10 or 11:** download `ilet-Setup-<version>.exe` from
+  [Releases](https://github.com/ysmltr/ilet/releases) and open it. It is not code-signed yet, so
+  Windows SmartScreen may warn first: More info → Run anyway. Each release lists the file's
+  SHA-256 and how to check that GitHub built it from this code.
+- **iPhone:** in testing with TestFlight; the App Store comes later.
+
+ilet works only on networks that Windows treats as **Private**, such as your home Wi-Fi. On a
+Public network (a café, an airport) it stays closed on purpose, because anyone on that network
+could reach it.
 
 ## Security first
 
@@ -27,14 +40,14 @@ automatically.
 
 ## Repository layout
 
-| Path               | Contents                                              |
-| ------------------ | ----------------------------------------------------- |
-| `desktop/`         | Windows app: Electron + TypeScript                    |
-| `ios/`             | iPhone app: Swift + SwiftUI (Share Extension: Phase 5) |
-| `branding/`        | App and tray icons: SVG masters and the .ico files    |
-| `.github/`         | CI: checks the iPhone app on GitHub's Macs            |
-| `PROTOCOL.md`      | Wire protocol                                         |
-| `THREAT_MODEL.md`  | Threat model                                          |
+| Path               | Contents                                                     |
+| ------------------ | ------------------------------------------------------------ |
+| `desktop/`         | Windows app: Electron + TypeScript                           |
+| `ios/`             | iPhone app: Swift + SwiftUI (Share Extension: Phase 5)       |
+| `branding/`        | App and tray icons: SVG masters and the .ico files           |
+| `.github/`         | GitHub Actions: checks, TestFlight uploads, Windows releases |
+| `PROTOCOL.md`      | Wire protocol                                                |
+| `THREAT_MODEL.md`  | Threat model                                                 |
 
 ### Desktop modules (`desktop/src`)
 
@@ -79,6 +92,20 @@ networks; uninstalling removes them. The app's Electron fuses are set in
 debugging flags, and loads only its own checked app archive. The installer is not code-signed
 yet, so Windows SmartScreen warns before it runs (More info → Run anyway). To sign it later, set
 `CSC_LINK` (the certificate file) and `CSC_KEY_PASSWORD` before `npm run package`.
+
+**Releases.** [`.github/workflows/desktop.yml`](.github/workflows/desktop.yml) runs `npm run check`
+and builds the installer on one of GitHub's Windows PCs whenever `desktop/` or `branding/`
+changes. To release a version:
+
+1. Raise `version` in `desktop/package.json` (each version is released once) and push.
+2. On GitHub: Actions → Desktop → Run workflow, on `main`.
+3. The run makes a draft release with the installer, its SHA-256 and a GitHub attestation that
+   records which workflow and commit built it. Drafts are visible only to people who can push to
+   the repository. Check it, then publish it (the pencil → Publish release).
+
+The job that makes the release runs none of the repository's code or npm packages; the build job
+that runs them has a read-only token (THREAT_MODEL.md T39). With release immutability turned on
+(Settings → General → Releases), a published release's files and tag can never change.
 
 Electron downloads its runtime the first time it starts (about 110 MB).
 
