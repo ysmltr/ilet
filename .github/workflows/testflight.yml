@@ -1,25 +1,21 @@
-# Builds the iPhone app on one of GitHub's Macs, has Apple sign it for the App Store and uploads
-# it to TestFlight. Start it in the Actions tab (TestFlight > Run workflow) or by pushing a tag
-# that starts with testflight-. ios/APP_STORE.md lists the secrets it needs.
+# TEMPORARY signing diagnostics, pushed only as the tag testflight-diag-1 (never to main).
+# Variants of the archive before Apple's cloud signing:
+#   U = unsigned (linker signature only), A = ad hoc with entitlements,
+#   S = signed with a throwaway self-signed identity, with entitlements.
 name: TestFlight
 
 on:
-  workflow_dispatch:
   push:
     tags: [testflight-*]
 
-# Read-only: the workflow never changes the repository. The App Store Connect key reaches only the
-# steps that need it, and never pull requests.
 permissions:
   contents: read
 
-# One upload at a time; a running upload is never cancelled.
 concurrency:
   group: testflight
   cancel-in-progress: false
 
 env:
-  # The same Xcode and XcodeGen as the checks in ios.yml.
   DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
   XCODEGEN_VERSION: 2.46.0
   XCODEGEN_SHA256: 4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806
@@ -33,39 +29,13 @@ jobs:
         shell: bash
         working-directory: ios
     env:
-      # App Store Connect needs a new build number for every upload: run 7 gives 7.1, and running
-      # it again gives 7.2.
       BUILD_NUMBER: ${{ github.run_number }}.${{ github.run_attempt }}
     steps:
-      # Pinned to a commit, because a tag such as v7 can be moved to different code.
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      # Checks only the format and prints nothing: a mix-up such as the Issuer ID in ASC_KEY_ID
-      # would otherwise fail only at the end, with a vague message from Apple.
-      - name: Check the App Store Connect secrets
-        env:
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
-        run: |
-          problems=0
-          problem() {
-            echo "::error title=App Store Connect secrets::$1"
-            problems=1
-          }
-          [[ "$ASC_KEY_ID" =~ ^[A-Z0-9]{10}$ ]] ||
-            problem "ASC_KEY_ID must be the key's Key ID: 10 letters and digits, without spaces."
-          [[ "$ASC_ISSUER_ID" =~ ^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$ ]] ||
-            problem "ASC_ISSUER_ID must be the Issuer ID shown above the keys: 36 characters such as 1a2b3c4d-…, without spaces."
-          [[ "$ASC_KEY_P8" == *"-----BEGIN PRIVATE KEY-----"*"-----END PRIVATE KEY-----"* ]] ||
-            problem "ASC_KEY_P8 must be the whole downloaded .p8 file, from -----BEGIN PRIVATE KEY----- to -----END PRIVATE KEY-----."
-          exit "$problems"
-
-      # Same rules as the npm packages: an exact version, checked against the SHA-256 that GitHub
-      # publishes for the release file.
       - name: Install XcodeGen
         run: |
           tools="$RUNNER_TEMP/tools"
@@ -74,7 +44,6 @@ jobs:
             "https://github.com/yonaskolb/XcodeGen/releases/download/$XCODEGEN_VERSION/xcodegen.zip"
           echo "$XCODEGEN_SHA256  $tools/xcodegen.zip" | shasum --algorithm 256 --check
           unzip -q "$tools/xcodegen.zip" -d "$tools/xcodegen"
-          # XcodeGen finds its templates next to its binary, so the folders stay as unpacked.
           binary=$(find "$tools/xcodegen" -type f -name xcodegen | head -n 1)
           test -x "$binary"
           dirname "$binary" >> "$GITHUB_PATH"
@@ -82,8 +51,6 @@ jobs:
       - name: Generate the Xcode project
         run: xcodegen generate
 
-      # Xcode cannot sign for an iPhone without a certificate on this Mac, so the archive is built
-      # unsigned; Apple signs it in the export below.
       - name: Build the archive
         run: |
           xcodebuild archive \
@@ -93,32 +60,55 @@ jobs:
             CODE_SIGNING_ALLOWED=NO CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
             | xcbeautify --renderer github-actions
 
-      # The export takes the app's entitlements (its App Group and Keychain group) from the
-      # archive's signature, and an unsigned app has none. So the app is signed here without a
-      # certificate (ad hoc), with Ilet.entitlements filled in from the build settings the way
-      # Xcode does it. The export replaces this signature with Apple's.
-      - name: Add the entitlements to the archive
+      - name: Make the variants
         run: |
-          app="$RUNNER_TEMP/Ilet.xcarchive/Products/Applications/Ilet.app"
-          if [ -d "$app/PlugIns" ]; then
-            echo "::error::The app has extensions now: sign each one here with its own entitlements."
-            exit 1
-          fi
+          app_in() { echo "$RUNNER_TEMP/Ilet-$1.xcarchive/Products/Applications/Ilet.app"; }
+          for v in U A S; do cp -R "$RUNNER_TEMP/Ilet.xcarchive" "$RUNNER_TEMP/Ilet-$v.xcarchive"; done
           xcodebuild -showBuildSettings -project Ilet.xcodeproj -target Ilet -configuration Release \
             > "$RUNNER_TEMP/build-settings.txt"
           perl -pe '
             BEGIN { open my $f, "<", shift or die; while (<$f>) { $s{$1} //= $2 if /^\s+(\w+) = (.*)$/ } }
             s{\$\((\w+)\)}{length($s{$1} // "") ? $s{$1} : die "no value for the build setting $1\n"}ge
           ' "$RUNNER_TEMP/build-settings.txt" Ilet/Ilet.entitlements > "$RUNNER_TEMP/Ilet.entitlements"
-          # Code inside the app (Swift libraries that Xcode may add) is signed first, without
-          # entitlements.
-          find "$app" -mindepth 2 \( -name '*.dylib' -o -name '*.framework' \) -prune \
-            -exec codesign --force --sign - {} \;
           codesign --force --sign - --entitlements "$RUNNER_TEMP/Ilet.entitlements" \
-            --generate-entitlement-der "$app"
+            --generate-entitlement-der "$(app_in A)"
 
-      # Written only now, after XcodeGen (a downloaded program) has run, and readable only by this
-      # user. The last step deletes it.
+      - name: Make variant S
+        continue-on-error: true
+        run: |
+          app_in() { echo "$RUNNER_TEMP/Ilet-$1.xcarchive/Products/Applications/Ilet.app"; }
+          dir="$RUNNER_TEMP/identity"
+          mkdir -p "$dir"
+          printf '%s\n' '[req]' 'distinguished_name = dn' 'x509_extensions = ext' 'prompt = no' \
+            '[dn]' 'CN = ilet archive' \
+            '[ext]' 'basicConstraints = critical, CA:false' 'keyUsage = critical, digitalSignature' \
+            'extendedKeyUsage = critical, codeSigning' > "$dir/openssl.cnf"
+          echo "::notice title=openssl::$(/usr/bin/openssl version)"
+          /usr/bin/openssl req -x509 -newkey rsa:2048 -nodes -days 2 -config "$dir/openssl.cnf" \
+            -keyout "$dir/key.pem" -out "$dir/cert.pem" 2>/dev/null
+          password=$(/usr/bin/openssl rand -hex 16)
+          /usr/bin/openssl pkcs12 -export -inkey "$dir/key.pem" -in "$dir/cert.pem" \
+            -keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES -macalg sha1 \
+            -passout "pass:$password" -out "$dir/identity.p12"
+          keychain="$dir/archive.keychain-db"
+          security create-keychain -p "$password" "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          security import "$dir/identity.p12" -k "$keychain" -P "$password" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$password" "$keychain" > /dev/null
+          hash=$(/usr/bin/openssl x509 -noout -fingerprint -sha1 -in "$dir/cert.pem" | sed 's/.*=//; s/://g')
+          codesign --force --sign "$hash" --keychain "$keychain" \
+            --entitlements "$RUNNER_TEMP/Ilet.entitlements" --generate-entitlement-der "$(app_in S)"
+          security delete-keychain "$keychain"
+
+      - name: Show the archives
+        run: |
+          app_in() { echo "$RUNNER_TEMP/Ilet-$1.xcarchive/Products/Applications/Ilet.app"; }
+          for v in U A S; do
+            summary=$(codesign -dvvv "$(app_in $v)" 2>&1 | grep -E '^(CodeDirectory|Signature=|Authority)' \
+              | head -n 3 | sed -E 's/^Authority=([^:]*).*/Authority=\1/' | tr '\n' ';')
+            echo "::notice title=Archive $v::$summary"
+          done
+
       - name: Prepare the App Store Connect key
         env:
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
@@ -126,18 +116,12 @@ jobs:
           umask 077
           printf '%s\n' "$ASC_KEY_P8" | tr -d '\r' > "$RUNNER_TEMP/AuthKey.p8"
 
-      # Apple keeps the team's distribution certificate and signs with it ("cloud signing"), so no
-      # certificate file is needed, only the key; this needs a key with Admin access.
-      # -allowProvisioningUpdates lets xcodebuild create the App Store provisioning profile.
-      - name: Sign for the App Store
-        id: export
+      - name: Export the variants
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
         run: |
           team=$(sed -n 's/^ *DEVELOPMENT_TEAM = //p' "$RUNNER_TEMP/build-settings.txt" | head -n 1)
-          test -n "$team"
-          # "export" writes an .ipa, to be checked next; the upload step changes it to "upload".
           cat > "$RUNNER_TEMP/export.plist" <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -156,96 +140,69 @@ jobs:
           </dict>
           </plist>
           EOF
-          xcodebuild -exportArchive \
-            -archivePath "$RUNNER_TEMP/Ilet.xcarchive" \
-            -exportOptionsPlist "$RUNNER_TEMP/export.plist" \
-            -exportPath "$RUNNER_TEMP/export" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
-            -authenticationKeyID "$ASC_KEY_ID" \
-            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
-            2>&1 | tee "$RUNNER_TEMP/export.log"
-
-      # An app without its App Group or Keychain group could not keep its pairings, so the signed
-      # app is compared with the values it reads from Info.plist before anything is uploaded.
-      - name: Check the signed app
-        run: |
-          unzip -q "$RUNNER_TEMP"/export/*.ipa -d "$RUNNER_TEMP/ipa"
-          signed="$RUNNER_TEMP/ipa/Payload/Ilet.app"
-          archived="$RUNNER_TEMP/Ilet.xcarchive/Products/Applications/Ilet.app"
-          codesign --display --entitlements - --xml "$signed" > "$RUNNER_TEMP/signed.plist"
-          codesign --display --entitlements - --xml "$archived" > "$RUNNER_TEMP/archived.plist"
-          value() { /usr/libexec/PlistBuddy -c "Print :$2" "$1" 2>/dev/null; }
-          # True if the list $2 in the plist $1 contains $3.
-          contains() {
-            local index=0 item
-            while item=$(value "$1" "$2:$index"); do
-              [ "$item" = "$3" ] && return 0
-              index=$((index + 1))
-            done
-            return 1
-          }
-          problems=0
-          problem() {
-            echo "::error title=Check the signed app::$1"
-            problems=1
-          }
-          # $1: the entitlement, $2: the value the app reads from Info.plist, $3: its name here.
-          check_group() {
-            contains "$RUNNER_TEMP/signed.plist" "$1" "$2" && return 0
-            if contains "$RUNNER_TEMP/archived.plist" "$1" "$2"; then
-              problem "The export dropped the $3 $2, which the archive had."
+          for v in U A S; do
+            if xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/Ilet-$v.xcarchive" \
+              -exportOptionsPlist "$RUNNER_TEMP/export.plist" -exportPath "$RUNNER_TEMP/export-$v" \
+              -allowProvisioningUpdates -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
+              -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+              > "$RUNNER_TEMP/export-$v.log" 2>&1; then
+              echo "export $v succeeded"
             else
-              problem "The $3 $2 is missing, and the archive did not have it either."
+              echo "::warning title=Export $v::$(grep -E '^error' "$RUNNER_TEMP/export-$v.log" | head -n 2 | tr '\n' ' ' | cut -c 1-900)"
             fi
-          }
-          group=$(value "$signed/Info.plist" IletAppGroupIdentifier) ||
-            problem "Info.plist has no IletAppGroupIdentifier."
-          keychain=$(value "$signed/Info.plist" IletKeychainAccessGroup) ||
-            problem "Info.plist has no IletKeychainAccessGroup."
-          check_group com.apple.security.application-groups "$group" "App Group"
-          check_group keychain-access-groups "$keychain" "Keychain group"
-          [ "$(value "$RUNNER_TEMP/signed.plist" get-task-allow)" != true ] ||
-            problem "The signed app allows debugging (get-task-allow), which the App Store refuses."
-          [ "$(value "$signed/Info.plist" CFBundleVersion)" = "$BUILD_NUMBER" ] ||
-            problem "The app's build number is not $BUILD_NUMBER."
-          if [ "$problems" = 0 ]; then
-            echo "::notice title=Signed for the App Store::Build $BUILD_NUMBER keeps the App Group $group and the Keychain group $keychain."
-          fi
-          exit "$problems"
+          done
 
-      - name: Upload to TestFlight
-        id: upload
+      - name: Inspect the variants
+        id: inspect
+        run: |
+          requirement='anchor apple generic and certificate leaf[field.1.2.840.113635.100.6.1.4]'
+          for v in U A S; do
+            ipa=("$RUNNER_TEMP/export-$v"/*.ipa)
+            if [ ! -f "${ipa[0]}" ]; then
+              echo "::notice title=Variant $v::no .ipa"
+              continue
+            fi
+            unzip -q "${ipa[0]}" -d "$RUNNER_TEMP/ipa-$v"
+            app="$RUNNER_TEMP/ipa-$v/Payload/Ilet.app"
+            summary=$(codesign -dvvv "$app" 2>&1 | grep -E '^(CodeDirectory|Signature=|Authority)' \
+              | head -n 3 | sed -E 's/^Authority=([^:]*).*/Authority=\1/' | tr '\n' ';')
+            if codesign --verify --strict -R="$requirement" "$app" 2> "$RUNNER_TEMP/requirement-$v.txt"; then
+              result=pass
+              echo "pass_$v=true" >> "$GITHUB_OUTPUT"
+            else
+              result="FAIL $(tr '\n' ' ' < "$RUNNER_TEMP/requirement-$v.txt" | cut -c 1-200)"
+            fi
+            entitlements=$(codesign -d --entitlements - --xml "$app" 2> /dev/null || true)
+            group=no
+            [[ "$entitlements" == *group.com.ysmltr.ilet* ]] && group=yes
+            keychain=no
+            [[ "$entitlements" == *5YL733ZJ5D.com.ysmltr.ilet.shared* ]] && keychain=yes
+            type=$(/usr/libexec/PlistBuddy -c 'Print :Ilet.ipa:0:certificate:type' \
+              "$RUNNER_TEMP/export-$v/DistributionSummary.plist" 2> /dev/null || echo unknown)
+            echo "::notice title=Variant $v::requirement=$result | $summary | certificate=$type | appGroup=$group keychainGroup=$keychain"
+          done
+          {
+            grep -h -o 'codesign.*--preserve-metadata[^ ]*' "$RUNNER_TEMP"/export-*/Packaging.log 2> /dev/null || true
+            find "${TMPDIR:-/tmp}" -maxdepth 2 -name '*.xcdistributionlogs' -print0 2> /dev/null \
+              | xargs -0 -I{} grep -h -o -r 'codesign.*--preserve-metadata[^ ]*' {} 2> /dev/null || true
+          } | sed -E 's/[0-9A-F]{40}/<sha1>/g' | sort -u | head -n 3 | cut -c 1-900 \
+            | sed 's/^/::notice title=codesign call::/' || true
+
+      - name: Upload variant S
+        if: steps.inspect.outputs.pass_S == 'true'
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
         run: |
           cp "$RUNNER_TEMP/export.plist" "$RUNNER_TEMP/upload.plist"
           plutil -replace destination -string upload "$RUNNER_TEMP/upload.plist"
-          xcodebuild -exportArchive \
-            -archivePath "$RUNNER_TEMP/Ilet.xcarchive" \
-            -exportOptionsPlist "$RUNNER_TEMP/upload.plist" \
-            -exportPath "$RUNNER_TEMP/upload" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
-            -authenticationKeyID "$ASC_KEY_ID" \
-            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
-            2>&1 | tee "$RUNNER_TEMP/upload.log"
-          echo "::notice title=Uploaded::Build $BUILD_NUMBER is uploaded. Apple processes it for a few minutes; then it appears under TestFlight in App Store Connect."
-
-      # xcodebuild's own export errors are often vague; the log bundle that each export writes says
-      # why Apple refused. Its errors become annotations, which can be read without signing in.
-      - name: Explain a failed export
-        if: failure() && (steps.export.outcome == 'failure' || steps.upload.outcome == 'failure')
-        run: |
-          {
-            grep -h -E '^(xcodebuild: )?error' "$RUNNER_TEMP/export.log" "$RUNNER_TEMP/upload.log" || true
-            for bundle in $(grep -h -o '/[^"]*\.xcdistributionlogs' "$RUNNER_TEMP"/*.log | sort -u); do
-              cat "$bundle/IDEDistribution.critical.log" || true
-              grep -h -i 'error' "$bundle/IDEDistribution.standard.log" || true
-            done
-          } 2>/dev/null | awk 'NF && !seen[$0]++' | head -n 10 | cut -c 1-1000 |
-            sed -e 's/%/%25/g' -e 's/^/::error title=Export::/' || true
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/Ilet-S.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/upload.plist" -exportPath "$RUNNER_TEMP/upload" \
+            -allowProvisioningUpdates -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            2>&1 | tee "$RUNNER_TEMP/upload.log" ||
+            { echo "::error title=Upload S::$(grep -E '^error' "$RUNNER_TEMP/upload.log" | head -n 2 | tr '\n' ' ' | cut -c 1-900)"; exit 1; }
+          echo "::notice title=Uploaded::Build $BUILD_NUMBER (variant S) uploaded."
 
       - name: Delete the App Store Connect key
         if: always()
