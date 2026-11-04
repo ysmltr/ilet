@@ -29,7 +29,7 @@
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@types/node": "24.19.2",
-    "electron": "44.9.0",
+    "electron": "44.9.3",
     "electron-builder": "26.17.0",
     "esbuild": "0.28.2",
     "eslint": "10.13.0",
