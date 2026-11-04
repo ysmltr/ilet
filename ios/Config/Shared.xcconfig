@@ -2,10 +2,11 @@
 
 // The app's bundle ID. The App Group and the Keychain group are derived from it, and the Share
 // Extension will use it as a prefix. It must be a reverse-DNS name you control.
-ILET_BUNDLE_ID_PREFIX = com.example.ilet
+ILET_BUNDLE_ID_PREFIX = com.ysmltr.ilet
 
-// Your Apple developer team (Xcode > Settings > Accounts). Needed to run on an iPhone.
-DEVELOPMENT_TEAM =
+// Your Apple developer team ID (developer.apple.com > Account > Membership details). Needed to
+// sign the app, and the first part of the Keychain group.
+DEVELOPMENT_TEAM = 5YL733ZJ5D
 
 MARKETING_VERSION = 0.1.0
 CURRENT_PROJECT_VERSION = 1

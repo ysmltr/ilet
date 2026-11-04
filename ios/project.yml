@@ -58,11 +58,15 @@ targets:
         # documentation; App Store Connect then does not ask about encryption for each build.
         ITSAppUsesNonExemptEncryption: false
         IletAppGroupIdentifier: group.$(ILET_BUNDLE_ID_PREFIX)
-        IletKeychainAccessGroup: $(AppIdentifierPrefix)$(ILET_BUNDLE_ID_PREFIX).shared
+        # Starts with the App ID prefix, which is the team ID. It is spelled out because Xcode's
+        # $(AppIdentifierPrefix) comes from a provisioning profile, and the TestFlight workflow
+        # builds without one (Apple signs the app afterwards).
+        IletKeychainAccessGroup: $(DEVELOPMENT_TEAM).$(ILET_BUNDLE_ID_PREFIX).shared
     entitlements:
       path: Ilet/Ilet.entitlements
       properties:
         com.apple.security.application-groups:
           - group.$(ILET_BUNDLE_ID_PREFIX)
+        # The same value as IletKeychainAccessGroup above.
         keychain-access-groups:
-          - $(AppIdentifierPrefix)$(ILET_BUNDLE_ID_PREFIX).shared
+          - $(DEVELOPMENT_TEAM).$(ILET_BUNDLE_ID_PREFIX).shared

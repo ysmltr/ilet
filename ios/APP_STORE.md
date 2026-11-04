@@ -11,15 +11,39 @@
 - Privacy policy: [PRIVACY.md](../PRIVACY.md), at
   <https://github.com/ysmltr/ilet/blob/main/PRIVACY.md>.
 
+## TestFlight
+
+[`testflight.yml`](../.github/workflows/testflight.yml) builds the app on one of GitHub's Macs, has
+Apple sign it for the App Store and uploads it to TestFlight. Apple keeps the distribution
+certificate and signs with it ("cloud signing"), so no certificate file is needed, only an App
+Store Connect API key in three repository secrets (Settings → Secrets and variables → Actions):
+
+| Secret          | Value                                              |
+| --------------- | -------------------------------------------------- |
+| `ASC_KEY_ID`    | The key's Key ID (10 characters)                   |
+| `ASC_ISSUER_ID` | The Issuer ID shown above the list of keys         |
+| `ASC_KEY_P8`    | The whole downloaded `AuthKey_<Key ID>.p8` file    |
+
+The key is a Team Key with Admin access (App Store Connect → Users and Access → Integrations),
+because cloud signing needs Admin. Whoever has the key can act as an Admin of your App Store
+Connect account, so if it may have leaked, revoke it there, then make a new one and update the
+secrets.
+
+To upload a build: **Actions → TestFlight → Run workflow**, or push a tag that starts with
+`testflight-`. The build number is the run number (`7.1` for run 7, `7.2` when it runs again), so
+every upload is new. Apple then processes the build for a few minutes before it appears under
+**TestFlight** in App Store Connect.
+
 ## Before submitting
 
 - [ ] The iPhone half of Phase 4 (finding the PC again) and Phase 5 (the Share Extension) are done.
-- [ ] `ILET_BUNDLE_ID_PREFIX` in `Config/Shared.xcconfig` is a reverse-DNS name you own, for example
+- [x] `ILET_BUNDLE_ID_PREFIX` in `Config/Shared.xcconfig` is a reverse-DNS name you own:
       `com.ysmltr.ilet`.
-- [ ] Apple Developer Program (99 USD a year): register the App ID with the App Group
-      `group.<prefix>` and Keychain Sharing.
-- [ ] App Store Connect: create the app and fill in the answers below.
-- [ ] Build and upload, from a Mac or with a TestFlight workflow on GitHub's Macs.
+- [x] Apple Developer Program (99 USD a year): register the App ID with the App Group
+      `group.<prefix>`. The Keychain group needs no registration.
+- [x] App Store Connect: create the app.
+- [ ] App Store Connect: fill in the answers below.
+- [ ] Build and upload with the TestFlight workflow (see [TestFlight](#testflight)).
 - [ ] Test the TestFlight build on a real iPhone: pairing, sending, and the warning for a wrong
       certificate.
 - [ ] Screenshots for the 6.9-inch iPhone (1320 × 2868 pixels), in English and Turkish.
