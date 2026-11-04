@@ -2,8 +2,9 @@
 
 ## Ready in this repository
 
-- App icon: `Ilet/Resources/Assets.xcassets`, made from `branding/ilet-icon.svg` by
-  `desktop/scripts/render-icons.mjs` (1024 × 1024, no transparency; iOS rounds the corners).
+- App icon and launch screen: `Ilet/Resources/Assets.xcassets`, made from `branding/ilet-icon.svg`
+  by `desktop/scripts/render-icons.mjs`. The icon is 1024 × 1024 without transparency (iOS rounds
+  the corners); the launch screen shows the drawing without its tile.
 - Privacy manifest (`PrivacyInfo.xcprivacy`): no tracking, no collected data.
 - Permission texts for the camera and the local network, in English and Turkish.
 - Export compliance: `ITSAppUsesNonExemptEncryption = NO`, because ilet uses only the system's
@@ -73,7 +74,7 @@ Store Connect.
       `group.<prefix>`. The Keychain group needs no registration.
 - [x] App Store Connect: create the app.
 - [ ] App Store Connect: fill in the answers below.
-- [ ] Build and upload with the TestFlight workflow (see [TestFlight](#testflight)).
+- [x] Build and upload with the TestFlight workflow (see [TestFlight](#testflight)).
 - [ ] Test the TestFlight build on a real iPhone: pairing, sending, and the warning for a wrong
       certificate.
 - [ ] Screenshots for the 6.9-inch iPhone (1320 × 2868 pixels), in English and Turkish.

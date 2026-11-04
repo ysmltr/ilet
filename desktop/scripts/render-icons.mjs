@@ -1,5 +1,6 @@
 // Renders the icon files from the SVG masters in ../branding, with Microsoft Edge in headless
-// mode, which comes with Windows: the .ico files of the desktop app and the iPhone app icon.
+// mode, which comes with Windows: the .ico files of the desktop app, and the iPhone app's icon and
+// logo (the drawing without its tile, on the launch screen and the welcome page).
 // Run it after changing an SVG: npm run icons
 import { Buffer } from 'node:buffer';
 import { execFileSync } from 'node:child_process';
@@ -7,6 +8,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { setTimeout as sleep } from 'node:timers/promises';
 import { pathToFileURL } from 'node:url';
 
 const BRANDING_FOLDER = path.resolve('../branding');
@@ -27,23 +29,39 @@ const ICONS = [
   },
 ];
 
-const IOS_APP_ICON = path.resolve(
-  '../ios/Ilet/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon.png',
-);
+const IOS_ASSETS_FOLDER = path.resolve('../ios/Ilet/Resources/Assets.xcassets');
+const IOS_APP_ICON = path.join(IOS_ASSETS_FOLDER, 'AppIcon.appiconset', 'AppIcon.png');
 const IOS_APP_ICON_SIZE = 1024;
 /** The background colour of ilet-icon.svg. iOS rounds the corners itself, so they are filled. */
-const IOS_APP_ICON_BACKGROUND = '#EEECE7';
+const IOS_APP_ICON_BACKGROUND = '#F3F8FC';
+/** The tile behind the drawing in ilet-icon.svg, which the logo leaves out. */
+const TILE = /<rect id="tile"[^>]*\/>\s*/;
+const FULL_VIEW_BOX = 'viewBox="0 0 1024 1024"';
+/** The part of ilet-icon.svg that holds the drawing, in the logo's proportions (5:4). */
+const IOS_LOGO_VIEW_BOX = 'viewBox="103 189 820 656"';
+const IOS_LOGO_FOLDER = path.join(IOS_ASSETS_FOLDER, 'Logo.imageset');
+/** The logo's size in points; the image set holds it at each screen scale. */
+const IOS_LOGO_POINTS = { width: 200, height: 160 };
+const IOS_SCALES = [
+  { scale: 1, suffix: '' },
+  { scale: 2, suffix: '@2x' },
+  { scale: 3, suffix: '@3x' },
+];
 
 const PNG_WIDTH_OFFSET = 16;
 const PNG_HEIGHT_OFFSET = 20;
 const PNG_COLOR_TYPE_OFFSET = 25;
 const PNG_COLOR_TYPE_RGB = 2;
+/** Every complete PNG ends with this IEND chunk. */
+const PNG_END = Buffer.from([0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82]);
 const ICO_HEADER_BYTES = 6;
 const ICO_ENTRY_BYTES = 16;
 const ICO_TYPE_ICON = 1;
 const ICO_BITS_PER_PIXEL = 32;
 /** An ICO entry stores sizes in one byte; 0 stands for 256. */
 const ICO_LARGEST_SIZE = 256;
+const BROWSER_TIMEOUT_MS = 60_000;
+const POLL_MS = 100;
 
 function findEdge() {
   const programFolders = [process.env['ProgramFiles(x86)'], process.env['ProgramFiles']];
@@ -57,15 +75,52 @@ function findEdge() {
   return edge;
 }
 
-function renderPng(edge, workFolder, { size, svg, background = 'transparent' }) {
-  const source = readFileSync(path.join(BRANDING_FOLDER, svg)).toString('base64');
-  const page = path.join(workFolder, `${svg}-${size}.html`);
-  const png = path.join(workFolder, `${svg}-${size}.png`);
+/** Waits until the browser has written the whole PNG, then reads it. */
+async function readFinishedPng(file) {
+  const deadline = Date.now() + BROWSER_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    if (existsSync(file)) {
+      const data = readFileSync(file);
+      if (data.length > PNG_END.length && data.subarray(-PNG_END.length).equals(PNG_END)) {
+        return data;
+      }
+    }
+    await sleep(POLL_MS);
+  }
+  throw new Error(`Edge did not write ${path.basename(file)}`);
+}
+
+/** Deletes `folder`, waiting while a browser that is still closing holds files in it. */
+async function removeWhenFree(folder) {
+  const deadline = Date.now() + BROWSER_TIMEOUT_MS;
+  for (;;) {
+    try {
+      rmSync(folder, { recursive: true, force: true });
+      return;
+    } catch (error) {
+      if (Date.now() > deadline) {
+        throw error;
+      }
+      await sleep(POLL_MS);
+    }
+  }
+}
+
+/**
+ * Renders SVG source to a PNG of exactly `width` x `height` pixels. Edge's launcher exits at once
+ * and leaves the work to a browser process, which writes the screenshot a moment later and then
+ * keeps its profile for a few seconds; waiting for both means one browser at a time and nothing
+ * left behind.
+ */
+async function renderPng(edge, workFolder, { name, svg, width, height, background }) {
+  const page = path.join(workFolder, `${name}.html`);
+  const png = path.join(workFolder, `${name}.png`);
+  const profile = path.join(workFolder, `profile-${name}`);
   writeFileSync(
     page,
-    `<!doctype html><body style="margin:0;background:${background}">` +
-      `<img src="data:image/svg+xml;base64,${source}" width="${size}" height="${size}" ` +
-      'style="display:block"></body>',
+    `<!doctype html><body style="margin:0;background:${background ?? 'transparent'}">` +
+      `<img src="data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}" ` +
+      `width="${width}" height="${height}" style="display:block"></body>`,
   );
   execFileSync(
     edge,
@@ -73,23 +128,31 @@ function renderPng(edge, workFolder, { size, svg, background = 'transparent' }) 
       '--headless=new',
       '--disable-gpu',
       '--no-first-run',
-      `--user-data-dir=${path.join(workFolder, 'profile')}`,
+      '--no-default-browser-check',
+      // Nothing to download for a local page: this also lets the browser close sooner.
+      '--disable-background-networking',
+      '--disable-component-update',
+      '--disable-extensions',
+      `--user-data-dir=${profile}`,
       '--hide-scrollbars',
       '--force-device-scale-factor=1',
       '--default-background-color=00000000',
-      `--window-size=${size},${size}`,
+      `--window-size=${width},${height}`,
       `--screenshot=${png}`,
       pathToFileURL(page).href,
     ],
     { stdio: 'ignore' },
   );
-  const data = readFileSync(png);
-  const width = data.readUInt32BE(PNG_WIDTH_OFFSET);
-  const height = data.readUInt32BE(PNG_HEIGHT_OFFSET);
-  if (width !== size || height !== size) {
-    throw new Error(`${svg} rendered at ${width}x${height} instead of ${size}x${size}`);
+  const data = await readFinishedPng(png);
+  await removeWhenFree(profile);
+  const renderedWidth = data.readUInt32BE(PNG_WIDTH_OFFSET);
+  const renderedHeight = data.readUInt32BE(PNG_HEIGHT_OFFSET);
+  if (renderedWidth !== width || renderedHeight !== height) {
+    throw new Error(
+      `${name} rendered at ${renderedWidth}x${renderedHeight} instead of ${width}x${height}`,
+    );
   }
-  return { size, data };
+  return data;
 }
 
 /** An ICO file whose images are PNGs, which Windows supports since Vista. */
@@ -113,31 +176,66 @@ function icoFile(images) {
   return Buffer.concat([header, ...entries, ...images.map(({ data }) => data)]);
 }
 
+/** The drawing of ilet-icon.svg without its tile, cut to the logo's proportions. */
+function logoSvg(drawing) {
+  if (!drawing.includes(FULL_VIEW_BOX)) {
+    throw new Error(`${FULL_DRAWING} has a new viewBox: update IOS_LOGO_VIEW_BOX`);
+  }
+  return drawing.replace(TILE, '').replace(FULL_VIEW_BOX, IOS_LOGO_VIEW_BOX);
+}
+
 const edge = findEdge();
 const workFolder = mkdtempSync(path.join(os.tmpdir(), 'ilet-icons-'));
 try {
   for (const icon of ICONS) {
-    const images = icon.images.map((image) => renderPng(edge, workFolder, image));
+    const images = [];
+    for (const { size, svg } of icon.images) {
+      const source = readFileSync(path.join(BRANDING_FOLDER, svg), 'utf8');
+      const name = `${svg}-${size}`;
+      const data = await renderPng(edge, workFolder, {
+        name,
+        svg: source,
+        width: size,
+        height: size,
+      });
+      images.push({ size, data });
+    }
     writeFileSync(path.join(BRANDING_FOLDER, icon.file), icoFile(images));
     process.stdout.write(`${icon.file}: ${images.map(({ size }) => size).join(', ')} px\n`);
   }
 
   const drawing = readFileSync(path.join(BRANDING_FOLDER, FULL_DRAWING), 'utf8');
-  if (!drawing.includes(`fill="${IOS_APP_ICON_BACKGROUND}"`)) {
-    throw new Error(`${FULL_DRAWING} has a new background colour: update IOS_APP_ICON_BACKGROUND`);
+  const tile = drawing.match(TILE);
+  if (tile === null) {
+    throw new Error(`${FULL_DRAWING} has no <rect id="tile">, which the logo leaves out`);
   }
-  const { data } = renderPng(edge, workFolder, {
-    size: IOS_APP_ICON_SIZE,
-    svg: FULL_DRAWING,
+  if (!tile[0].includes(`fill="${IOS_APP_ICON_BACKGROUND}"`)) {
+    throw new Error(`${FULL_DRAWING} has a new tile colour: update IOS_APP_ICON_BACKGROUND`);
+  }
+  const appIcon = await renderPng(edge, workFolder, {
+    name: 'app-icon',
+    svg: drawing,
+    width: IOS_APP_ICON_SIZE,
+    height: IOS_APP_ICON_SIZE,
     background: IOS_APP_ICON_BACKGROUND,
   });
   // The App Store refuses an icon with an alpha channel, even a fully opaque one. Edge writes an
   // opaque page as RGB; this check catches it if that ever changes.
-  if (data[PNG_COLOR_TYPE_OFFSET] !== PNG_COLOR_TYPE_RGB) {
+  if (appIcon[PNG_COLOR_TYPE_OFFSET] !== PNG_COLOR_TYPE_RGB) {
     throw new Error('the iPhone app icon must be an RGB PNG without an alpha channel');
   }
-  writeFileSync(IOS_APP_ICON, data);
+  writeFileSync(IOS_APP_ICON, appIcon);
   process.stdout.write(`${path.basename(IOS_APP_ICON)}: ${IOS_APP_ICON_SIZE} px, opaque RGB\n`);
+
+  const logo = logoSvg(drawing);
+  for (const { scale, suffix } of IOS_SCALES) {
+    const width = IOS_LOGO_POINTS.width * scale;
+    const height = IOS_LOGO_POINTS.height * scale;
+    const name = `Logo${suffix}`;
+    const data = await renderPng(edge, workFolder, { name, svg: logo, width, height });
+    writeFileSync(path.join(IOS_LOGO_FOLDER, `${name}.png`), data);
+    process.stdout.write(`${name}.png: ${width}x${height} px\n`);
+  }
 } finally {
-  rmSync(workFolder, { recursive: true, force: true });
+  await removeWhenFree(workFolder);
 }

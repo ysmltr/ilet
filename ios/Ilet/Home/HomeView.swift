@@ -7,11 +7,34 @@ struct HomeView: View {
     @ObservedObject var sender: SendViewModel
     let makePairingViewModel: @MainActor () -> PairingViewModel
 
+    /// How long the start screen stays at least, so it reads as a calm start and not as a flicker.
+    private static let startScreenDuration = Duration.milliseconds(800)
+
+    @State private var hasStarted = false
+    @State private var isShowingInfo = false
     @State private var isPairing = false
     @State private var isImportingFiles = false
     @State private var pickedPhotos: [PhotosPickerItem] = []
 
     var body: some View {
+        ZStack {
+            if hasStarted {
+                mainScreen
+                    .transition(.opacity)
+            } else {
+                LaunchView()
+                    .transition(.opacity)
+            }
+        }
+        .task {
+            // Loading before the switch means the welcome page never flashes up for a paired PC.
+            desktops.reload()
+            try? await Task.sleep(for: Self.startScreenDuration)
+            withAnimation { hasStarted = true }
+        }
+    }
+
+    private var mainScreen: some View {
         NavigationStack {
             Group {
                 if let desktop = desktops.defaultDesktop {
@@ -21,9 +44,22 @@ struct HomeView: View {
                         onPairAnother: { isPairing = true })
                 } else {
                     WelcomeView { isPairing = true }
+                        .navigationBarTitleDisplayMode(.inline)
                 }
             }
             .navigationTitle(Text(verbatim: "ilet"))
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        isShowingInfo = true
+                    } label: {
+                        Label("info.title", systemImage: "info.circle")
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $isShowingInfo) {
+            InfoView()
         }
         .sheet(
             isPresented: $isPairing, onDismiss: { desktops.reload() },
@@ -44,7 +80,6 @@ struct HomeView: View {
             actions: { Button("common.ok") {} },
             message: { Text(desktops.errorMessage ?? "") }
         )
-        .task { desktops.reload() }
     }
 }
 

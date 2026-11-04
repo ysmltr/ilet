@@ -42,7 +42,11 @@ targets:
         CFBundleDisplayName: ilet
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
-        UILaunchScreen: {}
+        # The logo on the welcome page's background (white, or black in Dark Mode). LaunchView
+        # shows the same in the app until the paired PCs are loaded, so the start has no jump.
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+          UIImageName: Logo
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         NSCameraUsageDescription: ilet uses the camera only to scan the pairing QR code shown on your PC.

@@ -1,6 +1,5 @@
 import IletCore
 import SwiftUI
-import UIKit
 
 struct PairingView: View {
     @StateObject private var viewModel: PairingViewModel
@@ -71,7 +70,7 @@ private struct ScanStep: View {
             case .denied:
                 Text("pairing.cameraDenied")
                     .multilineTextAlignment(.center)
-                Button("common.openSettings", action: openSettings)
+                OpenSettingsButton()
                     .buttonStyle(.borderedProminent)
             case .unavailable:
                 Text("pairing.cameraUnavailable")
@@ -79,13 +78,6 @@ private struct ScanStep: View {
         }
         .padding(Layout.screenPadding)
         .task { await viewModel.prepareCamera() }
-    }
-
-    private func openSettings() {
-        guard let url = URL(string: UIApplication.openSettingsURLString) else {
-            return
-        }
-        UIApplication.shared.open(url)
     }
 }
 

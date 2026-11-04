@@ -166,13 +166,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your PC cannot be reached. Make sure ilet is running on it and both devices are on the same Wi-Fi. If you denied Local Network access, allow it in Settings."
+            "value": "Your PC cannot be reached. Make sure ilet is running on it, both devices are on the same Wi-Fi and the PC’s network is set to Private. If you denied Local Network access, allow it in Settings."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bilgisayarınıza ulaşılamıyor. ilet’in açık olduğundan ve iki cihazın aynı Wi-Fi ağında olduğundan emin olun. Yerel Ağ erişimini reddettiyseniz Ayarlar’dan izin verin."
+            "value": "Bilgisayarınıza ulaşılamıyor. ilet’in açık olduğundan, iki cihazın aynı Wi-Fi ağında olduğundan ve bilgisayarın ağ profilinin Özel olduğundan emin olun. Yerel Ağ erişimini reddettiyseniz Ayarlar’dan izin verin."
           }
         }
       }
@@ -513,6 +513,262 @@
         }
       }
     },
+    "info.how.body": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ilet sends photos and files from this iPhone to your PC over your Wi-Fi. They never pass through the internet or a cloud, and you need no account."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ilet, fotoğrafları ve dosyaları bu iPhone’dan Wi-Fi üzerinden bilgisayarınıza gönderir. Dosyalar hiçbir zaman internetten ya da bir buluttan geçmez ve hesap gerekmez."
+          }
+        }
+      }
+    },
+    "info.how.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Straight to your PC"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doğrudan bilgisayarınıza"
+          }
+        }
+      }
+    },
+    "info.pairing.body": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In ilet on your PC, click “Pair new device” and scan the QR code with this iPhone. From then on the two know each other: the connection is encrypted, and only paired devices can send files to your PC."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilgisayarınızdaki ilet’te “Yeni cihaz eşleştir”e tıklayın ve QR kodu bu iPhone ile tarayın. Bundan sonra iki cihaz birbirini tanır: Bağlantı şifrelenir ve bilgisayarınıza yalnızca eşleştirilmiş cihazlar dosya gönderebilir."
+          }
+        }
+      }
+    },
+    "info.pairing.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pair once"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bir kez eşleştirin"
+          }
+        }
+      }
+    },
+    "info.privacy.body": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ilet has no account, no ads and no tracking, and it collects no data. Your files only travel between your iPhone and your PC."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ilet’te hesap, reklam ve izleme yoktur; ilet hiçbir veri toplamaz. Dosyalarınız yalnızca iPhone’unuz ile bilgisayarınız arasında gider."
+          }
+        }
+      }
+    },
+    "info.privacy.link": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy policy"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gizlilik politikası"
+          }
+        }
+      }
+    },
+    "info.privacy.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gizlilik"
+          }
+        }
+      }
+    },
+    "info.sending.body": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap “Send photos and videos” or “Send files” and choose what to send. ilet on the PC saves them in Downloads › ilet, unless you chose another folder there."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“Fotoğraf ve video gönder”e ya da “Dosya gönder”e dokunun ve göndermek istediklerinizi seçin. Bilgisayardaki ilet bunları, orada başka bir klasör seçmediyseniz İndirilenler › ilet klasörüne kaydeder."
+          }
+        }
+      }
+    },
+    "info.sending.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send photos and files"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğraf ve dosya gönderin"
+          }
+        }
+      }
+    },
+    "info.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How ilet works"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ilet nasıl çalışır?"
+          }
+        }
+      }
+    },
+    "info.trouble.localNetwork": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ilet must be allowed to use the local network on this iPhone: Settings › ilet › Local Network."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu iPhone’da ilet’in yerel ağı kullanmasına izin verilmeli: Ayarlar › ilet › Yerel Ağ."
+          }
+        }
+      }
+    },
+    "info.trouble.private": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The PC’s network must be set to Private. If it is Public, ilet on the PC shows how to change that."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilgisayarın ağ profili Özel olmalı. Ortak ise bilgisayardaki ilet bunu nasıl değiştireceğinizi gösterir."
+          }
+        }
+      }
+    },
+    "info.trouble.running": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ilet must be running on the PC. Its icon is next to the clock."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ilet bilgisayarda çalışıyor olmalı. Simgesi saatin yanında görünür."
+          }
+        }
+      }
+    },
+    "info.trouble.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If your PC cannot be reached"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilgisayarınıza ulaşılamıyorsa"
+          }
+        }
+      }
+    },
+    "info.trouble.wifi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Both devices must be on the same Wi-Fi."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İki cihaz da aynı Wi-Fi ağında olmalı."
+          }
+        }
+      }
+    },
+    "info.version %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version %@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sürüm %@"
+          }
+        }
+      }
+    },
     "pairing.cameraDenied": {
       "localizations": {
         "en": {
@@ -822,13 +1078,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open ilet on your PC, click “Pair new device” and scan the QR code it shows."
+            "value": "ilet sends them straight to your Windows PC over your Wi-Fi. No account, no cloud."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bilgisayarınızda ilet’i açın, “Yeni cihaz eşleştir”e tıklayın ve gösterilen QR kodu tarayın."
+            "value": "ilet bunları Wi-Fi üzerinden doğrudan Windows bilgisayarınıza gönderir. Hesap yok, bulut yok."
           }
         }
       }
@@ -849,18 +1105,66 @@
         }
       }
     },
-    "welcome.title": {
+    "welcome.step1": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Send photos to your PC"
+            "value": "Install ilet on your Windows PC and open it."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fotoğrafları bilgisayarınıza gönderin"
+            "value": "Windows bilgisayarınıza ilet’i yükleyin ve açın."
+          }
+        }
+      }
+    },
+    "welcome.step2": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect this iPhone and the PC to the same Wi-Fi. On the PC, the network must be set to Private."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu iPhone’u ve bilgisayarı aynı Wi-Fi ağına bağlayın. Bilgisayarda ağ profili Özel olmalıdır."
+          }
+        }
+      }
+    },
+    "welcome.step3": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In ilet on the PC, click “Pair new device” and scan the QR code it shows. When the iPhone asks for local network access, allow it."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilgisayardaki ilet’te “Yeni cihaz eşleştir”e tıklayın ve gösterilen QR kodu tarayın. iPhone yerel ağ erişimi istediğinde izin verin."
+          }
+        }
+      }
+    },
+    "welcome.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send photos and files to your PC"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğrafları ve dosyaları bilgisayarınıza gönderin"
           }
         }
       }

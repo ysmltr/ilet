@@ -139,12 +139,12 @@ Without a Mac there are two ways:
 | Path                       | Responsibility                                                                      |
 | -------------------------- | ----------------------------------------------------------------------------------- |
 | `IletKit/Sources/IletCore` | Protocol constants, certificate pinning, HTTPS client, pairing, Keychain and App Group storage, preparing files. No UI; the Share Extension will reuse it. |
-| `Ilet/App`                 | Composition root, configuration from Info.plist                                     |
+| `Ilet/App`                 | Composition root, configuration from Info.plist, the start screen                   |
 | `Ilet/Pairing`             | QR scanner and pairing flow                                                         |
 | `Ilet/Sending`             | Picking photos and files, uploads with progress                                     |
-| `Ilet/Home`                | Main screen and the list of PCs                                                     |
-| `Ilet/Shared`              | Error messages, the security warning, layout values                                 |
-| `Ilet/Resources`           | English and Turkish texts, privacy manifest                                         |
+| `Ilet/Home`                | Main screen, welcome page, info page and the list of PCs                            |
+| `Ilet/Shared`              | Error messages, the security warning, the Settings button, layout values            |
+| `Ilet/Resources`           | English and Turkish texts, app icon, logo and launch colour, privacy manifest       |
 
 ## Dependencies
 
