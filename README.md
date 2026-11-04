@@ -131,7 +131,7 @@ Without a Mac there are two ways:
 
 | Route | Cost | How it works | Watch out |
 | ----- | ---- | ------------ | --------- |
-| TestFlight (recommended) | Apple Developer Program, 99 USD a year (local prices vary) | [`.github/workflows/testflight.yml`](.github/workflows/testflight.yml) builds the app on GitHub's Mac, has Apple sign it with an App Store Connect API key kept as an encrypted GitHub secret, and uploads it ([ios/APP_STORE.md](ios/APP_STORE.md#testflight) explains how to start it). You install it with Apple's TestFlight app. | Apple's official route. The key needs Admin access for this way of signing; it can be revoked at any time in App Store Connect. |
+| TestFlight (recommended) | Apple Developer Program, 99 USD a year (local prices vary) | [`.github/workflows/testflight.yml`](.github/workflows/testflight.yml) builds the app on GitHub's Mac, signs it with your Apple Distribution certificate and uploads it. An App Store Connect API key and the certificate's private key are kept as encrypted GitHub secrets ([ios/APP_STORE.md](ios/APP_STORE.md#testflight) explains how to set them up and start a build). You install it with Apple's TestFlight app. | Apple's official route. The API key needs Admin access, because the workflow makes the provisioning profile; the key and the certificate can be revoked at any time. |
 | Sideloading with a free Apple ID | Free | A Windows tool (for example AltStore or Sideloadly) signs an unsigned build with your Apple ID and installs it over USB. | You type an Apple ID password into a third-party program: use a separate Apple ID for this, never your main one. The app stops opening after 7 days until you sign it again. |
 
 ### iOS modules

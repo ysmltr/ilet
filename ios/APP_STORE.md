@@ -13,26 +13,56 @@
 
 ## TestFlight
 
-[`testflight.yml`](../.github/workflows/testflight.yml) builds the app on one of GitHub's Macs, has
-Apple sign it for the App Store and uploads it to TestFlight. Apple keeps the distribution
-certificate and signs with it ("cloud signing"), so no certificate file is needed, only an App
-Store Connect API key in three repository secrets (Settings → Secrets and variables → Actions):
+[`testflight.yml`](../.github/workflows/testflight.yml) builds the app on one of GitHub's Macs,
+signs it with your Apple Distribution certificate and uploads it to TestFlight. It needs four
+repository secrets (Settings → Secrets and variables → Actions):
 
-| Secret          | Value                                              |
-| --------------- | -------------------------------------------------- |
-| `ASC_KEY_ID`    | The key's Key ID (10 characters)                   |
-| `ASC_ISSUER_ID` | The Issuer ID shown above the list of keys         |
-| `ASC_KEY_P8`    | The whole downloaded `AuthKey_<Key ID>.p8` file    |
+| Secret                   | Value                                                  |
+| ------------------------ | ------------------------------------------------------ |
+| `ASC_KEY_ID`             | The App Store Connect API key's Key ID (10 characters) |
+| `ASC_ISSUER_ID`          | The Issuer ID shown above the list of keys             |
+| `ASC_KEY_P8`             | The whole downloaded `AuthKey_<Key ID>.p8` file        |
+| `APPLE_DISTRIBUTION_KEY` | The whole `ilet-distribution.key` file (see below)     |
 
-The key is a Team Key with Admin access (App Store Connect → Users and Access → Integrations),
-because cloud signing needs Admin. Whoever has the key can act as an Admin of your App Store
+The API key is a Team Key with Admin access (App Store Connect → Users and Access →
+Integrations). The workflow uses it to find your certificate, to make the App Store provisioning
+profile the first time, and to upload. Whoever has the key can act as an Admin of your App Store
 Connect account, so if it may have leaked, revoke it there, then make a new one and update the
 secrets.
 
-To upload a build: **Actions → TestFlight → Run workflow**, or push a tag that starts with
-`testflight-`. The build number is the run number (`7.1` for run 7, `7.2` when it runs again), so
-every upload is new. Apple then processes the build for a few minutes before it appears under
-**TestFlight** in App Store Connect.
+### The distribution certificate
+
+Apple can also sign the app itself ("cloud signing", without a certificate of yours), but that
+fails when the account holder's name has letters such as ş or İ: Apple writes the name into the
+signature in a different Unicode form than the certificate has, and App Store Connect rejects the
+build with error 90035 ([Apple forum](https://developer.apple.com/forums/thread/848968)). So the
+workflow signs with a certificate of your own. It is made once, and Windows is enough:
+
+1. In PowerShell, make a private key and a certificate request with the OpenSSL that comes with
+   Git for Windows:
+
+   ```powershell
+   New-Item -ItemType Directory -Force "$HOME\ilet-signing" | Out-Null; Set-Location "$HOME\ilet-signing"; & "C:\Program Files\Git\usr\bin\openssl.exe" req -new -newkey rsa:2048 -nodes -keyout ilet-distribution.key -out ilet-distribution.csr -subj "/CN=ilet"
+   ```
+
+2. On developer.apple.com: Certificates, Identifiers & Profiles → Certificates → **+** → **Apple
+   Distribution** → upload `ilet-distribution.csr`. A team can have only a few distribution
+   certificates; if the choice is greyed out, revoke one that nothing uses any more.
+3. Open `ilet-distribution.key` in Notepad and copy all of it into the secret
+   `APPLE_DISTRIBUTION_KEY`. Nobody else gets this file. Once a build has worked, delete the
+   `ilet-signing` folder; a new certificate can be made the same way at any time.
+
+The workflow finds the certificate by its key and keeps one App Store provisioning profile for it,
+named `<bundle ID> TestFlight <certificate ID>`. The certificate is valid for a year; then make a
+new one the same way and replace the secret. If the key may have leaked, revoke the certificate on
+developer.apple.com.
+
+### Uploading a build
+
+**Actions → TestFlight → Run workflow**, or push a tag that starts with `testflight-`. The build
+number is the run number (`7.1` for run 7, `7.2` when it runs again), so every upload is new.
+Apple then processes the build for a few minutes before it appears under **TestFlight** in App
+Store Connect.
 
 ## Before submitting
 

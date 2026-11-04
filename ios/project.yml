@@ -60,7 +60,7 @@ targets:
         IletAppGroupIdentifier: group.$(ILET_BUNDLE_ID_PREFIX)
         # Starts with the App ID prefix, which is the team ID. It is spelled out because Xcode's
         # $(AppIdentifierPrefix) comes from a provisioning profile, and the TestFlight workflow
-        # builds without one (Apple signs the app afterwards).
+        # builds without one (the app is signed afterwards, when it is exported).
         IletKeychainAccessGroup: $(DEVELOPMENT_TEAM).$(ILET_BUNDLE_ID_PREFIX).shared
     entitlements:
       path: Ilet/Ilet.entitlements

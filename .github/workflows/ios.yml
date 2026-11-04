@@ -1,13 +1,14 @@
-# Checks the iPhone app on one of GitHub's Macs: lint, unit tests and a full app build. This is
-# how the iOS code gets compiled without owning a Mac.
+# Checks the iPhone app on one of GitHub's Macs: lint, unit tests and a full app build, and the
+# tests of the TestFlight workflow's helper. This is how the iOS code gets compiled without owning
+# a Mac.
 name: iOS
 
 on:
   push:
     branches: [main]
-    paths: [ios/**, .github/workflows/ios.yml]
+    paths: [ios/**, .github/scripts/**, .github/workflows/ios.yml]
   pull_request:
-    paths: [ios/**, .github/workflows/ios.yml]
+    paths: [ios/**, .github/scripts/**, .github/workflows/ios.yml]
   workflow_dispatch:
 
 # Read-only: the workflow never changes the repository and uses no secrets.
@@ -127,6 +128,11 @@ jobs:
         run: |
           swift test --package-path IletKit -Xswiftc -warnings-as-errors 2>&1 \
             | xcbeautify --renderer github-actions
+
+      # The App Store Connect helper of testflight.yml, with made-up keys and a fake Apple.
+      - name: TestFlight helper tests
+        if: ${{ !cancelled() }}
+        run: node --test ../.github/scripts/app-store-connect.test.mjs
 
       - name: Generate the Xcode project
         id: project

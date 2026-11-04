@@ -1,6 +1,7 @@
-# Builds the iPhone app on one of GitHub's Macs, has Apple sign it for the App Store and uploads
-# it to TestFlight. Start it in the Actions tab (TestFlight > Run workflow) or by pushing a tag
-# that starts with testflight-. ios/APP_STORE.md lists the secrets it needs.
+# Builds the iPhone app on one of GitHub's Macs, signs it with the team's Apple Distribution
+# certificate and uploads it to TestFlight. Start it in the Actions tab (TestFlight > Run workflow)
+# or by pushing a tag that starts with testflight-. ios/APP_STORE.md lists the secrets it needs and
+# explains how to make the certificate.
 name: TestFlight
 
 on:
@@ -8,8 +9,8 @@ on:
   push:
     tags: [testflight-*]
 
-# Read-only: the workflow never changes the repository. The App Store Connect key reaches only the
-# steps that need it, and never pull requests.
+# Read-only: the workflow never changes the repository. The secrets reach only the steps that need
+# them, and never pull requests.
 permissions:
   contents: read
 
@@ -45,15 +46,16 @@ jobs:
 
       # Checks only the format and prints nothing: a mix-up such as the Issuer ID in ASC_KEY_ID
       # would otherwise fail only at the end, with a vague message from Apple.
-      - name: Check the App Store Connect secrets
+      - name: Check the secrets
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          APPLE_DISTRIBUTION_KEY: ${{ secrets.APPLE_DISTRIBUTION_KEY }}
         run: |
           problems=0
           problem() {
-            echo "::error title=App Store Connect secrets::$1"
+            echo "::error title=Secrets::$1"
             problems=1
           }
           [[ "$ASC_KEY_ID" =~ ^[A-Z0-9]{10}$ ]] ||
@@ -62,6 +64,9 @@ jobs:
             problem "ASC_ISSUER_ID must be the Issuer ID shown above the keys: 36 characters such as 1a2b3c4d-…, without spaces."
           [[ "$ASC_KEY_P8" == *"-----BEGIN PRIVATE KEY-----"*"-----END PRIVATE KEY-----"* ]] ||
             problem "ASC_KEY_P8 must be the whole downloaded .p8 file, from -----BEGIN PRIVATE KEY----- to -----END PRIVATE KEY-----."
+          [[ "$APPLE_DISTRIBUTION_KEY" == *"-----BEGIN PRIVATE KEY-----"*"-----END PRIVATE KEY-----"* ||
+            "$APPLE_DISTRIBUTION_KEY" == *"-----BEGIN RSA PRIVATE KEY-----"*"-----END RSA PRIVATE KEY-----"* ]] ||
+            problem "APPLE_DISTRIBUTION_KEY must be the whole ilet-distribution.key file, from -----BEGIN PRIVATE KEY----- to -----END PRIVATE KEY----- (see ios/APP_STORE.md)."
           exit "$problems"
 
       # Same rules as the npm packages: an exact version, checked against the SHA-256 that GitHub
@@ -82,8 +87,7 @@ jobs:
       - name: Generate the Xcode project
         run: xcodegen generate
 
-      # Xcode cannot sign for an iPhone without a certificate on this Mac, so the archive is built
-      # unsigned; Apple signs it in the export below.
+      # Built unsigned, before any key is on this Mac; the export below signs the app.
       - name: Build the archive
         run: |
           xcodebuild archive \
@@ -96,12 +100,12 @@ jobs:
       # The export takes the app's entitlements (its App Group and Keychain group) from the
       # archive's signature, and an unsigned app has none. So the app is signed here without a
       # certificate (ad hoc), with Ilet.entitlements filled in from the build settings the way
-      # Xcode does it. The export replaces this signature with Apple's.
+      # Xcode does it. The export replaces this signature with the distribution certificate's.
       - name: Add the entitlements to the archive
         run: |
           app="$RUNNER_TEMP/Ilet.xcarchive/Products/Applications/Ilet.app"
           if [ -d "$app/PlugIns" ]; then
-            echo "::error::The app has extensions now: sign each one here with its own entitlements."
+            echo "::error::The app has extensions now: sign each one here with its own entitlements, and give each its own provisioning profile."
             exit 1
           fi
           xcodebuild -showBuildSettings -project Ilet.xcodeproj -target Ilet -configuration Release \
@@ -118,26 +122,109 @@ jobs:
             --generate-entitlement-der "$app"
 
       # Written only now, after XcodeGen (a downloaded program) has run, and readable only by this
-      # user. The last step deletes it.
-      - name: Prepare the App Store Connect key
+      # user. The last step deletes them. altool looks for the App Store Connect key under this
+      # name in the private_keys folder.
+      - name: Prepare the keys
         env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          APPLE_DISTRIBUTION_KEY: ${{ secrets.APPLE_DISTRIBUTION_KEY }}
         run: |
           umask 077
-          printf '%s\n' "$ASC_KEY_P8" | tr -d '\r' > "$RUNNER_TEMP/AuthKey.p8"
+          mkdir -p "$RUNNER_TEMP/private_keys" "$RUNNER_TEMP/signing"
+          printf '%s\n' "$ASC_KEY_P8" | tr -d '\r' > "$RUNNER_TEMP/private_keys/AuthKey_$ASC_KEY_ID.p8"
+          printf '%s\n' "$APPLE_DISTRIBUTION_KEY" | tr -d '\r' > "$RUNNER_TEMP/signing/distribution.key"
 
-      # Apple keeps the team's distribution certificate and signs with it ("cloud signing"), so no
-      # certificate file is needed, only the key; this needs a key with Admin access.
-      # -allowProvisioningUpdates lets xcodebuild create the App Store provisioning profile.
-      - name: Sign for the App Store
-        id: export
+      # The repository's own helper finds the certificate that belongs to APPLE_DISTRIBUTION_KEY
+      # and the App Store provisioning profile for it, which it makes the first time (this needs
+      # the key's Admin access). It is tested in ios.yml.
+      - name: Get the certificate and the provisioning profile
+        id: signing
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
         run: |
+          signing="$RUNNER_TEMP/signing"
+          app="$RUNNER_TEMP/Ilet.xcarchive/Products/Applications/Ilet.app"
+          bundle_id=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Info.plist")
+          node ../.github/scripts/app-store-connect.mjs \
+            --api-key "$RUNNER_TEMP/private_keys/AuthKey_$ASC_KEY_ID.p8" \
+            --distribution-key "$signing/distribution.key" \
+            --bundle-id "$bundle_id" --out "$signing"
+          security cms -D -i "$signing/profile.mobileprovision" > "$signing/profile.plist"
+          {
+            echo "bundle-id=$bundle_id"
+            echo "certificate-sha1=$(shasum -a 1 "$signing/certificate.cer" | cut -d ' ' -f 1 | tr a-f A-F)"
+            echo "profile-uuid=$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$signing/profile.plist")"
+          } >> "$GITHUB_OUTPUT"
+
+      # A keychain of its own, with a random password that is never printed, so that codesign
+      # never asks for a password and the key is gone once the keychain is deleted.
+      - name: Set up the signing keychain
+        env:
+          CERTIFICATE_SHA1: ${{ steps.signing.outputs.certificate-sha1 }}
+          PROFILE_UUID: ${{ steps.signing.outputs.profile-uuid }}
+        run: |
+          signing="$RUNNER_TEMP/signing"
+          keychain="$signing/signing.keychain-db"
+          password=$(/usr/bin/openssl rand -hex 32)
+          security create-keychain -p "$password" "$keychain"
+          security set-keychain-settings -lut 3600 "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          # macOS's own LibreSSL writes the classic .p12 format that `security import` reads.
+          /usr/bin/openssl x509 -inform DER -in "$signing/certificate.cer" -out "$signing/certificate.pem"
+          /usr/bin/openssl pkcs12 -export -inkey "$signing/distribution.key" \
+            -in "$signing/certificate.pem" -passout "pass:$password" -out "$signing/identity.p12"
+          security import "$signing/identity.p12" -k "$keychain" -P "$password" -T /usr/bin/codesign
+          # Lets codesign use the key without a dialog. The output describes the key, so it is
+          # not shown.
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$password" \
+            "$keychain" > /dev/null
+          keychains=("$keychain")
+          while read -r line; do
+            keychains+=("$(echo "$line" | tr -d '"')")
+          done < <(security list-keychains -d user)
+          security list-keychains -d user -s "${keychains[@]}"
+          # The identity is valid only with Apple's intermediate certificate. If this Mac does not
+          # have it, it comes from the address in the certificate; it still has to lead to Apple's
+          # root certificate, which macOS has. The list of identities holds the person's name, so
+          # it is only searched, never printed.
+          valid() {
+            local identities
+            identities=$(security find-identity -v -p codesigning "$keychain")
+            [[ "$identities" == *"$CERTIFICATE_SHA1"* ]]
+          }
+          if ! valid; then
+            issuer=$(/usr/bin/openssl x509 -inform DER -in "$signing/certificate.cer" -noout -text |
+              sed -n 's/^ *CA Issuers - URI://p' | head -n 1)
+            curl --fail --silent --show-error --location --max-time 60 \
+              --output "$signing/issuer.cer" "$issuer"
+            security import "$signing/issuer.cer" -k "$keychain"
+          fi
+          if ! valid; then
+            echo "::error title=Signing keychain::The certificate cannot sign on this Mac: macOS does not accept its chain of certificates."
+            exit 1
+          fi
+          # Xcode 16 and later look for profiles in the first folder, earlier versions in the second.
+          for folder in "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles" \
+            "$HOME/Library/MobileDevice/Provisioning Profiles"; do
+            mkdir -p "$folder"
+            cp "$signing/profile.mobileprovision" "$folder/$PROFILE_UUID.mobileprovision"
+          done
+
+      # Signs with exactly this certificate and profile ("manual" signing). Apple's own cloud
+      # signing is not used: for an account holder's name with letters such as ş or İ, it writes the
+      # name into the signature in a different Unicode form than the certificate has, and App Store
+      # Connect then rejects the build (error 90035).
+      - name: Sign for the App Store
+        id: export
+        env:
+          BUNDLE_ID: ${{ steps.signing.outputs.bundle-id }}
+          CERTIFICATE_SHA1: ${{ steps.signing.outputs.certificate-sha1 }}
+          PROFILE_UUID: ${{ steps.signing.outputs.profile-uuid }}
+        run: |
           team=$(sed -n 's/^ *DEVELOPMENT_TEAM = //p' "$RUNNER_TEMP/build-settings.txt" | head -n 1)
           test -n "$team"
-          # "export" writes an .ipa, to be checked next; the upload step changes it to "upload".
           cat > "$RUNNER_TEMP/export.plist" <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -146,11 +233,16 @@ jobs:
             <key>method</key>
             <string>app-store-connect</string>
             <key>signingStyle</key>
-            <string>automatic</string>
+            <string>manual</string>
             <key>teamID</key>
             <string>$team</string>
-            <key>destination</key>
-            <string>export</string>
+            <key>signingCertificate</key>
+            <string>$CERTIFICATE_SHA1</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>$BUNDLE_ID</key>
+              <string>$PROFILE_UUID</string>
+            </dict>
             <key>manageAppVersionAndBuildNumber</key>
             <false/>
           </dict>
@@ -160,15 +252,14 @@ jobs:
             -archivePath "$RUNNER_TEMP/Ilet.xcarchive" \
             -exportOptionsPlist "$RUNNER_TEMP/export.plist" \
             -exportPath "$RUNNER_TEMP/export" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
-            -authenticationKeyID "$ASC_KEY_ID" \
-            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
             2>&1 | tee "$RUNNER_TEMP/export.log"
 
-      # An app without its App Group or Keychain group could not keep its pairings, so the signed
-      # app is compared with the values it reads from Info.plist before anything is uploaded.
+      # Checks what App Store Connect would reject, before anything is uploaded: an app without its
+      # App Group or Keychain group could not keep its pairings, and a signature that fails its own
+      # check is error 90035.
       - name: Check the signed app
+        env:
+          CERTIFICATE_SHA1: ${{ steps.signing.outputs.certificate-sha1 }}
         run: |
           unzip -q "$RUNNER_TEMP"/export/*.ipa -d "$RUNNER_TEMP/ipa"
           signed="$RUNNER_TEMP/ipa/Payload/Ilet.app"
@@ -209,44 +300,59 @@ jobs:
             problem "The signed app allows debugging (get-task-allow), which the App Store refuses."
           [ "$(value "$signed/Info.plist" CFBundleVersion)" = "$BUILD_NUMBER" ] ||
             problem "The app's build number is not $BUILD_NUMBER."
+          # Without -R, codesign also checks that the app satisfies its designated requirement,
+          # which names the certificate. Its output holds only paths.
+          if ! verify=$(codesign --verify --strict --verbose=2 "$signed" 2>&1); then
+            problem "codesign rejects the signature: $(echo "$verify" | tr '\n' ' ' | sed "s|$RUNNER_TEMP/||g")"
+          fi
+          codesign --display --extract-certificates="$RUNNER_TEMP/signed-certificate-" "$signed" 2> /dev/null
+          [ "$(shasum -a 1 "$RUNNER_TEMP/signed-certificate-0" | cut -d ' ' -f 1 | tr a-f A-F)" = "$CERTIFICATE_SHA1" ] ||
+            problem "The app is not signed with the certificate of APPLE_DISTRIBUTION_KEY."
           if [ "$problems" = 0 ]; then
-            echo "::notice title=Signed for the App Store::Build $BUILD_NUMBER keeps the App Group $group and the Keychain group $keychain."
+            echo "::notice title=Signed for the App Store::Build $BUILD_NUMBER keeps the App Group $group and the Keychain group $keychain, and its signature passes codesign's check."
           fi
           exit "$problems"
 
+      # Uploads exactly the .ipa checked above.
       - name: Upload to TestFlight
-        id: upload
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
         run: |
-          cp "$RUNNER_TEMP/export.plist" "$RUNNER_TEMP/upload.plist"
-          plutil -replace destination -string upload "$RUNNER_TEMP/upload.plist"
-          xcodebuild -exportArchive \
-            -archivePath "$RUNNER_TEMP/Ilet.xcarchive" \
-            -exportOptionsPlist "$RUNNER_TEMP/upload.plist" \
-            -exportPath "$RUNNER_TEMP/upload" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
-            -authenticationKeyID "$ASC_KEY_ID" \
-            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
-            2>&1 | tee "$RUNNER_TEMP/upload.log"
+          ipa=("$RUNNER_TEMP"/export/*.ipa)
+          if ! API_PRIVATE_KEYS_DIR="$RUNNER_TEMP/private_keys" xcrun altool --upload-app \
+            -f "${ipa[0]}" -t ios --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID" \
+            --output-format json > "$RUNNER_TEMP/upload.txt" 2>&1; then
+            # A workflow command is one line, and the annotation is public, so certificate names
+            # lose the person's name.
+            message=$(tr '\n' ' ' < "$RUNNER_TEMP/upload.txt" | sed -E \
+              -e 's/ +/ /g' -e 's/%/%25/g' \
+              -e 's/((Apple|iPhone|iOS) (Distribution|Development)): [^"(]+/\1: <name> /g' |
+              cut -c 1-3500)
+            echo "::error title=Upload::$message"
+            exit 1
+          fi
           echo "::notice title=Uploaded::Build $BUILD_NUMBER is uploaded. Apple processes it for a few minutes; then it appears under TestFlight in App Store Connect."
 
-      # xcodebuild's own export errors are often vague; the log bundle that each export writes says
-      # why Apple refused. Its errors become annotations, which can be read without signing in.
+      # xcodebuild's own export errors are often vague; the log bundle that the export writes says
+      # why it failed. Its errors become annotations, which can be read without signing in, so
+      # certificate names lose the person's name.
       - name: Explain a failed export
-        if: failure() && (steps.export.outcome == 'failure' || steps.upload.outcome == 'failure')
+        if: failure() && steps.export.outcome == 'failure'
         run: |
           {
-            grep -h -E '^(xcodebuild: )?error' "$RUNNER_TEMP/export.log" "$RUNNER_TEMP/upload.log" || true
-            for bundle in $(grep -h -o '/[^"]*\.xcdistributionlogs' "$RUNNER_TEMP"/*.log | sort -u); do
+            grep -h -E '^(xcodebuild: )?error' "$RUNNER_TEMP/export.log" || true
+            for bundle in $(grep -h -o '/[^"]*\.xcdistributionlogs' "$RUNNER_TEMP/export.log" | sort -u); do
               cat "$bundle/IDEDistribution.critical.log" || true
               grep -h -i 'error' "$bundle/IDEDistribution.standard.log" || true
             done
           } 2>/dev/null | awk 'NF && !seen[$0]++' | head -n 10 | cut -c 1-1000 |
-            sed -e 's/%/%25/g' -e 's/^/::error title=Export::/' || true
+            sed -E -e 's/%/%25/g' \
+              -e 's/((Apple|iPhone|iOS) (Distribution|Development)): [^"(]+/\1: <name> /g' \
+              -e 's/^/::error title=Export::/' || true
 
-      - name: Delete the App Store Connect key
+      - name: Delete the keys and the signing keychain
         if: always()
-        run: rm -f "$RUNNER_TEMP/AuthKey.p8"
+        run: |
+          security delete-keychain "$RUNNER_TEMP/signing/signing.keychain-db" 2> /dev/null || true
+          rm -rf "$RUNNER_TEMP/private_keys" "$RUNNER_TEMP/signing"
