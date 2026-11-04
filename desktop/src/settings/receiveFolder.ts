@@ -32,8 +32,19 @@ export interface WindowsFolders {
   readonly env: NodeJS.ProcessEnv;
 }
 
+/** The rules with each folder named twice: as written, and by its real path. */
+interface ResolvedRules {
+  readonly forbiddenTrees: readonly string[];
+  readonly forbiddenFolders: readonly string[];
+  readonly homeFolders: readonly string[];
+  readonly ignoreCase: boolean;
+}
+
 const HIDDEN_FOLDER_PREFIX = '.';
+const APP_DATA_VARIABLES = ['APPDATA', 'LOCALAPPDATA'];
 const SYSTEM_FOLDER_VARIABLES = ['SystemRoot', 'ProgramFiles', 'ProgramFiles(x86)', 'ProgramData'];
+/** \\server\share. (\\?\C:\… and \\.\C:\… name local paths.) */
+const NETWORK_PATH = /^\\\\[^\\?.]/;
 
 export function windowsReceiveFolderRules({
   homeFolder,
@@ -48,6 +59,8 @@ export function windowsReceiveFolderRules({
     forbiddenTrees: [
       // The Startup folder, programs' settings and data, and WindowsApps, which is on PATH.
       path.join(homeFolder, 'AppData'),
+      // The same folders where Windows keeps them, in case they were moved or redirected.
+      ...APP_DATA_VARIABLES.flatMap(fromEnvironment),
       // Windows, programs, and the Startup folder for all users (in ProgramData).
       ...SYSTEM_FOLDER_VARIABLES.flatMap(fromEnvironment),
       ...appFolders,
@@ -59,28 +72,16 @@ export function windowsReceiveFolderRules({
   };
 }
 
-export function isForbiddenReceiveFolder(folder: string, rules: ReceiveFolderRules): boolean {
-  const comparable = (value: string): string => {
-    const resolved = path.resolve(value);
-    return rules.ignoreCase ? resolved.toLowerCase() : resolved;
-  };
-  const target = comparable(folder);
-  const pathInside = (parent: string): string | undefined => {
-    const relative = path.relative(comparable(parent), target);
-    return relative === '' || isDescendant(relative) ? relative : undefined;
-  };
-  const hiddenFolderBelowHome = (pathInside(rules.homeFolder) ?? '')
-    .split(path.sep)
-    .some((segment) => segment.startsWith(HIDDEN_FOLDER_PREFIX));
-  // A drive's top folder: Windows reads autorun.inf there, and a program installed under a path
-  // with spaces but no quotes ("D:\Program Files\…") can be started as "D:\Program.exe".
-  const isDriveRoot = path.parse(target).root === target;
-  return (
-    isDriveRoot ||
-    rules.forbiddenTrees.some((tree) => pathInside(tree) !== undefined) ||
-    rules.forbiddenFolders.some((forbidden) => comparable(forbidden) === target) ||
-    hiddenFolderBelowHome
-  );
+/**
+ * Whether files must not go to this folder, which need not exist yet. The folder and every folder
+ * in the rules are also compared by their real paths, with links, junctions and short names
+ * (C:\PROGRA~1) resolved, so that no forbidden folder can be reached under another name.
+ */
+export async function isForbiddenReceiveFolder(
+  folder: string,
+  rules: ReceiveFolderRules,
+): Promise<boolean> {
+  return isForbiddenUnderAnyName([folder, await realPathOf(folder)], rules);
 }
 
 /** Checks a folder the user picked, including a test write, before files are saved there. */
@@ -100,10 +101,72 @@ export async function checkReceiveFolder(
   } catch {
     return { ok: false, problem: 'not-a-folder' };
   }
-  if (isForbiddenReceiveFolder(chosenFolder, rules) || isForbiddenReceiveFolder(folder, rules)) {
+  if (await isForbiddenUnderAnyName([chosenFolder, folder], rules)) {
     return { ok: false, problem: 'system-folder' };
   }
   return writeTestFile(folder, markUntrusted, logger);
+}
+
+async function isForbiddenUnderAnyName(
+  names: readonly string[],
+  rules: ReceiveFolderRules,
+): Promise<boolean> {
+  const bothNames = async (folders: readonly string[]): Promise<string[]> =>
+    (await Promise.all(folders.map(async (folder) => [folder, await realPathOf(folder)]))).flat();
+  const [forbiddenTrees, forbiddenFolders, homeFolders] = await Promise.all([
+    bothNames(rules.forbiddenTrees),
+    bothNames(rules.forbiddenFolders),
+    bothNames([rules.homeFolder]),
+  ]);
+  const resolved = { forbiddenTrees, forbiddenFolders, homeFolders, ignoreCase: rules.ignoreCase };
+  return names.some((name) => isForbiddenName(name, resolved));
+}
+
+function isForbiddenName(folder: string, rules: ResolvedRules): boolean {
+  const comparable = (value: string): string => {
+    const resolved = path.resolve(value);
+    return rules.ignoreCase ? resolved.toLowerCase() : resolved;
+  };
+  const target = comparable(folder);
+  const pathInside = (parent: string): string | undefined => {
+    const relative = path.relative(comparable(parent), target);
+    return relative === '' || isDescendant(relative) ? relative : undefined;
+  };
+  const hiddenFolderBelowHome = rules.homeFolders.some((home) =>
+    (pathInside(home) ?? '')
+      .split(path.sep)
+      .some((segment) => segment.startsWith(HIDDEN_FOLDER_PREFIX)),
+  );
+  // A drive's top folder: Windows reads autorun.inf there, and a program installed under a path
+  // with spaces but no quotes ("D:\Program Files\…") can be started as "D:\Program.exe".
+  const isDriveRoot = path.parse(target).root === target;
+  return (
+    isDriveRoot ||
+    rules.forbiddenTrees.some((tree) => pathInside(tree) !== undefined) ||
+    rules.forbiddenFolders.some((forbidden) => comparable(forbidden) === target) ||
+    hiddenFolderBelowHome
+  );
+}
+
+/**
+ * A folder's real path: links, junctions and short names resolved. Of a folder that does not
+ * exist (yet), the nearest existing parent is resolved and the rest kept as written. A network
+ * path is kept as written: it is its own real path, and an unreachable server would hold up the
+ * check.
+ */
+async function realPathOf(folder: string): Promise<string> {
+  const absolute = path.resolve(folder);
+  if (NETWORK_PATH.test(absolute)) {
+    return absolute;
+  }
+  try {
+    return await realpath(absolute);
+  } catch {
+    const parent = path.dirname(absolute);
+    return parent === absolute
+      ? absolute
+      : path.join(await realPathOf(parent), path.basename(absolute));
+  }
 }
 
 /**

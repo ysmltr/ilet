@@ -178,7 +178,7 @@ async function replaceForbiddenReceiveFolder(
   environment: ServerCoreEnvironment,
 ): Promise<void> {
   const { receiveFolder } = settings.current;
-  if (!isForbiddenReceiveFolder(receiveFolder, environment.receiveFolderRules)) {
+  if (!(await isForbiddenReceiveFolder(receiveFolder, environment.receiveFolderRules))) {
     return;
   }
   environment.logger.warn('the receive folder is not allowed, using the default instead', {

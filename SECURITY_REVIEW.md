@@ -2,11 +2,12 @@
 
 *2 November 2026.* The whole codebase (`desktop/`, `ios/`, the installer script and the CI
 workflow) was checked against every threat in [THREAT_MODEL.md](THREAT_MODEL.md) (T1–T37) and its
-nine security invariants. Every finding below is fixed, with tests.
+nine security invariants. Every finding below is fixed, with tests. S8 was found afterwards, on
+4 November 2026, by the first run of the Windows checks on GitHub.
 
 ## Summary
 
-No critical or high findings. All nine invariants hold. One medium and six low findings:
+No critical or high findings. All nine invariants hold. One medium and seven low findings:
 
 | ID | Severity          | Area    | Finding                                                               | Status |
 | -- | ----------------- | ------- | --------------------------------------------------------------------- | ------ |
@@ -17,6 +18,7 @@ No critical or high findings. All nine invariants hold. One medium and six low f
 | S5 | Low (hardening)   | iPhone  | The app follows HTTP redirects                                         | Fixed  |
 | S6 | Low (hardening)   | iPhone  | The PC name from the QR code may contain invisible characters          | Fixed  |
 | S7 | Low (hardening)   | Desktop | The "text only, never HTML" rule for the window is not enforced by the browser | Fixed |
+| S8 | Low               | Desktop | A forbidden receive folder can be reached under another name (a junction, a short name) | Fixed |
 
 ## Findings
 
@@ -90,6 +92,21 @@ browser enforces.
 (`require-trusted-types-for 'script'; trusted-types 'none'`): any attempt to write HTML into the
 page then fails.
 
+### S8 · Low · Forbidden receive folders under another name (T35)
+
+The receive-folder check resolved the chosen folder to its real path (links, junctions and short
+8.3 names such as `C:\PROGRA~1` written out), but compared it with the forbidden folders as they
+were written. A forbidden folder written differently from its real path then did not match: a home
+folder that is a junction to another drive, a folder on PATH written with a short name or through
+a link. AppData redirected away from the home folder was not covered at all, and the check at
+startup compared the stored folder only as written. The user would still have had to pick such a
+folder. GitHub's Windows PCs showed it, because their temporary folder has a short name
+(`C:\Users\RUNNER~1`).
+
+**Fix:** the forbidden folders are compared both as written and by their real paths, and so is the
+stored folder at startup, through its nearest existing parent if it does not exist yet. AppData is
+also forbidden where `APPDATA` and `LOCALAPPDATA` say it is.
+
 ## Invariants
 
 | # | Invariant                                               | Where it is enforced                                                  |
@@ -114,6 +131,6 @@ page then fails.
   so an installer started there could load a DLL that a paired phone put next to it. This is part
   of the accepted risk "a paired device can send any file type".
 - Checked without findings: TLS settings and timeouts, token and secret handling, rate limits,
-  file name rules, disk space checks, the receive-folder rules, PowerShell use, the IPC guard,
+  file name rules, disk space checks, the receive-folder rules (but see S8), PowerShell use, the IPC guard,
   certificate creation and storage, the Keychain attributes, the QR address rules and the
   iPhone's temporary files.
