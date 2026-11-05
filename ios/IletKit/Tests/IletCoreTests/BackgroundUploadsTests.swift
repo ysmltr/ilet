@@ -78,7 +78,9 @@ final class BackgroundUploadsTests: XCTestCase {
             request.value(forHTTPHeaderField: "Ilet-File-Name"), "Ye%C5%9Fil%20%C3%A7ay.jpg")
     }
 
-    private func makeRecord(pinning fingerprint: CertificateFingerprint? = nil) throws
+    private func makeRecord(
+        pinning fingerprint: CertificateFingerprint? = nil
+    ) throws
         -> BackgroundUploadRecord
     {
         BackgroundUploadRecord(
