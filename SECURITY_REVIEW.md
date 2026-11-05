@@ -74,6 +74,9 @@ redirect, so nobody else can exploit this today; the protocol never uses redirec
 
 **Fix:** `PinningTaskDelegate` refuses every redirect.
 
+*Later (Phase 5):* the Share Extension's background uploads cannot refuse redirects, because iOS
+follows them itself in background sessions. THREAT_MODEL.md, section 6, says why that is accepted.
+
 ### S6 · Low (hardening) · Invisible characters in the PC name (T13, T18)
 
 The confirmation screen, which shows the PC name from the QR code, is the user's defense

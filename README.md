@@ -8,9 +8,10 @@ over your Wi-Fi, with no accounts, no cloud and no analytics.
 > **Status:** Phase 7 of 7. Windows: the server, QR pairing, the Bonjour announcement, the
 > desktop app (tray, notifications, settings, paired devices) and the installer are done, and the
 > whole codebase passed a security review ([SECURITY_REVIEW.md](SECURITY_REVIEW.md)). iPhone:
-> pairing and sending work on a real iPhone, installed through TestFlight. Not written yet: the
-> iPhone's half of Phase 4 (finding the PC again after it changes networks) and the Share
-> Extension (Phase 5).
+> pairing and sending work on a real iPhone, installed through TestFlight. The Share Extension
+> (Phase 5: Share → ilet in other apps) is written and builds, but has not been tried on an iPhone
+> yet, and it came after the security review. Not written yet: the iPhone's half of Phase 4
+> (finding the PC again after it changes networks).
 
 ## Download
 
@@ -43,7 +44,7 @@ automatically.
 | Path               | Contents                                                     |
 | ------------------ | ------------------------------------------------------------ |
 | `desktop/`         | Windows app: Electron + TypeScript                           |
-| `ios/`             | iPhone app: Swift + SwiftUI (Share Extension: Phase 5)       |
+| `ios/`             | iPhone app and its Share Extension: Swift + SwiftUI          |
 | `branding/`        | App and tray icons: SVG masters and the .ico files           |
 | `.github/`         | GitHub Actions: checks, TestFlight uploads, Windows releases |
 | `PROTOCOL.md`      | Wire protocol                                                |
@@ -143,14 +144,15 @@ Checks:
 ```bash
 cd ios/IletKit && swift test                              # unit tests, run on the Mac itself
 cd ios && swiftlint --strict                               # lint, zero warnings
-cd ios && xcrun swift-format lint --strict --recursive Ilet IletKit
+cd ios && xcrun swift-format lint --strict --recursive Ilet IletShare IletKit
 ```
 
 ### Without a Mac
 
 **Checking the code.** [`.github/workflows/ios.yml`](.github/workflows/ios.yml) runs the checks
-above on one of GitHub's Macs whenever `ios/` changes: lint, the unit tests and a full build of
-the app for the simulator. It needs the repository on GitHub. Public repositories get these Mac
+above on one of GitHub's Macs whenever `ios/` changes: lint, the unit tests, a full build of the
+app for the simulator, and the unsigned archive that the TestFlight workflow would sign. It needs
+the repository on GitHub. Public repositories get these Mac
 minutes for free; private ones get a limited number of free minutes each month.
 
 **Installing on an iPhone.** Every app on an iPhone must be signed with an Apple certificate.
@@ -158,15 +160,16 @@ Without a Mac there are two ways:
 
 | Route | Cost | How it works | Watch out |
 | ----- | ---- | ------------ | --------- |
-| TestFlight (recommended) | Apple Developer Program, 99 USD a year (local prices vary) | [`.github/workflows/testflight.yml`](.github/workflows/testflight.yml) builds the app on GitHub's Mac, signs it with your Apple Distribution certificate and uploads it. An App Store Connect API key and the certificate's private key are kept as encrypted GitHub secrets ([ios/APP_STORE.md](ios/APP_STORE.md#testflight) explains how to set them up and start a build). You install it with Apple's TestFlight app. | Apple's official route. The API key needs Admin access, because the workflow makes the provisioning profile; the key and the certificate can be revoked at any time. |
+| TestFlight (recommended) | Apple Developer Program, 99 USD a year (local prices vary) | [`.github/workflows/testflight.yml`](.github/workflows/testflight.yml) builds the app on GitHub's Mac, signs it with your Apple Distribution certificate and uploads it. An App Store Connect API key and the certificate's private key are kept as encrypted GitHub secrets ([ios/APP_STORE.md](ios/APP_STORE.md#testflight) explains how to set them up and start a build). You install it with Apple's TestFlight app. | Apple's official route. The API key needs Admin access, because the workflow makes the provisioning profiles; the key and the certificate can be revoked at any time. |
 | Sideloading with a free Apple ID | Free | A Windows tool (for example AltStore or Sideloadly) signs an unsigned build with your Apple ID and installs it over USB. | You type an Apple ID password into a third-party program: use a separate Apple ID for this, never your main one. The app stops opening after 7 days until you sign it again. |
 
 ### iOS modules
 
 | Path                       | Responsibility                                                                      |
 | -------------------------- | ----------------------------------------------------------------------------------- |
-| `IletKit/Sources/IletCore` | Protocol constants, certificate pinning, HTTPS client, pairing, Keychain and App Group storage, preparing files. No UI; the Share Extension will reuse it. |
-| `Ilet/App`                 | Composition root, configuration from Info.plist, the start screen                   |
+| `IletKit/Sources/IletCore` | Protocol constants, certificate pinning, HTTPS client, pairing, Keychain and App Group storage, preparing files, background uploads, checking shared names and types. No UI; the app and the Share Extension both use it. |
+| `IletShare`                | The Share Extension (Share → ilet): its sheet, copying the shared items and handing them to background uploads |
+| `Ilet/App`                 | Composition root, configuration from Info.plist, the start screen, and the upload events iOS sends after the share sheet has closed |
 | `Ilet/Pairing`             | QR scanner and pairing flow                                                         |
 | `Ilet/Sending`             | Picking photos and files, uploads with progress                                     |
 | `Ilet/Home`                | Main screen, welcome page, info page and the list of PCs                            |

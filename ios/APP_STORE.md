@@ -5,7 +5,8 @@
 - App icon and launch screen: `Ilet/Resources/Assets.xcassets`, made from `branding/ilet-icon.svg`
   by `desktop/scripts/render-icons.mjs`. The icon is 1024 × 1024 without transparency (iOS rounds
   the corners); the launch screen shows the drawing without its tile.
-- Privacy manifest (`PrivacyInfo.xcprivacy`): no tracking, no collected data.
+- Privacy manifests (`PrivacyInfo.xcprivacy`, in the app and in the Share Extension): no
+  tracking, no collected data.
 - Permission texts for the camera and the local network, in English and Turkish.
 - Export compliance: `ITSAppUsesNonExemptEncryption = NO`, because ilet uses only the system's
   HTTPS and hashing.
@@ -27,7 +28,7 @@ repository secrets (Settings → Secrets and variables → Actions):
 
 The API key is a Team Key with Admin access (App Store Connect → Users and Access →
 Integrations). The workflow uses it to find your certificate, to make the App Store provisioning
-profile the first time, and to upload. Whoever has the key can act as an Admin of your App Store
+profiles the first time, and to upload. Whoever has the key can act as an Admin of your App Store
 Connect account, so if it may have leaked, revoke it there, then make a new one and update the
 secrets.
 
@@ -53,10 +54,29 @@ workflow signs with a certificate of your own. It is made once, and Windows is e
    `APPLE_DISTRIBUTION_KEY`. Nobody else gets this file. Once a build has worked, delete the
    `ilet-signing` folder; a new certificate can be made the same way at any time.
 
-The workflow finds the certificate by its key and keeps one App Store provisioning profile for it,
-named `<bundle ID> TestFlight <certificate ID>`. The certificate is valid for a year; then make a
-new one the same way and replace the secret. If the key may have leaked, revoke the certificate on
+The workflow finds the certificate by its key and keeps one App Store provisioning profile with it
+for each App ID (the app's and the Share Extension's), named
+`<bundle ID> TestFlight <certificate ID>`. The certificate is valid for a year; then make a new
+one the same way and replace the secret. If the key may have leaked, revoke the certificate on
 developer.apple.com.
+
+### The Share Extension's App ID
+
+The Share Extension is a bundle of its own inside the app, so it needs its own App ID, with the
+app's App Group: that is how it reads the paired PCs. Register it once, before the first build
+that has the extension:
+
+1. On developer.apple.com: Certificates, Identifiers & Profiles → Identifiers → **+** →
+   **App IDs** → Continue → **App** → Continue.
+2. Description: `ilet Share Extension`. Bundle ID: **Explicit**, `com.ysmltr.ilet.share` (the
+   app's bundle ID followed by `.share`).
+3. Under Capabilities, tick **App Groups**, then Continue → Register.
+4. Open the new App ID, click **Configure** next to App Groups, tick `group.com.ysmltr.ilet` →
+   Continue → Save, and confirm.
+
+The workflow makes the extension's provisioning profile the first time it runs. If an App ID lacks
+the App Group, the workflow stops before signing and says what to fix. Changing an App ID's
+capabilities makes Apple mark its profiles invalid, and the next run replaces them.
 
 ### Uploading a build
 
@@ -67,16 +87,19 @@ Store Connect.
 
 ## Before submitting
 
-- [ ] The iPhone half of Phase 4 (finding the PC again) and Phase 5 (the Share Extension) are done.
+- [ ] The iPhone half of Phase 4 (finding the PC again) is done.
+- [x] Phase 5: the Share Extension is written.
 - [x] `ILET_BUNDLE_ID_PREFIX` in `Config/Shared.xcconfig` is a reverse-DNS name you own:
       `com.ysmltr.ilet`.
-- [x] Apple Developer Program (99 USD a year): register the App ID with the App Group
+- [x] Apple Developer Program (99 USD a year): register the app's App ID with the App Group
       `group.<prefix>`. The Keychain group needs no registration.
+- [ ] Register the Share Extension's App ID `<prefix>.share` with the same App Group (see
+      [The Share Extension's App ID](#the-share-extensions-app-id)).
 - [x] App Store Connect: create the app.
 - [ ] App Store Connect: fill in the answers below.
 - [x] Build and upload with the TestFlight workflow (see [TestFlight](#testflight)).
-- [ ] Test the TestFlight build on a real iPhone: pairing, sending, and the warning for a wrong
-      certificate.
+- [ ] Test the TestFlight build on a real iPhone: pairing, sending, the warning for a wrong
+      certificate, and Share → ilet from Photos and Files.
 - [ ] Screenshots for the 6.9-inch iPhone (1320 × 2868 pixels), in English and Turkish.
 - [ ] Publish the Windows installer as a GitHub release, so reviewers and users can get it (the
       Desktop workflow makes the draft; see Releases in the README).

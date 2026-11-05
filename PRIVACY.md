@@ -1,6 +1,6 @@
 # ilet privacy policy
 
-*Last updated: 2 November 2026 · [Türkçe aşağıda](#ilet-gizlilik-politikası)*
+*Last updated: 5 November 2026 · [Türkçe aşağıda](#ilet-gizlilik-politikası)*
 
 ilet sends files from your iPhone to your own PC over your own Wi-Fi network.
 
@@ -19,6 +19,9 @@ On your iPhone:
 - Your settings, such as "Send as JPG".
 - The camera is used only to scan the pairing code on your PC's screen. No image is kept.
 - The photos and files you choose to send are read only when you choose them.
+- Files you share with ilet from another app are copied only until they are sent. Each copy is
+  deleted when its upload ends; a copy left from an upload that did not finish is deleted after
+  48 hours, the next time ilet opens.
 
 On your PC:
 
@@ -45,7 +48,7 @@ Open an issue at <https://github.com/ysmltr/ilet/issues>.
 
 # ilet gizlilik politikası
 
-*Son güncelleme: 2 Kasım 2026*
+*Son güncelleme: 5 Kasım 2026*
 
 ilet, dosyaları iPhone’unuzdan kendi bilgisayarınıza, kendi Wi-Fi ağınız üzerinden gönderir.
 
@@ -65,6 +68,9 @@ iPhone’unuzda:
 - Kamera yalnızca bilgisayar ekranındaki eşleştirme kodunu taramak için kullanılır; hiçbir
   görüntü saklanmaz.
 - Göndermek için seçtiğiniz fotoğraf ve dosyalar yalnızca siz seçtiğinizde okunur.
+- Başka bir uygulamadan ilet ile paylaştığınız dosyaların kopyası yalnızca gönderilene kadar
+  tutulur. Her kopya, gönderimi bitince silinir; bitmeyen bir gönderimden kalan kopya ise 48 saat
+  sonra, ilet bir sonraki açıldığında silinir.
 
 Bilgisayarınızda:
 
