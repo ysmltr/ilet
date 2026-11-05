@@ -5,13 +5,14 @@
 Share a photo on your iPhone, tap **ilet**, and the file is in a folder on your PC: directly
 over your Wi-Fi, with no accounts, no cloud and no analytics.
 
-> **Status:** Phase 7 of 7. Windows: the server, QR pairing, the Bonjour announcement, the
-> desktop app (tray, notifications, settings, paired devices) and the installer are done, and the
-> whole codebase passed a security review ([SECURITY_REVIEW.md](SECURITY_REVIEW.md)). iPhone:
-> pairing and sending work on a real iPhone, installed through TestFlight. The Share Extension
-> (Phase 5: Share → ilet in other apps) is written and builds, but has not been tried on an iPhone
-> yet, and it came after the security review. Not written yet: the iPhone's half of Phase 4
-> (finding the PC again after it changes networks).
+> **Status:** Windows: the server, QR pairing, the Bonjour announcement, the desktop app (tray,
+> notifications, settings, paired devices) and the installer are done, and the whole codebase
+> passed the Phase 7 security review ([SECURITY_REVIEW.md](SECURITY_REVIEW.md)). iPhone: pairing
+> and sending work on a real iPhone, installed through TestFlight. The Share Extension (Phase 5:
+> Share → ilet in other apps) is written and builds, but has not been tried on an iPhone yet, and
+> it came after the security review. Still to come, in this order (see [Plans](#plans)): Phase 8,
+> sending from the PC to the iPhone; the iPhone's half of Phase 4 (finding the PC again after it
+> changes networks); a Microsoft Store package for Windows.
 
 ## Download
 
@@ -38,6 +39,25 @@ In short: HTTPS only, with a self-signed certificate that the iPhone pins by its
 fingerprint; pairing only by QR code; 256-bit tokens stored only as hashes; received files are
 sanitized, never overwrite anything, are marked with Mark-of-the-Web and are never opened
 automatically.
+
+## Plans
+
+### Phase 8: from the PC to the iPhone
+
+Sending the other way round. The iPhone runs no server and ilet uses no push service, so files
+wait on the PC until ilet is open on the iPhone, which then fetches them over pinned HTTPS with
+its token, just as it sends:
+
+- On the PC, **Send to iPhone** in ilet's window opens the Windows file dialog: choose the files
+  and the iPhone. The PC serves only the files queued for that iPhone, never any other file.
+- Each file waits in that iPhone's outbox for at most 24 hours and leaves the PC once the iPhone
+  has it. Removing the iPhone from the paired devices empties its outbox.
+- On the iPhone, files land in ilet's folder in the Files app (On My iPhone › ilet), with **Save
+  to Photos** for photos and videos. Nothing opens by itself.
+- Nothing new is opened on either side: no port on the iPhone, no new pairing, no firewall rule.
+
+To decide when the phase starts: whether Explorer's **Send to** menu and drag and drop should also
+send files, and how long files wait.
 
 ## Repository layout
 
