@@ -183,12 +183,11 @@ describe('findSigningFiles', () => {
     const result = await findSigningFiles({
       call: apple.call,
       distributionKey: ours.key,
-      bundleId: BUNDLE_ID,
+      bundleIds: [BUNDLE_ID],
       now: NOW,
     });
     assert.equal(result.certificate.id, 'C4');
-    assert.equal(result.profile.id, 'P2');
-    assert.equal(result.made, false);
+    assert.deepEqual(summarize(result.profiles), [[BUNDLE_ID, 'P2', false]]);
     assert.deepEqual(
       apple.requests.map(({ key, query }) => [key, query]),
       [
@@ -212,11 +211,10 @@ describe('findSigningFiles', () => {
     const result = await findSigningFiles({
       call: apple.call,
       distributionKey: ours.key,
-      bundleId: BUNDLE_ID,
+      bundleIds: [BUNDLE_ID],
       now: NOW,
     });
-    assert.equal(result.profile.id, 'P4');
-    assert.equal(result.made, true);
+    assert.deepEqual(summarize(result.profiles), [[BUNDLE_ID, 'P4', true]]);
     assert.deepEqual(
       apple.requests.slice(3).map(({ key }) => key),
       ['DELETE /v1/profiles/P3', 'POST /v1/profiles'],
@@ -233,10 +231,53 @@ describe('findSigningFiles', () => {
     });
   });
 
+  it('signs the app and its extension with the same certificate', async () => {
+    const share = `${BUNDLE_ID}.share`;
+    const answers = standardAnswers(
+      [certificate('C4', ours.content)],
+      [profile('P2', `${BUNDLE_ID} TestFlight C4`)],
+    );
+    answers['GET /v1/bundleIds/A2/profiles'] = { data: [] };
+    answers['POST /v1/profiles'] = (body) => ({
+      data: profile('P5', body.data.attributes.name),
+    });
+    const apple = fakeApple(answers);
+    const result = await findSigningFiles({
+      call: apple.call,
+      distributionKey: ours.key,
+      bundleIds: [BUNDLE_ID, share],
+      now: NOW,
+    });
+    assert.equal(result.certificate.id, 'C4');
+    assert.deepEqual(summarize(result.profiles), [
+      [BUNDLE_ID, 'P2', false],
+      [share, 'P5', true],
+    ]);
+    assert.deepEqual(
+      apple.requests.map(({ key, query }) => [key, query]),
+      [
+        ['GET /v1/certificates', { limit: '200' }],
+        ['GET /v1/bundleIds', { 'filter[identifier]': BUNDLE_ID, limit: '200' }],
+        ['GET /v1/bundleIds/A1/profiles', { limit: '200' }],
+        ['GET /v1/bundleIds', { 'filter[identifier]': share, limit: '200' }],
+        ['GET /v1/bundleIds/A2/profiles', { limit: '200' }],
+        ['POST /v1/profiles', {}],
+      ],
+    );
+    assert.deepEqual(apple.requests[5].body.data, {
+      type: 'profiles',
+      attributes: { name: `${share} TestFlight C4`, profileType: 'IOS_APP_STORE' },
+      relationships: {
+        bundleId: { data: { type: 'bundleIds', id: 'A2' } },
+        certificates: { data: [{ type: 'certificates', id: 'C4' }] },
+      },
+    });
+  });
+
   it('says what to do when no certificate belongs to the key', async () => {
     const apple = fakeApple(standardAnswers([certificate('C1', theirs.content)], []));
     await assert.rejects(
-      findSigningFiles({ call: apple.call, distributionKey: ours.key, bundleId: BUNDLE_ID }),
+      findSigningFiles({ call: apple.call, distributionKey: ours.key, bundleIds: [BUNDLE_ID] }),
       /^Error: No certificate of this team belongs to the key in APPLE_DISTRIBUTION_KEY\./,
     );
   });
@@ -251,14 +292,14 @@ describe('findSigningFiles', () => {
       findSigningFiles({
         call: apple.call,
         distributionKey: ours.key,
-        bundleId: BUNDLE_ID,
+        bundleIds: [BUNDLE_ID],
         now: NOW,
       }),
       /has expired or is not an Apple Distribution certificate/,
     );
   });
 
-  it('refuses an App ID that is not registered', async () => {
+  it('says how to register an App ID that is missing', async () => {
     const answers = standardAnswers([certificate('C4', ours.content)], []);
     answers['GET /v1/bundleIds'] = { data: [app('A2', `${BUNDLE_ID}.share`)] };
     const apple = fakeApple(answers);
@@ -266,13 +307,22 @@ describe('findSigningFiles', () => {
       findSigningFiles({
         call: apple.call,
         distributionKey: ours.key,
-        bundleId: BUNDLE_ID,
+        bundleIds: [BUNDLE_ID],
         now: NOW,
       }),
-      { message: `This team has no App ID ${BUNDLE_ID}.` },
+      (error) => {
+        assert.ok(error.message.startsWith(`This team has no App ID ${BUNDLE_ID}. Register it`));
+        assert.ok(error.message.includes('App Groups capability'));
+        return true;
+      },
     );
   });
 });
+
+/** Each profile as [App ID, profile ID, whether it was made now]. */
+function summarize(profiles) {
+  return profiles.map((entry) => [entry.bundleId, entry.profile.id, entry.made]);
+}
 
 /** A self-signed certificate (base64 DER, as the API sends it) and its private key. */
 function makeCertificate(folder, name) {

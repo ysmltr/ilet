@@ -97,27 +97,38 @@ jobs:
             CODE_SIGNING_ALLOWED=NO CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
             | xcbeautify --renderer github-actions
 
-      # The export takes the app's entitlements (its App Group and Keychain group) from the
-      # archive's signature, and an unsigned app has none. So the app is signed here without a
-      # certificate (ad hoc), with Ilet.entitlements filled in from the build settings the way
-      # Xcode does it. The export replaces this signature with the distribution certificate's.
+      # The export takes each bundle's entitlements (its App Group and Keychain group) from the
+      # archive's signature, and an unsigned bundle has none. So the Share Extension and the app are
+      # signed here without a certificate (ad hoc), each with its .entitlements file filled in from
+      # its build settings the way Xcode does it. The export replaces these signatures with the
+      # distribution certificate's.
       - name: Add the entitlements to the archive
         run: |
           app="$RUNNER_TEMP/Ilet.xcarchive/Products/Applications/Ilet.app"
-          if [ -d "$app/PlugIns" ]; then
-            echo "::error::The app has extensions now: sign each one here with its own entitlements, and give each its own provisioning profile."
+          extensions=$(find "$app/PlugIns" -mindepth 1 -maxdepth 1 2> /dev/null || true)
+          if [ "$extensions" != "$app/PlugIns/IletShare.appex" ]; then
+            echo "::error::The app's extensions are not just IletShare.appex: sign each one here with its own entitlements, and give each its own provisioning profile."
             exit 1
           fi
-          xcodebuild -showBuildSettings -project Ilet.xcodeproj -target Ilet -configuration Release \
-            > "$RUNNER_TEMP/build-settings.txt"
-          perl -pe '
-            BEGIN { open my $f, "<", shift or die; while (<$f>) { $s{$1} //= $2 if /^\s+(\w+) = (.*)$/ } }
-            s{\$\((\w+)\)}{length($s{$1} // "") ? $s{$1} : die "no value for the build setting $1\n"}ge
-          ' "$RUNNER_TEMP/build-settings.txt" Ilet/Ilet.entitlements > "$RUNNER_TEMP/Ilet.entitlements"
+          # $1: the target, $2: its entitlements file. Writes the target's build settings and the
+          # filled-in entitlements to RUNNER_TEMP.
+          entitlements() {
+            xcodebuild -showBuildSettings -project Ilet.xcodeproj -target "$1" -configuration Release \
+              > "$RUNNER_TEMP/$1-build-settings.txt"
+            perl -pe '
+              BEGIN { open my $f, "<", shift or die; while (<$f>) { $s{$1} //= $2 if /^\s+(\w+) = (.*)$/ } }
+              s{\$\((\w+)\)}{length($s{$1} // "") ? $s{$1} : die "no value for the build setting $1\n"}ge
+            ' "$RUNNER_TEMP/$1-build-settings.txt" "$2" > "$RUNNER_TEMP/$1.entitlements"
+          }
+          entitlements Ilet Ilet/Ilet.entitlements
+          entitlements IletShare IletShare/IletShare.entitlements
           # Code inside the app (Swift libraries that Xcode may add) is signed first, without
-          # entitlements.
+          # entitlements; then the extension, and the app last, because its signature covers the
+          # extension's.
           find "$app" -mindepth 2 \( -name '*.dylib' -o -name '*.framework' \) -prune \
             -exec codesign --force --sign - {} \;
+          codesign --force --sign - --entitlements "$RUNNER_TEMP/IletShare.entitlements" \
+            --generate-entitlement-der "$app/PlugIns/IletShare.appex"
           codesign --force --sign - --entitlements "$RUNNER_TEMP/Ilet.entitlements" \
             --generate-entitlement-der "$app"
 
@@ -136,9 +147,11 @@ jobs:
           printf '%s\n' "$APPLE_DISTRIBUTION_KEY" | tr -d '\r' > "$RUNNER_TEMP/signing/distribution.key"
 
       # The repository's own helper finds the certificate that belongs to APPLE_DISTRIBUTION_KEY
-      # and the App Store provisioning profile for it, which it makes the first time (this needs
-      # the key's Admin access). It is tested in ios.yml.
-      - name: Get the certificate and the provisioning profile
+      # and, for the app and for its Share Extension, an App Store provisioning profile with it,
+      # which it makes the first time (this needs the key's Admin access). It is tested in ios.yml.
+      # A profile lists its App ID's App Groups, so an App ID without the app's group is caught
+      # here, with what to do, rather than as a vague error in the export.
+      - name: Get the certificate and the provisioning profiles
         id: signing
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
@@ -146,24 +159,49 @@ jobs:
         run: |
           signing="$RUNNER_TEMP/signing"
           app="$RUNNER_TEMP/Ilet.xcarchive/Products/Applications/Ilet.app"
-          bundle_id=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Info.plist")
+          value() { /usr/libexec/PlistBuddy -c "Print :$2" "$1" 2>/dev/null; }
+          # True if the list $2 in the plist $1 contains $3.
+          contains() {
+            local index=0 item
+            while item=$(value "$1" "$2:$index"); do
+              [ "$item" = "$3" ] && return 0
+              index=$((index + 1))
+            done
+            return 1
+          }
+          app_id=$(value "$app/Info.plist" CFBundleIdentifier)
+          share_id=$(value "$app/PlugIns/IletShare.appex/Info.plist" CFBundleIdentifier)
+          group=$(value "$app/Info.plist" IletAppGroupIdentifier)
           node ../.github/scripts/app-store-connect.mjs \
             --api-key "$RUNNER_TEMP/private_keys/AuthKey_$ASC_KEY_ID.p8" \
             --distribution-key "$signing/distribution.key" \
-            --bundle-id "$bundle_id" --out "$signing"
-          security cms -D -i "$signing/profile.mobileprovision" > "$signing/profile.plist"
+            --bundle-id "$app_id" --bundle-id "$share_id" --out "$signing"
+          problems=0
+          for id in "$app_id" "$share_id"; do
+            security cms -D -i "$signing/$id.mobileprovision" > "$signing/$id.plist"
+            if ! contains "$signing/$id.plist" Entitlements:com.apple.security.application-groups "$group"; then
+              echo "::error title=App ID::The App ID $id does not have the App Group $group. On developer.apple.com: Identifiers, $id, App Groups, Configure, tick $group, Continue, Save (ios/APP_STORE.md). Then run this workflow again."
+              problems=1
+            fi
+          done
           {
-            echo "bundle-id=$bundle_id"
+            echo "app-id=$app_id"
+            echo "share-id=$share_id"
             echo "certificate-sha1=$(shasum -a 1 "$signing/certificate.cer" | cut -d ' ' -f 1 | tr a-f A-F)"
-            echo "profile-uuid=$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$signing/profile.plist")"
+            echo "app-profile=$(value "$signing/$app_id.plist" UUID)"
+            echo "share-profile=$(value "$signing/$share_id.plist" UUID)"
           } >> "$GITHUB_OUTPUT"
+          exit "$problems"
 
       # A keychain of its own, with a random password that is never printed, so that codesign
       # never asks for a password and the key is gone once the keychain is deleted.
       - name: Set up the signing keychain
         env:
           CERTIFICATE_SHA1: ${{ steps.signing.outputs.certificate-sha1 }}
-          PROFILE_UUID: ${{ steps.signing.outputs.profile-uuid }}
+          APP_ID: ${{ steps.signing.outputs.app-id }}
+          SHARE_ID: ${{ steps.signing.outputs.share-id }}
+          APP_PROFILE: ${{ steps.signing.outputs.app-profile }}
+          SHARE_PROFILE: ${{ steps.signing.outputs.share-profile }}
         run: |
           signing="$RUNNER_TEMP/signing"
           keychain="$signing/signing.keychain-db"
@@ -209,21 +247,24 @@ jobs:
           for folder in "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles" \
             "$HOME/Library/MobileDevice/Provisioning Profiles"; do
             mkdir -p "$folder"
-            cp "$signing/profile.mobileprovision" "$folder/$PROFILE_UUID.mobileprovision"
+            cp "$signing/$APP_ID.mobileprovision" "$folder/$APP_PROFILE.mobileprovision"
+            cp "$signing/$SHARE_ID.mobileprovision" "$folder/$SHARE_PROFILE.mobileprovision"
           done
 
-      # Signs with exactly this certificate and profile ("manual" signing). Apple's own cloud
-      # signing is not used: for an account holder's name with letters such as ş or İ, it writes the
-      # name into the signature in a different Unicode form than the certificate has, and App Store
-      # Connect then rejects the build (error 90035).
+      # Signs with exactly this certificate and these profiles ("manual" signing). Apple's own
+      # cloud signing is not used: for an account holder's name with letters such as ş or İ, it
+      # writes the name into the signature in a different Unicode form than the certificate has,
+      # and App Store Connect then rejects the build (error 90035).
       - name: Sign for the App Store
         id: export
         env:
-          BUNDLE_ID: ${{ steps.signing.outputs.bundle-id }}
           CERTIFICATE_SHA1: ${{ steps.signing.outputs.certificate-sha1 }}
-          PROFILE_UUID: ${{ steps.signing.outputs.profile-uuid }}
+          APP_ID: ${{ steps.signing.outputs.app-id }}
+          SHARE_ID: ${{ steps.signing.outputs.share-id }}
+          APP_PROFILE: ${{ steps.signing.outputs.app-profile }}
+          SHARE_PROFILE: ${{ steps.signing.outputs.share-profile }}
         run: |
-          team=$(sed -n 's/^ *DEVELOPMENT_TEAM = //p' "$RUNNER_TEMP/build-settings.txt" | head -n 1)
+          team=$(sed -n 's/^ *DEVELOPMENT_TEAM = //p' "$RUNNER_TEMP/Ilet-build-settings.txt" | head -n 1)
           test -n "$team"
           cat > "$RUNNER_TEMP/export.plist" <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
@@ -240,8 +281,10 @@ jobs:
             <string>$CERTIFICATE_SHA1</string>
             <key>provisioningProfiles</key>
             <dict>
-              <key>$BUNDLE_ID</key>
-              <string>$PROFILE_UUID</string>
+              <key>$APP_ID</key>
+              <string>$APP_PROFILE</string>
+              <key>$SHARE_ID</key>
+              <string>$SHARE_PROFILE</string>
             </dict>
             <key>manageAppVersionAndBuildNumber</key>
             <false/>
@@ -254,18 +297,14 @@ jobs:
             -exportPath "$RUNNER_TEMP/export" \
             2>&1 | tee "$RUNNER_TEMP/export.log"
 
-      # Checks what App Store Connect would reject, before anything is uploaded: an app without its
-      # App Group or Keychain group could not keep its pairings, and a signature that fails its own
-      # check is error 90035.
+      # Checks what App Store Connect would reject, before anything is uploaded, in the app and in
+      # its Share Extension: a bundle without the App Group or Keychain group could not reach the
+      # pairings, and a signature that fails its own check is error 90035.
       - name: Check the signed app
         env:
           CERTIFICATE_SHA1: ${{ steps.signing.outputs.certificate-sha1 }}
         run: |
           unzip -q "$RUNNER_TEMP"/export/*.ipa -d "$RUNNER_TEMP/ipa"
-          signed="$RUNNER_TEMP/ipa/Payload/Ilet.app"
-          archived="$RUNNER_TEMP/Ilet.xcarchive/Products/Applications/Ilet.app"
-          codesign --display --entitlements - --xml "$signed" > "$RUNNER_TEMP/signed.plist"
-          codesign --display --entitlements - --xml "$archived" > "$RUNNER_TEMP/archived.plist"
           value() { /usr/libexec/PlistBuddy -c "Print :$2" "$1" 2>/dev/null; }
           # True if the list $2 in the plist $1 contains $3.
           contains() {
@@ -281,35 +320,57 @@ jobs:
             echo "::error title=Check the signed app::$1"
             problems=1
           }
-          # $1: the entitlement, $2: the value the app reads from Info.plist, $3: its name here.
+          # $1: the bundle's name, $2: the entitlement, $3: the group, $4: what it is called here.
           check_group() {
-            contains "$RUNNER_TEMP/signed.plist" "$1" "$2" && return 0
-            if contains "$RUNNER_TEMP/archived.plist" "$1" "$2"; then
-              problem "The export dropped the $3 $2, which the archive had."
+            contains "$RUNNER_TEMP/$1.signed.plist" "$2" "$3" && return 0
+            if contains "$RUNNER_TEMP/$1.archived.plist" "$2" "$3"; then
+              problem "The export dropped the $4 $3 from $1, which the archive had."
             else
-              problem "The $3 $2 is missing, and the archive did not have it either."
+              problem "$1 is missing the $4 $3, and the archive did not have it either."
             fi
           }
-          group=$(value "$signed/Info.plist" IletAppGroupIdentifier) ||
+          # $1: the bundle's path in the app: Ilet.app or Ilet.app/PlugIns/IletShare.appex.
+          check_bundle() {
+            local name signed verify
+            name=$(basename "$1")
+            signed="$RUNNER_TEMP/ipa/Payload/$1"
+            codesign --display --entitlements - --xml "$signed" > "$RUNNER_TEMP/$name.signed.plist"
+            codesign --display --entitlements - --xml \
+              "$RUNNER_TEMP/Ilet.xcarchive/Products/Applications/$1" > "$RUNNER_TEMP/$name.archived.plist"
+            # The extension reads what the app saves, so both name the same groups.
+            [ "$(value "$signed/Info.plist" IletAppGroupIdentifier)" = "$group" ] ||
+              problem "The Info.plist of $name does not name the App Group $group."
+            [ "$(value "$signed/Info.plist" IletKeychainAccessGroup)" = "$keychain" ] ||
+              problem "The Info.plist of $name does not name the Keychain group $keychain."
+            check_group "$name" com.apple.security.application-groups "$group" "App Group"
+            check_group "$name" keychain-access-groups "$keychain" "Keychain group"
+            [ "$(value "$RUNNER_TEMP/$name.signed.plist" get-task-allow)" != true ] ||
+              problem "$name allows debugging (get-task-allow), which the App Store refuses."
+            # App Store Connect wants an extension to have its app's version and build number.
+            [ "$(value "$signed/Info.plist" CFBundleShortVersionString)" = "$version" ] ||
+              problem "The version of $name is not $version."
+            [ "$(value "$signed/Info.plist" CFBundleVersion)" = "$BUILD_NUMBER" ] ||
+              problem "The build number of $name is not $BUILD_NUMBER."
+            # Without -R, codesign also checks that the bundle satisfies its designated
+            # requirement, which names the certificate. Its output holds only paths.
+            if ! verify=$(codesign --verify --strict --verbose=2 "$signed" 2>&1); then
+              problem "codesign rejects the signature of $name: $(echo "$verify" | tr '\n' ' ' | sed "s|$RUNNER_TEMP/||g")"
+            fi
+            codesign --display --extract-certificates="$RUNNER_TEMP/$name.certificate-" "$signed" 2> /dev/null
+            [ "$(shasum -a 1 "$RUNNER_TEMP/$name.certificate-0" | cut -d ' ' -f 1 | tr a-f A-F)" = "$CERTIFICATE_SHA1" ] ||
+              problem "$name is not signed with the certificate of APPLE_DISTRIBUTION_KEY."
+          }
+          info="$RUNNER_TEMP/ipa/Payload/Ilet.app/Info.plist"
+          group=$(value "$info" IletAppGroupIdentifier) ||
             problem "Info.plist has no IletAppGroupIdentifier."
-          keychain=$(value "$signed/Info.plist" IletKeychainAccessGroup) ||
+          keychain=$(value "$info" IletKeychainAccessGroup) ||
             problem "Info.plist has no IletKeychainAccessGroup."
-          check_group com.apple.security.application-groups "$group" "App Group"
-          check_group keychain-access-groups "$keychain" "Keychain group"
-          [ "$(value "$RUNNER_TEMP/signed.plist" get-task-allow)" != true ] ||
-            problem "The signed app allows debugging (get-task-allow), which the App Store refuses."
-          [ "$(value "$signed/Info.plist" CFBundleVersion)" = "$BUILD_NUMBER" ] ||
-            problem "The app's build number is not $BUILD_NUMBER."
-          # Without -R, codesign also checks that the app satisfies its designated requirement,
-          # which names the certificate. Its output holds only paths.
-          if ! verify=$(codesign --verify --strict --verbose=2 "$signed" 2>&1); then
-            problem "codesign rejects the signature: $(echo "$verify" | tr '\n' ' ' | sed "s|$RUNNER_TEMP/||g")"
-          fi
-          codesign --display --extract-certificates="$RUNNER_TEMP/signed-certificate-" "$signed" 2> /dev/null
-          [ "$(shasum -a 1 "$RUNNER_TEMP/signed-certificate-0" | cut -d ' ' -f 1 | tr a-f A-F)" = "$CERTIFICATE_SHA1" ] ||
-            problem "The app is not signed with the certificate of APPLE_DISTRIBUTION_KEY."
+          version=$(value "$info" CFBundleShortVersionString) ||
+            problem "Info.plist has no CFBundleShortVersionString."
+          check_bundle Ilet.app
+          check_bundle Ilet.app/PlugIns/IletShare.appex
           if [ "$problems" = 0 ]; then
-            echo "::notice title=Signed for the App Store::Build $BUILD_NUMBER keeps the App Group $group and the Keychain group $keychain, and its signature passes codesign's check."
+            echo "::notice title=Signed for the App Store::Build $BUILD_NUMBER: the app and its Share Extension keep the App Group $group and the Keychain group $keychain, and their signatures pass codesign's check."
           fi
           exit "$problems"
 

@@ -1,11 +1,13 @@
 // The TestFlight workflow's helper for the App Store Connect API. It finds the team's distribution
-// certificate that belongs to the private key in the APPLE_DISTRIBUTION_KEY secret, and an App
-// Store provisioning profile with that certificate for the app, which it makes the first time. It
-// writes both files for the signing step and prints only identifiers and dates: never a token, a
-// key or a certificate's name, which holds the account holder's name.
+// certificate that belongs to the private key in the APPLE_DISTRIBUTION_KEY secret, and for each
+// App ID (the app's and its extension's) an App Store provisioning profile with that certificate,
+// which it makes the first time. It writes certificate.cer and <App ID>.mobileprovision for the
+// signing step and prints only identifiers and dates: never a token, a key or a certificate's
+// name, which holds the account holder's name.
 //
 //   ASC_KEY_ID=… ASC_ISSUER_ID=… node app-store-connect.mjs --api-key AuthKey.p8 \
-//     --distribution-key distribution.key --bundle-id com.example.app --out folder
+//     --distribution-key distribution.key --bundle-id com.example.app \
+//     --bundle-id com.example.app.share --out folder
 import { Buffer } from 'node:buffer';
 import { createPrivateKey, sign, X509Certificate } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -22,6 +24,8 @@ const PAGE_SIZE = '200';
 /** The certificate types that sign for the App Store: Apple Distribution and the older iOS one. */
 const DISTRIBUTION_TYPES = new Set(['DISTRIBUTION', 'IOS_DISTRIBUTION']);
 const PROFILE_TYPE = 'IOS_APP_STORE';
+/** App IDs become file names, so only the characters that Apple allows in them are accepted. */
+const BUNDLE_ID_PATTERN = /^[A-Za-z0-9.-]+$/;
 
 /**
  * A token for the App Store Connect API: a JWT signed with the API key (ES256).
@@ -96,15 +100,19 @@ export function redactNames(text) {
 }
 
 /**
- * Finds the distribution certificate that belongs to `distributionKey`, and an App Store profile
- * with that certificate for the App ID `bundleId`, which is made if there is none yet.
- * @param {{ call: ReturnType<typeof connect>, distributionKey: import('node:crypto').KeyObject, bundleId: string, now?: number }} options
+ * Finds the distribution certificate that belongs to `distributionKey`, and for each App ID in
+ * `bundleIds` an App Store profile with that certificate, which is made if there is none yet.
+ * @param {{ call: ReturnType<typeof connect>, distributionKey: import('node:crypto').KeyObject, bundleIds: string[], now?: number }} options
  */
-export async function findSigningFiles({ call, distributionKey, bundleId, now = Date.now() }) {
+export async function findSigningFiles({ call, distributionKey, bundleIds, now = Date.now() }) {
   const certificate = await findCertificate(call, distributionKey, now);
-  const app = await findApp(call, bundleId);
-  const { profile, made } = await findOrMakeProfile(call, certificate, app);
-  return { certificate, profile, made };
+  const profiles = [];
+  for (const bundleId of bundleIds) {
+    const app = await findApp(call, bundleId);
+    const { profile, made } = await findOrMakeProfile(call, certificate, app);
+    profiles.push({ bundleId, profile, made });
+  }
+  return { certificate, profiles };
 }
 
 async function findCertificate(call, distributionKey, now) {
@@ -145,7 +153,12 @@ async function findApp(call, identifier) {
   const { data } = await call('GET', `/v1/bundleIds?${query}`);
   // The filter also matches App IDs that only start with this one.
   const app = data.find((item) => item.attributes.identifier === identifier);
-  if (app === undefined) throw new Error(`This team has no App ID ${identifier}.`);
+  if (app === undefined) {
+    throw new Error(
+      `This team has no App ID ${identifier}. Register it on developer.apple.com (Identifiers, +, ` +
+        "App IDs) with the App Groups capability set to the app's group (ios/APP_STORE.md).",
+    );
+  }
   return app;
 }
 
@@ -184,40 +197,46 @@ async function main() {
     options: {
       'api-key': { type: 'string' },
       'distribution-key': { type: 'string' },
-      'bundle-id': { type: 'string' },
+      'bundle-id': { type: 'string', multiple: true },
       out: { type: 'string' },
     },
   });
   const { ASC_KEY_ID: keyId, ASC_ISSUER_ID: issuerId } = process.env;
   const apiKeyPath = values['api-key'];
   const distributionKeyPath = values['distribution-key'];
-  const bundleId = values['bundle-id'];
+  const bundleIds = values['bundle-id'] ?? [];
   const folder = values.out;
-  if (!keyId || !issuerId || !apiKeyPath || !distributionKeyPath || !bundleId || !folder) {
+  if (!keyId || !issuerId || !apiKeyPath || !distributionKeyPath || !folder) {
     throw new Error('Usage: see the top of app-store-connect.mjs.');
+  }
+  if (bundleIds.length === 0 || !bundleIds.every((id) => BUNDLE_ID_PATTERN.test(id))) {
+    throw new Error('Each --bundle-id must be an App ID such as com.example.app.');
   }
   const token = makeToken({
     apiKey: createPrivateKey(readFileSync(apiKeyPath)),
     keyId,
     issuerId,
   });
-  const { certificate, profile, made } = await findSigningFiles({
+  const { certificate, profiles } = await findSigningFiles({
     call: connect({ token }),
     distributionKey: createPrivateKey(readFileSync(distributionKeyPath)),
-    bundleId,
+    bundleIds,
   });
-  const files = {
-    'certificate.cer': certificate.attributes.certificateContent,
-    'profile.mobileprovision': profile.attributes.profileContent,
-  };
+  const files = { 'certificate.cer': certificate.attributes.certificateContent };
+  for (const { bundleId, profile } of profiles) {
+    files[`${bundleId}.mobileprovision`] = profile.attributes.profileContent;
+  }
   for (const [file, content] of Object.entries(files)) {
     writeFileSync(path.join(folder, file), Buffer.from(content, 'base64'));
   }
+  const used = profiles.map(
+    ({ profile, made }) => `${made ? 'made' : 'reused'} "${profile.attributes.name}"`,
+  );
   annotate(
     'notice',
     'Signing',
     `Certificate ${certificate.id}, valid until ${certificate.attributes.expirationDate}; ` +
-      `${made ? 'made' : 'reused'} the provisioning profile "${profile.attributes.name}".`,
+      `provisioning profiles: ${used.join(', ')}.`,
   );
 }
 

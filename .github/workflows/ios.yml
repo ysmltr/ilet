@@ -1,6 +1,6 @@
-# Checks the iPhone app on one of GitHub's Macs: lint, unit tests and a full app build, and the
-# tests of the TestFlight workflow's helper. This is how the iOS code gets compiled without owning
-# a Mac.
+# Checks the iPhone app on one of GitHub's Macs: lint, unit tests, a full app build and the
+# unsigned archive that the TestFlight workflow uploads, and the tests of that workflow's helper.
+# This is how the iOS code gets compiled without owning a Mac.
 name: iOS
 
 on:
@@ -33,7 +33,7 @@ env:
 jobs:
   check:
     runs-on: macos-26
-    timeout-minutes: 30
+    timeout-minutes: 40
     defaults:
       run:
         shell: bash
@@ -148,3 +148,32 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES \
             | xcbeautify --renderer github-actions
+
+      # The unsigned archive that testflight.yml signs and uploads, made the same way. Its export
+      # needs an iOS app archive (one that holds only the app) with the Share Extension inside the
+      # app, so that is checked here, on every change, rather than in a TestFlight run.
+      - name: Archive as for TestFlight
+        if: ${{ !cancelled() && steps.project.outcome == 'success' }}
+        run: |
+          archive="$RUNNER_TEMP/Ilet.xcarchive"
+          xcodebuild archive \
+            -project Ilet.xcodeproj -scheme Ilet -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$archive" \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcbeautify --renderer github-actions
+          problems=0
+          problem() {
+            echo "::error title=Archive::$1"
+            problems=1
+          }
+          app_path=$(/usr/libexec/PlistBuddy -c 'Print :ApplicationProperties:ApplicationPath' \
+            "$archive/Info.plist" 2> /dev/null || true)
+          [ "$app_path" = Applications/Ilet.app ] ||
+            problem "This is not an iOS app archive of Ilet.app, so the export would refuse it."
+          products=$(cd "$archive/Products" && find . -mindepth 1 -maxdepth 2 | sort | tr '\n' ' ')
+          [ "$products" = "./Applications ./Applications/Ilet.app " ] ||
+            problem "The archive holds more than the app: $products(set SKIP_INSTALL for the rest)."
+          [ -f "$archive/Products/Applications/Ilet.app/PlugIns/IletShare.appex/IletShare" ] ||
+            problem "The Share Extension is not inside the app, as PlugIns/IletShare.appex."
+          exit "$problems"

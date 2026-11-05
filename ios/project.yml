@@ -101,6 +101,9 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"
         CODE_SIGN_STYLE: Automatic
         APPLICATION_EXTENSION_API_ONLY: true
+        # Only embedded in the app, as in Xcode's extension templates: an archive that also holds
+        # the extension on its own is not an iOS app archive, and the export refuses it.
+        SKIP_INSTALL: true
     info:
       path: IletShare/Info.plist
       properties:
