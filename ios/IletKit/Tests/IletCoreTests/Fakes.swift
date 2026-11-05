@@ -88,6 +88,14 @@ extension XCTestCase {
         return AppGroupDesktopStore(defaults: defaults)
     }
 
+    /// An empty store of copies in a fresh folder, which is deleted after the test.
+    func makeTemporaryStore() -> TemporaryFiles {
+        let base = FileManager.default.temporaryDirectory.appending(
+            path: "ilet-tests-\(UUID().uuidString)", directoryHint: .isDirectory)
+        addTeardownBlock { _ = try? FileManager.default.removeItem(at: base) }
+        return TemporaryFiles(root: base.appending(path: "store", directoryHint: .isDirectory))
+    }
+
     func assertThrows(
         _ expected: IletError, file: StaticString = #filePath, line: UInt = #line,
         _ body: () async throws -> Void

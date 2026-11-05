@@ -1,4 +1,3 @@
-import Security
 import XCTest
 
 @testable import IletCore
@@ -11,14 +10,15 @@ final class CertificatePinningTests: XCTestCase {
     }
 
     func testAcceptsTheServerWithThePinnedCertificate() throws {
-        let pinned = try XCTUnwrap(
-            CertificateFingerprint(hex: Fixtures.desktopCertificateFingerprint))
-        XCTAssertTrue(CertificatePinning.leafCertificate(of: try serverTrust(), matches: pinned))
+        let pinned = try Fixtures.desktopFingerprint()
+        XCTAssertTrue(
+            CertificatePinning.leafCertificate(of: try Fixtures.serverTrust(), matches: pinned))
     }
 
     func testRejectsAServerWithAnyOtherCertificate() throws {
         let other = CertificateFingerprint(certificateData: Data("another certificate".utf8))
-        XCTAssertFalse(CertificatePinning.leafCertificate(of: try serverTrust(), matches: other))
+        XCTAssertFalse(
+            CertificatePinning.leafCertificate(of: try Fixtures.serverTrust(), matches: other))
     }
 
     func testParsesOnlyTheProtocolsFingerprintFormat() {
@@ -32,20 +32,9 @@ final class CertificatePinningTests: XCTestCase {
     }
 
     func testFingerprintSurvivesStorage() throws {
-        let fingerprint = try XCTUnwrap(
-            CertificateFingerprint(hex: Fixtures.desktopCertificateFingerprint))
+        let fingerprint = try Fixtures.desktopFingerprint()
         let decoded = try JSONDecoder().decode(
             CertificateFingerprint.self, from: try JSONEncoder().encode(fingerprint))
         XCTAssertEqual(decoded, fingerprint)
-    }
-
-    /// A trust object for the desktop's certificate, as URLSession would hand it over.
-    private func serverTrust() throws -> SecTrust {
-        let certificate = try XCTUnwrap(
-            SecCertificateCreateWithData(nil, try Fixtures.desktopCertificateData() as CFData))
-        var trust: SecTrust?
-        let status = SecTrustCreateWithCertificates(certificate, SecPolicyCreateBasicX509(), &trust)
-        XCTAssertEqual(status, errSecSuccess)
-        return try XCTUnwrap(trust)
     }
 }

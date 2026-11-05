@@ -29,6 +29,10 @@ public enum ProtocolConstants {
         static let files = "/api/v1/files"
     }
 
+    enum Method {
+        static let post = "POST"
+    }
+
     enum Header {
         static let authorization = "Authorization"
         static let contentType = "Content-Type"

@@ -34,6 +34,8 @@ enum ErrorMessage {
             return String(localized: "error.fileUnreadable")
         case .credentialStorage, .storageCorrupted:
             return String(localized: "error.storage")
+        case .backgroundUploadsBusy:
+            return String(localized: "error.backgroundUploadsBusy")
         case .cancelled:
             return String(localized: "error.cancelled")
         }

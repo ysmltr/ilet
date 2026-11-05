@@ -11,15 +11,10 @@ public struct PinnedClientFactory: DesktopClientFactory {
 /// `DesktopClient` over URLSession. Each request carries a `PinningTaskDelegate`, which accepts
 /// the TLS connection only if the server presents the pinned certificate.
 final class PinnedDesktopClient: DesktopClient {
-    private enum HTTPMethod {
-        static let post = "POST"
-    }
-
     /// `/api/info` is used to find a working address, so unreachable ones must fail fast.
     private static let infoTimeout: TimeInterval = 4
     /// Longest silence before a request fails; an upload in progress keeps resetting it.
     private static let idleTimeout: TimeInterval = 30
-    private static let successStatusCodes = 200..<300
 
     private let session: URLSession
     private let fingerprint: CertificateFingerprint
@@ -50,7 +45,7 @@ final class PinnedDesktopClient: DesktopClient {
         -> String
     {
         var request = URLRequest(url: try endpoint.url(path: ProtocolConstants.Path.pair))
-        request.httpMethod = HTTPMethod.post
+        request.httpMethod = ProtocolConstants.Method.post
         request.setValue(
             ProtocolConstants.MediaType.json,
             forHTTPHeaderField: ProtocolConstants.Header.contentType)
@@ -68,15 +63,7 @@ final class PinnedDesktopClient: DesktopClient {
         _ file: PreparedFile, to endpoint: DesktopEndpoint, token: String,
         progress: @escaping @Sendable (Double) -> Void
     ) async throws -> String {
-        var request = URLRequest(url: try endpoint.url(path: ProtocolConstants.Path.files))
-        request.httpMethod = HTTPMethod.post
-        request.setValue(bearer(token), forHTTPHeaderField: ProtocolConstants.Header.authorization)
-        request.setValue(
-            ProtocolConstants.MediaType.upload,
-            forHTTPHeaderField: ProtocolConstants.Header.contentType)
-        request.setValue(
-            try FileNameHeader.encode(file.fileName),
-            forHTTPHeaderField: ProtocolConstants.Header.fileName)
+        let request = try URLRequest(upload: file.fileName, to: endpoint, token: token)
         let data = try await send(request, uploading: file.url, progress: progress)
         return try decode(UploadResponse.self, from: data).fileName
     }
@@ -107,18 +94,7 @@ final class PinnedDesktopClient: DesktopClient {
         guard let httpResponse = response as? HTTPURLResponse else {
             throw IletError.unexpectedResponse
         }
-        guard Self.successStatusCodes.contains(httpResponse.statusCode) else {
-            throw serverError(statusCode: httpResponse.statusCode, body: data)
-        }
-        return data
-    }
-
-    private func serverError(statusCode: Int, body: Data) -> IletError {
-        guard let response = try? JSONDecoder().decode(ErrorResponse.self, from: body) else {
-            Log.network.error("unreadable error response, status \(statusCode, privacy: .public)")
-            return .unexpectedResponse
-        }
-        return IletError(serverCode: ServerErrorCode(rawValue: response.error) ?? .unknown)
+        return try ServerAnswer.check(statusCode: httpResponse.statusCode, body: data).get()
     }
 
     private func bearer(_ token: String) -> String {

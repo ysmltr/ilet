@@ -27,6 +27,8 @@ targets:
     dependencies:
       - package: IletKit
         product: IletCore
+      # Embedded in the app, as its PlugIns/IletShare.appex.
+      - target: IletShare
     # A shared scheme, so command-line builds find it without opening Xcode first.
     scheme: {}
     settings:
@@ -72,5 +74,59 @@ targets:
         com.apple.security.application-groups:
           - group.$(ILET_BUNDLE_ID_PREFIX)
         # The same value as IletKeychainAccessGroup above.
+        keychain-access-groups:
+          - $(DEVELOPMENT_TEAM).$(ILET_BUNDLE_ID_PREFIX).shared
+  # The "Share → ilet" sheet. It sends through a background URLSession, so uploads carry on after
+  # the sheet closes, and iOS wakes the app for their remaining events.
+  IletShare:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: IletShare
+      # Shared with the app: its texts and the few views and helpers the sheet needs.
+      - path: Ilet/Resources/Localizable.xcstrings
+        buildPhase: resources
+      - path: Ilet/Resources/InfoPlist.xcstrings
+        buildPhase: resources
+      - path: Ilet/App/AppConfiguration.swift
+      - path: Ilet/Shared/ErrorMessage.swift
+      - path: Ilet/Shared/Layout.swift
+      - path: Ilet/Shared/SecurityWarningView.swift
+    dependencies:
+      - package: IletKit
+        product: IletCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(ILET_BUNDLE_ID_PREFIX).share
+        TARGETED_DEVICE_FAMILY: "1"
+        CODE_SIGN_STYLE: Automatic
+        APPLICATION_EXTENSION_API_ONLY: true
+    info:
+      path: IletShare/Info.plist
+      properties:
+        CFBundleDisplayName: ilet
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.share-services
+          NSExtensionPrincipalClass: ShareViewController
+          # Photos, videos and files, up to 50 at a time. Links and plain text are not offered.
+          NSExtensionAttributes:
+            NSExtensionActivationRule:
+              NSExtensionActivationSupportsImageWithMaxCount: 50
+              NSExtensionActivationSupportsMovieWithMaxCount: 50
+              NSExtensionActivationSupportsFileWithMaxCount: 50
+        # The same as the app's: the sheet checks the PC before it sends.
+        NSLocalNetworkUsageDescription: ilet sends your files directly to your PC over your local network.
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+        IletAppGroupIdentifier: group.$(ILET_BUNDLE_ID_PREFIX)
+        IletKeychainAccessGroup: $(DEVELOPMENT_TEAM).$(ILET_BUNDLE_ID_PREFIX).shared
+    # The app's groups: the paired PCs and settings, the copies being sent, and the tokens.
+    entitlements:
+      path: IletShare/IletShare.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.$(ILET_BUNDLE_ID_PREFIX)
         keychain-access-groups:
           - $(DEVELOPMENT_TEAM).$(ILET_BUNDLE_ID_PREFIX).shared

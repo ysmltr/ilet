@@ -87,7 +87,7 @@ jobs:
         id: format
         if: ${{ !cancelled() }}
         run: |
-          xcrun swift-format lint --strict --recursive Ilet IletKit 2>&1 \
+          xcrun swift-format lint --strict --recursive Ilet IletShare IletKit 2>&1 \
             | sed -E 's|^([^:]+):([0-9]+):([0-9]+): [a-z]+: (.*)$|::error file=ios/\1,line=\2,col=\3::\4|'
 
       # swift-format needs a Mac, so the run publishes the changes it wants as a patch, in notices
@@ -96,7 +96,7 @@ jobs:
       - name: Show swift-format's changes
         if: ${{ !cancelled() && steps.format.outcome == 'failure' }}
         run: |
-          xcrun swift-format format --in-place --recursive Ilet IletKit
+          xcrun swift-format format --in-place --recursive Ilet IletShare IletKit
           git diff > "$RUNNER_TEMP/format.patch"
           git checkout -- .
           if [ ! -s "$RUNNER_TEMP/format.patch" ]; then

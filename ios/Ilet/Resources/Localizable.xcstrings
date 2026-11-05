@@ -1,6 +1,22 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "common.cancel": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vazgeç"
+          }
+        }
+      }
+    },
     "common.close": {
       "localizations": {
         "en": {
@@ -125,6 +141,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bilgisayarlarınız"
+          }
+        }
+      }
+    },
+    "error.backgroundUploadsBusy": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ilet is still finishing earlier uploads. Try again in a moment."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ilet önceki gönderimleri bitiriyor. Biraz sonra tekrar deneyin."
           }
         }
       }
@@ -630,13 +662,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tap “Send photos and videos” or “Send files” and choose what to send. ilet on the PC saves them in Downloads › ilet, unless you chose another folder there."
+            "value": "Tap “Send photos and videos” or “Send files” and choose what to send. In other apps, use Share › ilet. ilet on the PC saves them in Downloads › ilet, unless you chose another folder there."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "“Fotoğraf ve video gönder”e ya da “Dosya gönder”e dokunun ve göndermek istediklerinizi seçin. Bilgisayardaki ilet bunları, orada başka bir klasör seçmediyseniz İndirilenler › ilet klasörüne kaydeder."
+            "value": "“Fotoğraf ve video gönder”e ya da “Dosya gönder”e dokunun ve göndermek istediklerinizi seçin. Diğer uygulamalarda Paylaş › ilet’i kullanın. Bilgisayardaki ilet bunları, orada başka bir klasör seçmediyseniz İndirilenler › ilet klasörüne kaydeder."
           }
         }
       }
@@ -1005,6 +1037,198 @@
           "stringUnit": {
             "state": "translated",
             "value": "Windows, HEIC fotoğrafları ek bir uygulama olmadan açamaz."
+          }
+        }
+      }
+    },
+    "share.footer.background": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can close this now. ilet keeps sending in the background."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bunu şimdi kapatabilirsiniz. ilet arka planda göndermeye devam eder."
+          }
+        }
+      }
+    },
+    "share.footer.preparing": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep this open until every file is sending."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Her dosya gönderilmeye başlayana kadar bunu açık tutun."
+          }
+        }
+      }
+    },
+    "share.items": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To send"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gönderilecekler"
+          }
+        }
+      }
+    },
+    "share.keptHEIC": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kept as HEIC: too large to convert to JPG here. The ilet app can convert it."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HEIC olarak kalır: Burada JPG’ye dönüştürülemeyecek kadar büyük. ilet uygulaması dönüştürebilir."
+          }
+        }
+      }
+    },
+    "share.notPaired.message": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open ilet on this iPhone and pair your PC first."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Önce bu iPhone’da ilet’i açın ve bilgisayarınızla eşleştirin."
+          }
+        }
+      }
+    },
+    "share.notPaired.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No PC paired"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eşleştirilmiş bilgisayar yok"
+          }
+        }
+      }
+    },
+    "share.pc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PC"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilgisayar"
+          }
+        }
+      }
+    },
+    "share.send": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gönder"
+          }
+        }
+      }
+    },
+    "share.sent": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sent"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gönderildi"
+          }
+        }
+      }
+    },
+    "share.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send with ilet"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ilet ile gönder"
+          }
+        }
+      }
+    },
+    "share.to": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send to"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gönderilecek bilgisayar"
+          }
+        }
+      }
+    },
+    "share.waiting": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting…"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sırada…"
           }
         }
       }

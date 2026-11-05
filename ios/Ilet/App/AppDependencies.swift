@@ -18,6 +18,9 @@ struct AppDependencies {
             preconditionFailure("App Group \(configuration.appGroupIdentifier) is not available")
         }
         TemporaryFiles.outgoing.removeAll()
+        let cutoff = Date(timeIntervalSinceNow: -BackgroundUploads.leftoverAge)
+        TemporaryFiles.backgroundUploads(appGroup: configuration.appGroupIdentifier)?
+            .removeFolders(madeBefore: cutoff)
 
         let desktopStore = AppGroupDesktopStore(defaults: defaults)
         let credentialStore = KeychainCredentialStore(

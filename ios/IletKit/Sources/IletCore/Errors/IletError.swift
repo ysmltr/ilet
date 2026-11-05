@@ -22,6 +22,8 @@ public enum IletError: Error, Equatable, Sendable {
     case fileUnreadable
     case credentialStorage(OSStatus)
     case storageCorrupted
+    /// The app is still finishing the share sheet's earlier uploads, so new ones cannot start yet.
+    case backgroundUploadsBusy
     case cancelled
 }
 

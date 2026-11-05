@@ -2,8 +2,9 @@
 
 import PackageDescription
 
-// Everything the app and (later) the Share Extension share: protocol, pinning, networking and
-// storage. No UI, and it also builds for macOS, so `swift test` runs on a Mac without a simulator.
+// Everything the app and the Share Extension share: protocol, pinning, networking, storage and
+// the background uploads. No UI, and it also builds for macOS, so `swift test` runs on a Mac
+// without a simulator.
 let package = Package(
     name: "IletKit",
     platforms: [.iOS(.v16), .macOS(.v13)],

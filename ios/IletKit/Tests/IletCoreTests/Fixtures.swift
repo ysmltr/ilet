@@ -1,4 +1,5 @@
 import Foundation
+import Security
 import XCTest
 
 @testable import IletCore
@@ -28,6 +29,20 @@ enum Fixtures {
     static func desktopCertificateData() throws -> Data {
         try XCTUnwrap(
             Data(base64Encoded: desktopCertificateBase64, options: .ignoreUnknownCharacters))
+    }
+
+    static func desktopFingerprint() throws -> CertificateFingerprint {
+        try XCTUnwrap(CertificateFingerprint(hex: desktopCertificateFingerprint))
+    }
+
+    /// A trust object for the desktop's certificate, as URLSession would hand it over.
+    static func serverTrust() throws -> SecTrust {
+        let certificate = try XCTUnwrap(
+            SecCertificateCreateWithData(nil, try desktopCertificateData() as CFData))
+        var trust: SecTrust?
+        let status = SecTrustCreateWithCertificates(certificate, SecPolicyCreateBasicX509(), &trust)
+        XCTAssertEqual(status, errSecSuccess)
+        return try XCTUnwrap(trust)
     }
 
     /// The fields of a valid pairing QR code; tests change one at a time.

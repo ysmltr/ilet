@@ -53,6 +53,8 @@ final class PairingAndSendingTests: XCTestCase {
         let connection = DesktopConnection(
             limits: UploadLimits(maxFileSizeBytes: 1_000, maxConcurrentUploads: 1),
             endpoint: DesktopEndpoint(address: "192.168.1.20", port: 45380), token: "token",
+            fingerprint: try XCTUnwrap(
+                CertificateFingerprint(hex: Fixtures.desktopCertificateFingerprint)),
             client: client)
         let file = PreparedFile(
             url: URL(fileURLWithPath: "/tmp/big.mov"), fileName: "big.mov", sizeBytes: 1_001)

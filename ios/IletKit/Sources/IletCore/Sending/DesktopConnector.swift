@@ -32,7 +32,8 @@ public struct DesktopConnector: DesktopConnecting {
         updated.prefer(endpoint.address)
         try desktopStore.save(updated)
         return DesktopConnection(
-            limits: status.limits, endpoint: endpoint, token: token, client: client)
+            limits: status.limits, endpoint: endpoint, token: token,
+            fingerprint: desktop.fingerprint, client: client)
     }
 }
 
@@ -41,6 +42,8 @@ public struct DesktopConnection: Sendable {
     public let limits: UploadLimits
     let endpoint: DesktopEndpoint
     let token: String
+    /// The PC's pinned certificate, which background uploads check on every new connection.
+    let fingerprint: CertificateFingerprint
     let client: any DesktopClient
 
     /// Uploads one file and returns the name the PC saved it under. Files over the PC's limit
