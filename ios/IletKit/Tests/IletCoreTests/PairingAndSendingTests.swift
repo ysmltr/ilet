@@ -48,22 +48,22 @@ final class PairingAndSendingTests: XCTestCase {
         }
     }
 
+    /// Background uploads check the size before they hand a file to iOS.
     func testRefusesFilesOverTheLimitBeforeSendingAnything() async throws {
-        let client = FakeDesktopClient(answers: [:])
         let connection = DesktopConnection(
             limits: UploadLimits(maxFileSizeBytes: 1_000, maxConcurrentUploads: 1),
             endpoint: DesktopEndpoint(address: "192.168.1.20", port: 45380), token: "token",
             fingerprint: try XCTUnwrap(
-                CertificateFingerprint(hex: Fixtures.desktopCertificateFingerprint)),
-            client: client)
-        let file = PreparedFile(
+                CertificateFingerprint(hex: Fixtures.desktopCertificateFingerprint)))
+        let fits = PreparedFile(
+            url: URL(fileURLWithPath: "/tmp/fits.mov"), fileName: "fits.mov", sizeBytes: 1_000)
+        let big = PreparedFile(
             url: URL(fileURLWithPath: "/tmp/big.mov"), fileName: "big.mov", sizeBytes: 1_001)
 
+        XCTAssertNoThrow(try connection.checkSize(of: fits))
         await assertThrows(.fileTooLarge(limitBytes: 1_000)) {
-            _ = try await connection.upload(file) { _ in }
+            try connection.checkSize(of: big)
         }
-        let uploads = await client.uploads
-        XCTAssertEqual(uploads, [])
     }
 
     func testRemovingTheDefaultDesktopSelectsAnother() throws {

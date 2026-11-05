@@ -1,19 +1,17 @@
 import Foundation
 import os
 
-/// Checks the server certificate of one request against the pin and reports upload progress.
+/// Checks the server certificate of one request against the pin, and refuses redirects.
 ///
 /// It is a per-request delegate on purpose: the session itself has no delegate, so URLSession
 /// hands the server-trust challenge to this object, and after a failure the client can tell a
 /// pin mismatch apart from other cancellations.
 final class PinningTaskDelegate: NSObject, URLSessionTaskDelegate, Sendable {
     private let pinnedFingerprint: CertificateFingerprint
-    private let onProgress: (@Sendable (Double) -> Void)?
     private let certificateRejected = OSAllocatedUnfairLock(initialState: false)
 
-    init(pinnedFingerprint: CertificateFingerprint, onProgress: (@Sendable (Double) -> Void)?) {
+    init(pinnedFingerprint: CertificateFingerprint) {
         self.pinnedFingerprint = pinnedFingerprint
-        self.onProgress = onProgress
     }
 
     /// True once the server presented a certificate other than the pinned one.
@@ -40,23 +38,13 @@ final class PinningTaskDelegate: NSObject, URLSessionTaskDelegate, Sendable {
         return (.useCredential, URLCredential(trust: trust))
     }
 
-    /// The protocol never redirects. Following one could take the request, with its token or
-    /// file, away from the pinned connection, even to plain HTTP on the local network.
+    /// The protocol never redirects. Following one could take the request, with its token, away
+    /// from the pinned connection, even to plain HTTP on the local network.
     func urlSession(
         _ session: URLSession, task: URLSessionTask,
         willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest
     ) async -> URLRequest? {
         Log.network.error("refused a redirect from the PC")
         return nil
-    }
-
-    func urlSession(
-        _ session: URLSession, task: URLSessionTask, didSendBodyData bytesSent: Int64,
-        totalBytesSent: Int64, totalBytesExpectedToSend: Int64
-    ) {
-        guard totalBytesExpectedToSend > 0 else {
-            return
-        }
-        onProgress?(Double(totalBytesSent) / Double(totalBytesExpectedToSend))
     }
 }

@@ -41,7 +41,7 @@ struct ShareView: View {
                 }
                 Section {
                     ForEach(model.items) { item in
-                        ShareItemRow(item: item)
+                        TransferRow(transfer: item)
                     }
                 } header: {
                     Text("share.items")
@@ -78,60 +78,6 @@ private struct DesktopPicker: View {
             }
             .disabled(model.phase != .choosing)
         }
-    }
-}
-
-private struct ShareItemRow: View {
-    let item: ShareItem
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: Layout.rowSpacing) {
-            Text(item.name)
-                .lineLimit(1)
-                .truncationMode(.middle)
-            status
-            if let note = item.note {
-                Text(note)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var status: some View {
-        switch item.state {
-        case .ready:
-            EmptyView()
-        case .preparing:
-            caption("transfer.preparing")
-        case .waiting:
-            caption("share.waiting")
-        case .sending(let fraction):
-            ProgressView(value: fraction)
-        case .sent(let savedAs):
-            Label(sentText(savedAs), systemImage: "checkmark.circle.fill")
-                .font(.caption)
-                .foregroundStyle(.green)
-        case .failed(let message):
-            Label(message, systemImage: "exclamationmark.triangle.fill")
-                .font(.caption)
-                .foregroundStyle(.red)
-        }
-    }
-
-    private func caption(_ key: LocalizedStringKey) -> some View {
-        Text(key)
-            .font(.caption)
-            .foregroundStyle(.secondary)
-    }
-
-    /// The PC's answer names the saved file; without it, the upload is still known to be sent.
-    private func sentText(_ savedAs: String?) -> String {
-        guard let savedAs else {
-            return String(localized: "share.sent")
-        }
-        return String(localized: "transfer.sent \(savedAs)")
     }
 }
 

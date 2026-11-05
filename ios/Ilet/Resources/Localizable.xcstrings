@@ -481,6 +481,38 @@
         }
       }
     },
+    "home.footer.background": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can switch apps or lock your iPhone; ilet keeps sending. Swiping ilet away in the App Switcher stops it."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Başka bir uygulamaya geçebilir ya da iPhone’u kilitleyebilirsiniz; ilet göndermeye devam eder. ilet’i Uygulama Değiştirici’de yukarı kaydırıp kapatırsanız gönderim durur."
+          }
+        }
+      }
+    },
+    "home.footer.preparing": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep ilet open until every file is sending."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Her dosya gönderilmeye başlayana kadar ilet’i açık tutun."
+          }
+        }
+      }
+    },
     "home.sendFiles": {
       "localizations": {
         "en": {
@@ -1009,34 +1041,34 @@
         }
       }
     },
-    "settings.sendAsJPEG": {
+    "settings.compatibleFormats": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Send photos as JPG"
+            "value": "Send photos as JPG, videos as MP4"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fotoğrafları JPG olarak gönder"
+            "value": "Fotoğrafları JPG, videoları MP4 olarak gönder"
           }
         }
       }
     },
-    "settings.sendAsJPEGFooter": {
+    "settings.compatibleFormatsFooter": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Windows cannot open HEIC photos without an extra app."
+            "value": "Windows cannot open HEIC photos or play HEVC videos without extra apps. Converted videos are larger."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Windows, HEIC fotoğrafları ek bir uygulama olmadan açamaz."
+            "value": "Windows, ek uygulamalar olmadan HEIC fotoğrafları açamaz ve HEVC videoları oynatamaz. Dönüştürülen videolar daha büyük olur."
           }
         }
       }
@@ -1105,6 +1137,22 @@
         }
       }
     },
+    "share.keptHEVC": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kept as HEVC: too large to convert to MP4 here. The ilet app can convert it."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HEVC olarak kalır: Burada MP4’e dönüştürülemeyecek kadar büyük. ilet uygulaması dönüştürebilir."
+          }
+        }
+      }
+    },
     "share.notPaired.message": {
       "localizations": {
         "en": {
@@ -1169,22 +1217,6 @@
         }
       }
     },
-    "share.sent": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sent"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Gönderildi"
-          }
-        }
-      }
-    },
     "share.title": {
       "localizations": {
         "en": {
@@ -1217,22 +1249,6 @@
         }
       }
     },
-    "share.waiting": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Waiting…"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sırada…"
-          }
-        }
-      }
-    },
     "transfer.file": {
       "localizations": {
         "en": {
@@ -1245,6 +1261,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dosya"
+          }
+        }
+      }
+    },
+    "transfer.keptHEVC": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kept as HEVC: it could not be converted to MP4."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HEVC olarak kalır: MP4’e dönüştürülemedi."
           }
         }
       }
@@ -1293,6 +1325,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ olarak kaydedildi"
+          }
+        }
+      }
+    },
+    "transfer.sentUnnamed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sent"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gönderildi"
+          }
+        }
+      }
+    },
+    "transfer.waiting": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting…"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sırada…"
           }
         }
       }

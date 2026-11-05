@@ -2,10 +2,21 @@ import XCTest
 
 @testable import IletCore
 
-/// The share sheet's background uploads: the pin that travels with each task, and how iOS's
-/// report about an ended upload is read.
+/// Background uploads, the app's and the share sheet's: the pin that travels with each task, and
+/// how iOS's report about an ended upload is read.
 final class BackgroundUploadsTests: XCTestCase {
     private let endpoint = DesktopEndpoint(address: "192.168.1.20", port: 45380)
+
+    /// The app delegate opens the share sheets' sessions when iOS wakes the app for them. Taking
+    /// the app's own session for one would open it a second time in the same process.
+    func testTellsTheAppsSessionFromTheShareSheets() {
+        let shareSheet = "app.ilet.background-uploads.\(UUID().uuidString)"
+        let app = BackgroundUploads.appSessionIdentifier
+
+        XCTAssertTrue(BackgroundUploads.isShareSheetSession(shareSheet))
+        XCTAssertFalse(BackgroundUploads.isShareSheetSession(app))
+        XCTAssertFalse(BackgroundUploads.isShareSheetSession("com.example.uploads"))
+    }
 
     func testRecordTravelsWithItsTask() throws {
         let record = try makeRecord()

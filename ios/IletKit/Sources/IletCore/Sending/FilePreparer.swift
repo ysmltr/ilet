@@ -7,17 +7,44 @@ public struct PreparedFile: Sendable {
     public let url: URL
     public let fileName: String
     public let sizeBytes: Int64
-    /// A HEIC photo that was to become a JPG but is sent as it is, because converting it would
-    /// need more memory than the share sheet has.
-    public var isUnconvertedHEIC = false
+    /// Why a photo or video that was to be converted is sent as it is; `nil` if it was converted
+    /// or needed no conversion.
+    public var keptOriginal: KeptOriginal?
+}
+
+/// Why a photo or video stays in a format that Windows needs an extra app for.
+public enum KeptOriginal: Equatable, Sendable {
+    /// A HEIC photo that would take more memory to convert than the share sheet has.
+    case photoTooLarge
+    /// An HEVC video that would take more memory to convert than the share sheet has.
+    case videoTooLarge
+    /// iOS stopped converting the video, for example because the app was left. Trying again once
+    /// the app is back in front may work.
+    case videoInterrupted
+    /// The video could not be converted.
+    case videoFailed
+}
+
+/// Where memory is short, as in the share sheet, larger photos and videos are sent as they are.
+public struct ConversionLimits: Sendable {
+    /// The most memory a HEIC photo may take, decoded.
+    public var photoBytes: Int64
+    /// The most pixels a frame of an HEVC video may have.
+    public var videoFramePixels: Int64
+
+    public init(photoBytes: Int64, videoFramePixels: Int64) {
+        self.photoBytes = photoBytes
+        self.videoFramePixels = videoFramePixels
+    }
 }
 
 public protocol FilePreparing: Sendable {
     /// Copies a file the user picked (possibly security-scoped) into the app's temporary folder.
     func importFile(at url: URL) async throws -> URL
-    /// Turns a copy in the temporary folder into the file to upload, converting HEIC photos to
-    /// JPG when asked.
-    func prepareForSending(_ file: URL, convertHEICToJPEG: Bool) async throws -> PreparedFile
+    /// Turns a copy in the temporary folder into the file to upload. With `makeCompatible`, HEIC
+    /// photos become JPG and HEVC videos become MP4 (H.264), which Windows opens without extra
+    /// apps.
+    func prepareForSending(_ file: URL, makeCompatible: Bool) async throws -> PreparedFile
     func discard(_ file: PreparedFile)
 }
 
@@ -32,13 +59,12 @@ public struct FilePreparer: FilePreparing {
     private static let deepBytesPerPixel: Int64 = 8
 
     private let temporaryFiles: TemporaryFiles
-    private let conversionMemoryLimit: Int64?
+    private let limits: ConversionLimits?
 
-    /// `conversionMemoryLimit` is the most memory a HEIC photo may take, decoded, to be converted
-    /// to JPG; larger ones are sent as HEIC. Without a limit every photo is converted.
-    public init(temporaryFiles: TemporaryFiles = .outgoing, conversionMemoryLimit: Int64? = nil) {
+    /// Without `limits`, every HEIC photo and HEVC video is converted.
+    public init(temporaryFiles: TemporaryFiles, limits: ConversionLimits? = nil) {
         self.temporaryFiles = temporaryFiles
-        self.conversionMemoryLimit = conversionMemoryLimit
+        self.limits = limits
     }
 
     public func importFile(at url: URL) async throws -> URL {
@@ -60,18 +86,23 @@ public struct FilePreparer: FilePreparing {
     }
 
     public func prepareForSending(
-        _ file: URL, convertHEICToJPEG: Bool
+        _ file: URL, makeCompatible: Bool
     ) async throws
         -> PreparedFile
     {
-        guard convertHEICToJPEG, Self.isHEIC(file) else {
+        guard makeCompatible else {
             return try prepared(file)
         }
-        guard fitsConversionLimit(file) else {
-            Log.files.info("HEIC photo too large to convert here, sent as HEIC")
-            return try prepared(file, isUnconvertedHEIC: true)
+        if Self.conforms(file, to: [.heic, .heif]) {
+            return try preparePhoto(file)
         }
-        return try prepared(convertToJPEG(file))
+        // Only files named as videos are opened as videos, so other files are never parsed.
+        guard Self.conforms(file, to: [.movie]),
+            let framePixels = await VideoConverter.hevcFramePixels(of: file)
+        else {
+            return try prepared(file)
+        }
+        return try await prepareVideo(file, framePixels: framePixels)
     }
 
     public func discard(_ file: PreparedFile) {
@@ -102,28 +133,52 @@ public struct FilePreparer: FilePreparing {
         return bytes
     }
 
-    private static func isHEIC(_ file: URL) -> Bool {
+    /// The type comes from the name's extension, as the PC will see it.
+    private static func conforms(_ file: URL, to types: [UTType]) -> Bool {
         guard let type = UTType(filenameExtension: file.pathExtension) else {
             return false
         }
-        return type.conforms(to: .heic) || type.conforms(to: .heif)
+        return types.contains { type.conforms(to: $0) }
     }
 
-    private func prepared(_ file: URL, isUnconvertedHEIC: Bool = false) throws -> PreparedFile {
+    private func preparePhoto(_ file: URL) throws -> PreparedFile {
+        guard fitsPhotoLimit(file) else {
+            Log.files.info("HEIC photo too large to convert here, sent as HEIC")
+            return try prepared(file, keptOriginal: .photoTooLarge)
+        }
+        return try prepared(convertToJPEG(file))
+    }
+
+    private func prepareVideo(_ file: URL, framePixels: Int64) async throws -> PreparedFile {
+        if let limit = limits?.videoFramePixels, framePixels > limit {
+            Log.files.info("HEVC video too large to convert here, sent as HEVC")
+            return try prepared(file, keptOriginal: .videoTooLarge)
+        }
+        switch try await VideoConverter.convertToMP4(file) {
+        case .converted(let converted):
+            return try prepared(converted)
+        case .interrupted:
+            return try prepared(file, keptOriginal: .videoInterrupted)
+        case .failed:
+            return try prepared(file, keptOriginal: .videoFailed)
+        }
+    }
+
+    private func prepared(_ file: URL, keptOriginal: KeptOriginal? = nil) throws -> PreparedFile {
         PreparedFile(
             url: file, fileName: file.lastPathComponent, sizeBytes: try fileSize(of: file),
-            isUnconvertedHEIC: isUnconvertedHEIC)
+            keptOriginal: keptOriginal)
     }
 
     /// Where memory is limited, a photo whose size cannot be read is not converted.
-    private func fitsConversionLimit(_ file: URL) -> Bool {
-        guard let conversionMemoryLimit else {
+    private func fitsPhotoLimit(_ file: URL) -> Bool {
+        guard let limit = limits?.photoBytes else {
             return true
         }
         guard let size = Self.decodedSize(of: file) else {
             return false
         }
-        return size <= conversionMemoryLimit
+        return size <= limit
     }
 
     /// Re-encodes the image as JPG next to the original and deletes the original. Metadata such

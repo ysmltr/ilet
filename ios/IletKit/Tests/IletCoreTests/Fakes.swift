@@ -12,7 +12,6 @@ actor FakeDesktopClient: DesktopClient {
 
     private let answers: [String: Answer]
     private let pairResult: Result<String, IletError>
-    private(set) var uploads: [String] = []
 
     init(answers: [String: Answer], pairResult: Result<String, IletError> = .success("token")) {
         self.answers = answers
@@ -40,15 +39,6 @@ actor FakeDesktopClient: DesktopClient {
 
     func status(at endpoint: DesktopEndpoint, token: String) async throws -> DeviceStatus {
         DeviceStatus(limits: UploadLimits(maxFileSizeBytes: 1_000, maxConcurrentUploads: 2))
-    }
-
-    func upload(
-        _ file: PreparedFile, to endpoint: DesktopEndpoint, token: String,
-        progress: @escaping @Sendable (Double) -> Void
-    ) async throws -> String {
-        uploads.append(file.fileName)
-        progress(1)
-        return file.fileName
     }
 }
 
@@ -79,13 +69,18 @@ final class InMemoryCredentialStore: CredentialStore, @unchecked Sendable {
 }
 
 extension XCTestCase {
-    /// A desktop store backed by a fresh, private user defaults domain.
-    func makeDesktopStore() throws -> AppGroupDesktopStore {
+    /// A fresh, private user defaults domain, which is deleted after the test.
+    func makeDefaults() throws -> UserDefaults {
         let suiteName = "ilet-tests-\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
         // Only the name goes into the teardown block, which must be Sendable; UserDefaults is not.
         addTeardownBlock { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
-        return AppGroupDesktopStore(defaults: defaults)
+        return defaults
+    }
+
+    /// A desktop store backed by a fresh, private user defaults domain.
+    func makeDesktopStore() throws -> AppGroupDesktopStore {
+        AppGroupDesktopStore(defaults: try makeDefaults())
     }
 
     /// An empty store of copies in a fresh folder, which is deleted after the test.

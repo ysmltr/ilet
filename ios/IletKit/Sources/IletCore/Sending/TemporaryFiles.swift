@@ -3,13 +3,8 @@ import Foundation
 /// Copies of files being sent. Each file gets its own folder, so equal names never collide, and
 /// the folder's name starts with the time it was made, so leftovers can be found by age without
 /// reading file dates. Copies are deleted after the upload, and leftovers (after a crash, for
-/// example) at the next launch.
+/// example) once they are old, when the app or the share sheet starts.
 public struct TemporaryFiles: Sendable {
-    /// The app's copies, for the uploads it sends itself.
-    public static let outgoing = TemporaryFiles(
-        root: FileManager.default.temporaryDirectory.appending(
-            path: "ilet-outgoing", directoryHint: .isDirectory))
-
     private static let backgroundUploadsPath = "Library/Caches/ilet-background-uploads"
     private static let nameSeparator: Character = "-"
 
@@ -19,8 +14,9 @@ public struct TemporaryFiles: Sendable {
         self.root = root
     }
 
-    /// The share sheet's copies, which iOS uploads in the background. They are in the App Group,
-    /// so the app can delete them when iOS wakes it for the end of an upload.
+    /// The copies that iOS uploads in the background, for the app and the share sheet. They are
+    /// in the App Group, so the app can delete the share sheet's when iOS wakes it for the end of
+    /// an upload.
     public static func backgroundUploads(appGroup: String) -> TemporaryFiles? {
         guard
             let container = FileManager.default.containerURL(
@@ -78,13 +74,6 @@ public struct TemporaryFiles: Sendable {
         for name in names where Self.creationTime(ofFolderNamed: name) ?? .distantPast < cutoff {
             remove(root.appending(path: name))
         }
-    }
-
-    public func removeAll() {
-        guard FileManager.default.fileExists(atPath: root.path(percentEncoded: false)) else {
-            return
-        }
-        remove(root)
     }
 
     /// When a folder of this store was made, read from its name: whole seconds since 1970, a

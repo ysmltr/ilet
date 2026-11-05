@@ -11,16 +11,17 @@ struct AppDependencies {
     let pairing: any Pairing
     let connector: any DesktopConnecting
     let filePreparer: any FilePreparing
+    let copies: TemporaryFiles
+    let uploads: AppUploads
 
     static func live() -> AppDependencies {
         let configuration = AppConfiguration.fromMainBundle()
         guard let defaults = UserDefaults(suiteName: configuration.appGroupIdentifier) else {
             preconditionFailure("App Group \(configuration.appGroupIdentifier) is not available")
         }
-        TemporaryFiles.outgoing.removeAll()
+        let copies = TemporaryFiles.appUploads
         let cutoff = Date(timeIntervalSinceNow: -BackgroundUploads.leftoverAge)
-        TemporaryFiles.backgroundUploads(appGroup: configuration.appGroupIdentifier)?
-            .removeFolders(madeBefore: cutoff)
+        copies.removeFolders(madeBefore: cutoff)
 
         let desktopStore = AppGroupDesktopStore(defaults: defaults)
         let credentialStore = KeychainCredentialStore(
@@ -36,7 +37,9 @@ struct AppDependencies {
             connector: DesktopConnector(
                 clientFactory: clientFactory, desktopStore: desktopStore,
                 credentialStore: credentialStore),
-            filePreparer: FilePreparer())
+            filePreparer: FilePreparer(temporaryFiles: copies),
+            copies: copies,
+            uploads: .shared)
     }
 
     func makeDesktopsViewModel() -> DesktopsViewModel {
@@ -44,7 +47,9 @@ struct AppDependencies {
     }
 
     func makeSendViewModel() -> SendViewModel {
-        SendViewModel(connector: connector, preparer: filePreparer, settings: settingsStore)
+        SendViewModel(
+            connector: connector, preparer: filePreparer, settings: settingsStore,
+            uploads: uploads, copies: copies)
     }
 
     func makePairingViewModel() -> PairingViewModel {

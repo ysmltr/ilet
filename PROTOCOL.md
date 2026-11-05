@@ -53,8 +53,8 @@ validation or the system trust store.** Trust comes only from the pin.
 - The **fingerprint** is the SHA-256 hash of the DER-encoded leaf certificate, written as 64
   lowercase hexadecimal characters.
 - The client receives the fingerprint out of band, inside the pairing QR code (section 4).
-- For every connection, including background uploads from the Share Extension, the client MUST
-  compute the fingerprint of the leaf certificate the server presents and compare it with the
+- For every connection, including background uploads from the app and the Share Extension, the
+  client MUST compute the fingerprint of the leaf certificate the server presents and compare it with the
   pinned value. If they differ, the client MUST abort the connection, MUST NOT send any request
   data (including the token), and MUST show a clear warning. There is no "continue anyway"
   option.

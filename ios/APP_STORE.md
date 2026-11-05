@@ -126,18 +126,20 @@ Store Connect.
 | ---------------------- | ----------------------------------------- | ---------------------------------------- |
 | Name (30)              | ilet: Send Files to Your PC               | ilet: Dosyaları PC’ye Gönder             |
 | Subtitle (30)          | Photos to Windows over Wi-Fi              | Fotoğrafları Wi-Fi ile PC’ye             |
-| Keywords (100)         | transfer,windows,pc,photos,share,wifi,local,send,files,heic,jpg,desktop | aktarım,windows,bilgisayar,fotoğraf,paylaş,wifi,yerel,gönder,dosya,heic,jpg |
+| Keywords (100)         | transfer,windows,pc,photos,videos,share,wifi,local,send,files,heic,hevc,jpg,mp4,desktop | aktarım,windows,bilgisayar,fotoğraf,video,paylaş,wifi,yerel,gönder,dosya,heic,hevc,jpg,mp4 |
 
 **Description (English)**
 
 Share a photo, tap ilet, and it is on your PC.
 
-ilet sends photos and files from your iPhone straight to a folder on your Windows PC, over your
-own Wi-Fi. No account, no cloud, no ads, no tracking.
+ilet sends photos, videos and files from your iPhone straight to a folder on your Windows PC,
+over your own Wi-Fi. No account, no cloud, no ads, no tracking.
 
 - Pair once by scanning a code on your PC's screen.
 - Send from the share sheet in Photos, Files and other apps.
-- iPhone photos arrive as JPG, so Windows opens them (you can turn this off).
+- Sending carries on when you switch apps or lock your iPhone.
+- iPhone photos arrive as JPG and videos as MP4, so Windows opens them without extra apps (you can
+  turn this off).
 - Every connection is encrypted and tied to your own PC, so nobody else on the network can
   receive your files.
 
@@ -147,12 +149,14 @@ Needs the free ilet app for Windows.
 
 Bir fotoğrafı paylaşın, ilet’e dokunun; fotoğraf bilgisayarınızda.
 
-ilet, fotoğraf ve dosyaları iPhone’unuzdan doğrudan Windows bilgisayarınızdaki bir klasöre, kendi
-Wi-Fi ağınız üzerinden gönderir. Hesap yok, bulut yok, reklam yok, izleme yok.
+ilet, fotoğraf, video ve dosyaları iPhone’unuzdan doğrudan Windows bilgisayarınızdaki bir
+klasöre, kendi Wi-Fi ağınız üzerinden gönderir. Hesap yok, bulut yok, reklam yok, izleme yok.
 
 - Bilgisayar ekranındaki kodu tarayarak bir kez eşleştirin.
 - Fotoğraflar, Dosyalar ve diğer uygulamalardaki paylaşım menüsünden gönderin.
-- iPhone fotoğrafları Windows’un açabilmesi için JPG olarak gelir (bunu kapatabilirsiniz).
+- Başka bir uygulamaya geçseniz ya da iPhone’u kilitleseniz de gönderim sürer.
+- iPhone fotoğrafları JPG, videoları MP4 olarak gelir; Windows bunları ek uygulama olmadan açar
+  (bunu kapatabilirsiniz).
 - Her bağlantı şifrelidir ve kendi bilgisayarınıza bağlıdır; ağdaki başka biri dosyalarınızı
   alamaz.
 

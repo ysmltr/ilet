@@ -38,6 +38,8 @@ targets:
         CODE_SIGN_STYLE: Automatic
         # Made from branding/ilet-icon.svg by desktop/scripts/render-icons.mjs.
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    # The app sends through a background URLSession too, so uploads carry on when the user
+    # switches apps or locks the iPhone. That needs no background mode in Info.plist.
     info:
       path: Ilet/Info.plist
       properties:
@@ -89,9 +91,12 @@ targets:
       - path: Ilet/Resources/InfoPlist.xcstrings
         buildPhase: resources
       - path: Ilet/App/AppConfiguration.swift
+      - path: Ilet/Shared/ConversionNote.swift
       - path: Ilet/Shared/ErrorMessage.swift
       - path: Ilet/Shared/Layout.swift
       - path: Ilet/Shared/SecurityWarningView.swift
+      - path: Ilet/Shared/Transfer.swift
+      - path: Ilet/Shared/TransferRow.swift
     dependencies:
       - package: IletKit
         product: IletCore

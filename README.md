@@ -7,12 +7,13 @@ over your Wi-Fi, with no accounts, no cloud and no analytics.
 
 > **Status:** Windows: the server, QR pairing, the Bonjour announcement, the desktop app (tray,
 > notifications, settings, paired devices) and the installer are done, and the whole codebase
-> passed the Phase 7 security review ([SECURITY_REVIEW.md](SECURITY_REVIEW.md)). iPhone: pairing
-> and sending work on a real iPhone, installed through TestFlight. The Share Extension (Phase 5:
-> Share → ilet in other apps) is written and builds, but has not been tried on an iPhone yet, and
-> it came after the security review. Still to come, in this order (see [Plans](#plans)): Phase 8,
-> sending from the PC to the iPhone; the iPhone's half of Phase 4 (finding the PC again after it
-> changes networks); a Microsoft Store package for Windows.
+> passed the Phase 7 security review ([SECURITY_REVIEW.md](SECURITY_REVIEW.md)). iPhone: pairing,
+> sending and the Share Extension (Phase 5: Share → ilet in other apps) work on a real iPhone,
+> installed through TestFlight. Newer, and not tried on an iPhone yet: sending from the app carries
+> on in the background, and HEVC videos are converted to MP4 so that Windows plays them. Phase 5
+> and these came after the security review. Still to come, in this order (see [Plans](#plans)):
+> Phase 8, sending from the PC to the iPhone; the iPhone's half of Phase 4 (finding the PC again
+> after it changes networks); a Microsoft Store package for Windows.
 
 ## Download
 
@@ -187,13 +188,13 @@ Without a Mac there are two ways:
 
 | Path                       | Responsibility                                                                      |
 | -------------------------- | ----------------------------------------------------------------------------------- |
-| `IletKit/Sources/IletCore` | Protocol constants, certificate pinning, HTTPS client, pairing, Keychain and App Group storage, preparing files, background uploads, checking shared names and types. No UI; the app and the Share Extension both use it. |
+| `IletKit/Sources/IletCore` | Protocol constants, certificate pinning, HTTPS client, pairing, Keychain and App Group storage, preparing files (HEIC photos to JPG, HEVC videos to MP4), background uploads, checking shared names and types. No UI; the app and the Share Extension both use it. |
 | `IletShare`                | The Share Extension (Share → ilet): its sheet, copying the shared items and handing them to background uploads |
-| `Ilet/App`                 | Composition root, configuration from Info.plist, the start screen, and the upload events iOS sends after the share sheet has closed |
+| `Ilet/App`                 | Composition root, configuration from Info.plist, the start screen, and the upload events iOS sends while ilet is in the background or after the share sheet has closed |
 | `Ilet/Pairing`             | QR scanner and pairing flow                                                         |
-| `Ilet/Sending`             | Picking photos and files, uploads with progress                                     |
+| `Ilet/Sending`             | Picking photos and files, and sending them with the app's background uploads        |
 | `Ilet/Home`                | Main screen, welcome page, info page and the list of PCs                            |
-| `Ilet/Shared`              | Error messages, the security warning, the Settings button, layout values            |
+| `Ilet/Shared`              | Error messages, the security warning, the Settings button, layout values, and the list of transfers that the app and the share sheet both show |
 | `Ilet/Resources`           | English and Turkish texts, app icon, logo and launch colour, privacy manifest       |
 
 ## Dependencies

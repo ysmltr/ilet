@@ -4,7 +4,8 @@ ilet moves files from an iPhone to a Windows PC on the same local network, **wit
 confirmation dialog on the PC**. That convenience is the main security risk: anything a paired
 device sends lands on the PC's disk. This document lists what we protect, from whom, and how.
 It was reviewed against the code in Phase 7: see [SECURITY_REVIEW.md](SECURITY_REVIEW.md). The
-Share Extension (Phase 5, T40 and T41) was written after that review and has not had one yet.
+Share Extension (Phase 5, T40 and T41), the app's background uploads and the conversion of videos
+were written after that review and have not had one yet.
 
 The wire protocol is specified in [PROTOCOL.md](PROTOCOL.md).
 
@@ -13,19 +14,20 @@ The wire protocol is specified in [PROTOCOL.md](PROTOCOL.md).
 | Component                  | Role                                                                                      |
 | -------------------------- | ----------------------------------------------------------------------------------------- |
 | Desktop app (Electron)     | HTTPS server on the LAN. Stores its TLS identity, paired devices and settings. Writes received files into the receive folder. |
-| iOS app                    | Scans the pairing QR code, stores the access token, sends photos and files.               |
+| iOS app                    | Scans the pairing QR code, stores the access token, sends photos and files with background uploads that carry on when the user switches apps or locks the phone. |
 | iOS Share Extension        | Sends files from other apps' share sheet to a paired PC, with background uploads that carry on after the sheet closes. |
 
 ### 1.1 Data flows
 
 1. **Pairing:** the desktop screen shows a QR code → the phone camera reads it → the phone calls
    `POST /api/v1/pair` over pinned HTTPS.
-2. **Upload:** the phone calls `POST /api/v1/files` over pinned HTTPS with its access token.
+2. **Upload:** the app or the Share Extension copies each file into the App Group and gives it to
+   iOS's background transfer service, which calls `POST /api/v1/files` over pinned HTTPS with the
+   access token. The upload carries on when the user switches apps, locks the phone or closes the
+   sheet.
 3. **Discovery:** the desktop advertises `_ilet._tcp` over mDNS; the phone uses it to find the
    PC's new address.
-4. **Sharing:** another app hands items to the Share Extension, which copies them into the App
-   Group and gives each one to iOS's background transfer service. That service uploads them as in
-   2, also after the sheet has closed.
+4. **Sharing:** another app hands items to the Share Extension, which sends them as in 2.
 
 ### 1.2 Trust boundaries
 
@@ -71,7 +73,7 @@ every file anyway), a jailbroken or compromised iOS, and physical access to an u
 | ID  | Threat                                                     | Mitigation                                                                                                   | Phase |
 | --- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ----- |
 | T1  | ADV1 reads files in transit                                | HTTPS only, no plaintext port. TLS 1.3 preferred; TLS 1.2 only with ECDHE + AEAD suites (forward secrecy).   | 1 |
-| T2  | ADV2 impersonates the PC (man-in-the-middle) and receives the photos | Certificate pinning by SHA-256 fingerprint. The pin arrives out of band in the QR code, so there is no "trust on first use". A mismatch aborts before the token or any data is sent; no override. The app never follows redirects, so a request cannot leave the pinned connection. The Share Extension's background uploads carry the pin in their task and check it on each connection. iOS follows their redirects itself, which ilet cannot prevent, but only a server that presents the pinned certificate can send one, and a redirected upload counts as failed (section 6). ATS stays on: the app and the extension set only `NSAllowsLocalNetworking`, because a PC on the LAN cannot have a certificate from a public CA, and the pin replaces that check. | 1 (server), 3, 5 |
+| T2  | ADV2 impersonates the PC (man-in-the-middle) and receives the photos | Certificate pinning by SHA-256 fingerprint. The pin arrives out of band in the QR code, so there is no "trust on first use". A mismatch aborts before the token or any data is sent; no override. The app's other requests (info, pairing, status) never follow redirects, so they cannot leave the pinned connection. Uploads, from the app and from the Share Extension, go through background sessions whose tasks carry the pin and check it on each connection. iOS follows their redirects itself, which ilet cannot prevent, but only a server that presents the pinned certificate can send one, and a redirected upload counts as failed (section 6). ATS stays on: the app and the extension set only `NSAllowsLocalNetworking`, because a PC on the LAN cannot have a certificate from a public CA, and the pin replaces that check. | 1 (server), 3, 5 |
 | T3  | ADV2 advertises a fake `_ilet._tcp` service to redirect the phone | Discovery is only a hint for the address. The phone accepts only addresses that pass the QR code rules (local-network IP literals), and the fingerprint must still match, so the worst case is a failed connection. | 4 |
 | T4  | ADV3 makes the browser send requests to the PC (CSRF, DNS rebinding) | Requests with an `Origin` header are rejected. `Host` must be an IP literal or `localhost`, which defeats DNS rebinding. The self-signed certificate makes browsers fail the TLS handshake anyway, and the `Authorization` and custom headers would need a CORS preflight, which is never allowed. | 1 |
 | T5  | ADV7 reaches the server from the internet, or a stranger on public Wi-Fi reaches it | Connections from addresses outside local-network ranges are dropped before the TLS handshake. The firewall rule allows only the Private profile. The installer adds these rules: allow on Private networks, block on Public and Domain networks. ilet also reads the category of each connected network (Windows PowerShell, `Get-NetConnectionProfile`) and itself accepts connections only on its addresses on Private networks, so a firewall rule that allows more (for example one clicked by accident) changes nothing, and a network Windows has not classified yet is refused; the window explains how to switch a trusted Public network to Private, and that Domain networks stay blocked. If the categories cannot be read, the firewall alone decides. | 1, 6, 7 |
@@ -130,12 +132,12 @@ every file anyway), a jailbroken or compromised iOS, and physical access to an u
 | T30 | iOS privacy rules                                          | Local network, Bonjour and camera usage descriptions; `PrivacyInfo.xcprivacy`; no third-party SDKs.          | 3 |
 | T33 | Announcements tell everyone on the same network that ilet runs on this PC, with its name and device ID, also on public Wi-Fi | Only the device ID and display name are announced. The ID is random (UUID v4), not derived from the hardware or the user. mDNS uses a link-local multicast address that routers never forward. ilet announces only on networks that Windows classifies as Private; on Public and Domain networks it stays silent. | 4, 6 |
 
-### 4.6 Share Extension
+### 4.6 Share Extension and preparing files
 
 | ID  | Threat                                                     | Mitigation                                                                                                   | Phase |
 | --- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ----- |
-| T40 | ADV5 shares crafted items with ilet: a name with a path or invisible characters, a link posing as a file, or a photo too large to convert in the extension's little memory | Only files are taken (types that conform to `public.data`, never `public.url`). A shared name keeps only its last path component, loses control, format and line separator characters, and is cut to 200 bytes between characters, keeping its extension; the PC cleans it again on arrival (T16–T18). A HEIC photo is converted to JPG only if it fits in 48 MiB once decoded, and is otherwise sent as it is; items are prepared one at a time. | 5 |
-| T41 | Copies of shared files stay on the phone, or ilet deletes files that are not its own | Each copy is made in a folder of its own in the App Group, only to be sent, and is deleted when its upload ends; folders older than 48 hours are removed whenever the app or the extension starts. A folder's name comes back from iOS with each finished upload, so ilet deletes only folders whose names it could have made (a time and a UUID, checked exactly). | 5 |
+| T40 | ADV5 shares crafted items with ilet, or leaves them in Files for the user to pick in the app: a name with a path or invisible characters, a link posing as a file, a file that is not the type its name says, or a photo or video too large to convert in the extension's little memory | Only files are taken (types that conform to `public.data`, never `public.url`). A shared name keeps only its last path component, loses control, format and line separator characters, and is cut to 200 bytes between characters, keeping its extension; the PC cleans it again on arrival (T16–T18). Only Apple's frameworks read files for conversion (Image I/O for photos, AVFoundation for videos), one file at a time, and only files whose extension names a HEIC photo or a video; every other file is sent as it is, unread. A video is converted only if its video track really is HEVC. In the extension, a HEIC photo is converted to JPG only if it fits in 48 MiB once decoded, and an HEVC video to H.264 (MP4) only up to 1920 × 1080 pixels per frame; larger ones are sent as they are, with a note. A conversion that fails sends the original. | 5 |
+| T41 | Copies of shared or picked files stay on the phone, or ilet deletes files that are not its own | Each copy, from the app or the extension, is made in a folder of its own in the App Group, only to be sent; a converted file replaces it in the same folder. The folder is deleted when its upload ends or cannot start, and folders older than 48 hours are removed whenever the app or the extension starts. A folder's name comes back from iOS with each finished upload, so ilet deletes only folders whose names it could have made (a time and a UUID, checked exactly). | 5 |
 
 ## 5. Security invariants
 
@@ -166,5 +168,5 @@ These must always be true. The Phase 7 review checks each one against the code.
 | A user tricked into scanning an attacker's QR code pairs with the attacker's PC.         | The app shows the PC's name and the user chooses the default PC; this is social engineering. |
 | TLS 1.2 is accepted (restricted suites).                                                 | Windows 10 tools such as curl cannot use TLS 1.3. The iPhone uses TLS 1.3, and TLS 1.3's downgrade protection prevents forcing it to 1.2. |
 | Same-user malware can decrypt the TLS key through DPAPI.                                  | Out of scope (section 3).                                                |
-| In the Share Extension's background uploads, iOS follows a redirect itself, before ilet can refuse it, even to plain `http://` on the local network. | Only a server with the pinned certificate's private key (A2) can send one, and with that key it could receive the upload directly anyway (T2, T15). The PC never sends redirects, and ilet reports a redirected upload as failed. |
+| In background uploads (from the app and from the Share Extension), iOS follows a redirect itself, before ilet can refuse it, even to plain `http://` on the local network. | Only a server with the pinned certificate's private key (A2) can send one, and with that key it could receive the upload directly anyway (T2, T15). The PC never sends redirects, and ilet reports a redirected upload as failed. |
 | The Windows installer is not code-signed, so SmartScreen warns before it runs and Windows cannot show who made it. | Signing needs a paid certificate, or the Microsoft Store, which signs the packages it distributes (planned). Until then, each release's attestation proves which workflow and commit built the file (T39). |

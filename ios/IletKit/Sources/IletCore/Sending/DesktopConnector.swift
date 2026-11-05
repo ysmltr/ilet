@@ -33,29 +33,22 @@ public struct DesktopConnector: DesktopConnecting {
         try desktopStore.save(updated)
         return DesktopConnection(
             limits: status.limits, endpoint: endpoint, token: token,
-            fingerprint: desktop.fingerprint, client: client)
+            fingerprint: desktop.fingerprint)
     }
 }
 
-/// A checked route to a paired PC, ready for uploads.
+/// A checked route to a paired PC, ready for background uploads.
 public struct DesktopConnection: Sendable {
     public let limits: UploadLimits
     let endpoint: DesktopEndpoint
     let token: String
     /// The PC's pinned certificate, which background uploads check on every new connection.
     let fingerprint: CertificateFingerprint
-    let client: any DesktopClient
 
-    /// Uploads one file and returns the name the PC saved it under. Files over the PC's limit
-    /// are refused here, before any byte is sent.
-    public func upload(
-        _ file: PreparedFile, progress: @escaping @Sendable (Double) -> Void
-    )
-        async throws -> String
-    {
+    /// Refuses a file over the PC's limit, before any byte of it is sent.
+    func checkSize(of file: PreparedFile) throws {
         guard file.sizeBytes <= limits.maxFileSizeBytes else {
             throw IletError.fileTooLarge(limitBytes: limits.maxFileSizeBytes)
         }
-        return try await client.upload(file, to: endpoint, token: token, progress: progress)
     }
 }

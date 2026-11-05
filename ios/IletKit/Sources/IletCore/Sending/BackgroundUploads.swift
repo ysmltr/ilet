@@ -18,31 +18,35 @@ public struct BackgroundUploadHandlers: Sendable {
     public init() {}
 }
 
-/// Uploads that iOS carries on after the share sheet closes, in a background URLSession. Each
-/// share sheet opens a session of its own, so two never meet; once the sheet is gone, iOS wakes
-/// the app with that session's identifier for the remaining events.
+/// Uploads that iOS carries on in the background: the share sheet's after the sheet closes, and
+/// the app's after the user leaves it. Each share sheet opens a session of its own, so two never
+/// meet; once the sheet is gone, iOS wakes the app with that session's identifier for the
+/// remaining events. The app keeps one session of its own for as long as it runs.
 ///
 /// A background session takes no per-request delegate, so each task carries its pin in its
 /// `taskDescription`, and the session's delegate checks it on every new TLS connection.
 public final class BackgroundUploads: Sendable {
+    /// The app's own session. iOS allows one session per identifier in a process, so the app
+    /// opens it once, and uploads that an earlier run of the app left come back to it.
+    public static let appSessionIdentifier = "app.ilet.app-uploads"
     /// The longest an upload may take, waiting for the Wi-Fi included, before iOS gives up.
     public static let longestUpload: TimeInterval = 24 * 60 * 60
     /// Copies older than this are leftovers, whose uploads ended long ago.
     public static let leftoverAge = 2 * longestUpload
-    private static let identifierPrefix = "app.ilet.background-uploads."
+    private static let shareSheetIdentifierPrefix = "app.ilet.background-uploads."
     /// Longest silence before an upload fails.
     private static let idleTimeout: TimeInterval = 60
 
     private let session: URLSession
     private let delegate: BackgroundUploadDelegate
 
-    /// Opens a session: a new one without `identifier`, as the share sheet does, or the one that
-    /// iOS woke the app for.
+    /// Opens a session: a new one for a share sheet without `identifier`, or else the one with
+    /// that identifier, such as the app's own or a share sheet's that iOS woke the app for.
     public init(
         identifier: String? = nil, appGroup: String, copies: TemporaryFiles,
         handlers: BackgroundUploadHandlers
     ) {
-        let identifier = identifier ?? Self.identifierPrefix + UUID().uuidString
+        let identifier = identifier ?? Self.shareSheetIdentifierPrefix + UUID().uuidString
         let delegate = BackgroundUploadDelegate(copies: copies, handlers: handlers)
         self.delegate = delegate
         session = URLSession(
@@ -50,9 +54,10 @@ public final class BackgroundUploads: Sendable {
             delegate: delegate, delegateQueue: nil)
     }
 
-    /// True for the identifiers of these sessions, the ones that iOS may wake the app for.
-    public static func isSession(_ identifier: String) -> Bool {
-        identifier.hasPrefix(identifierPrefix)
+    /// True for the identifiers of the share sheets' sessions, which iOS may wake the app for
+    /// once a sheet is gone.
+    public static func isShareSheetSession(_ identifier: String) -> Bool {
+        identifier.hasPrefix(shareSheetIdentifierPrefix)
     }
 
     /// True once the session has let go of every upload.
@@ -63,10 +68,7 @@ public final class BackgroundUploads: Sendable {
     /// Hands a prepared copy to iOS. From here on the copy belongs to the upload: whichever
     /// process hears that the upload ended deletes it.
     public func start(_ file: PreparedFile, id: UUID, over connection: DesktopConnection) throws {
-        let limit = connection.limits.maxFileSizeBytes
-        guard file.sizeBytes <= limit else {
-            throw IletError.fileTooLarge(limitBytes: limit)
-        }
+        try connection.checkSize(of: file)
         // A task in a session that is letting go would crash the process.
         guard !delegate.isClosed else {
             throw IletError.backgroundUploadsBusy

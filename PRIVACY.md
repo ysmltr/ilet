@@ -16,10 +16,11 @@ On your iPhone:
 
 - The PCs you paired: their names, network addresses and certificate fingerprints, and an
   access token for each, which is kept in the iOS Keychain.
-- Your settings, such as "Send as JPG".
+- Your settings, such as "Send photos as JPG, videos as MP4".
 - The camera is used only to scan the pairing code on your PC's screen. No image is kept.
 - The photos and files you choose to send are read only when you choose them.
-- Files you share with ilet from another app are copied only until they are sent. Each copy is
+- The files you send, from ilet itself or by sharing them with ilet from another app, are copied
+  (and converted to JPG or MP4, if that setting is on) only until they are sent. Each copy is
   deleted when its upload ends; a copy left from an upload that did not finish is deleted after
   48 hours, the next time ilet opens.
 
@@ -64,13 +65,14 @@ iPhone’unuzda:
 
 - Eşleştirdiğiniz bilgisayarlar: adları, ağ adresleri ve sertifika parmak izleri, ayrıca her
   biri için iOS Anahtar Zinciri’nde saklanan bir erişim anahtarı.
-- “JPG olarak gönder” gibi ayarlarınız.
+- “Fotoğrafları JPG, videoları MP4 olarak gönder” gibi ayarlarınız.
 - Kamera yalnızca bilgisayar ekranındaki eşleştirme kodunu taramak için kullanılır; hiçbir
   görüntü saklanmaz.
 - Göndermek için seçtiğiniz fotoğraf ve dosyalar yalnızca siz seçtiğinizde okunur.
-- Başka bir uygulamadan ilet ile paylaştığınız dosyaların kopyası yalnızca gönderilene kadar
-  tutulur. Her kopya, gönderimi bitince silinir; bitmeyen bir gönderimden kalan kopya ise 48 saat
-  sonra, ilet bir sonraki açıldığında silinir.
+- ilet’in kendisinden gönderdiğiniz ya da başka bir uygulamadan ilet ile paylaştığınız
+  dosyaların kopyası (bu ayar açıksa JPG ya da MP4’e dönüştürülmüş hâli) yalnızca gönderilene
+  kadar tutulur. Her kopya, gönderimi bitince silinir; bitmeyen bir gönderimden kalan kopya ise
+  48 saat sonra, ilet bir sonraki açıldığında silinir.
 
 Bilgisayarınızda:
 

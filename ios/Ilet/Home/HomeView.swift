@@ -120,12 +120,18 @@ private struct SendList: View {
                         Spacer()
                         Button("home.clearFinished") { sender.clearFinished() }
                     }
+                } footer: {
+                    if sender.isPreparing {
+                        Text("home.footer.preparing")
+                    } else if sender.isSending {
+                        Text("home.footer.background")
+                    }
                 }
             }
             Section {
-                Toggle("settings.sendAsJPEG", isOn: $sender.sendAsJPEG)
+                Toggle("settings.compatibleFormats", isOn: $sender.sendCompatibleFormats)
             } footer: {
-                Text("settings.sendAsJPEGFooter")
+                Text("settings.compatibleFormatsFooter")
             }
             DesktopsSection(viewModel: desktops, onPairAnother: onPairAnother)
         }

@@ -13,7 +13,7 @@ public struct PinnedClientFactory: DesktopClientFactory {
 final class PinnedDesktopClient: DesktopClient {
     /// `/api/info` is used to find a working address, so unreachable ones must fail fast.
     private static let infoTimeout: TimeInterval = 4
-    /// Longest silence before a request fails; an upload in progress keeps resetting it.
+    /// Longest silence before a request fails.
     private static let idleTimeout: TimeInterval = 30
 
     private let session: URLSession
@@ -59,31 +59,14 @@ final class PinnedDesktopClient: DesktopClient {
         return try decode(DeviceStatus.self, from: try await send(request))
     }
 
-    func upload(
-        _ file: PreparedFile, to endpoint: DesktopEndpoint, token: String,
-        progress: @escaping @Sendable (Double) -> Void
-    ) async throws -> String {
-        let request = try URLRequest(upload: file.fileName, to: endpoint, token: token)
-        let data = try await send(request, uploading: file.url, progress: progress)
-        return try decode(UploadResponse.self, from: data).fileName
-    }
-
-    /// Sends a request (streaming `fileURL` as the body, if given) and returns the body of a
-    /// successful response. Every failure is mapped to an `IletError`.
-    private func send(
-        _ request: URLRequest, uploading fileURL: URL? = nil,
-        progress: (@Sendable (Double) -> Void)? = nil
-    ) async throws -> Data {
-        let delegate = PinningTaskDelegate(pinnedFingerprint: fingerprint, onProgress: progress)
+    /// Sends a request and returns the body of a successful response. Every failure is mapped to
+    /// an `IletError`.
+    private func send(_ request: URLRequest) async throws -> Data {
+        let delegate = PinningTaskDelegate(pinnedFingerprint: fingerprint)
         let data: Data
         let response: URLResponse
         do {
-            if let fileURL {
-                (data, response) = try await session.upload(
-                    for: request, fromFile: fileURL, delegate: delegate)
-            } else {
-                (data, response) = try await session.data(for: request, delegate: delegate)
-            }
+            (data, response) = try await session.data(for: request, delegate: delegate)
         } catch {
             if delegate.rejectedCertificate {
                 throw IletError.certificateMismatch

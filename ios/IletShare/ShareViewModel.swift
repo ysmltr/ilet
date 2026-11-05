@@ -18,17 +18,14 @@ final class ShareViewModel: ObservableObject {
         let uploads: BackgroundUploads
     }
 
-    /// Progress below this step is not shown, to keep the list from redrawing for every chunk.
-    private static let progressStep = 0.01
-
     @Published private(set) var desktops: [Desktop]
     @Published var selectedDesktopID: Desktop.ID?
-    @Published private(set) var items: [ShareItem]
+    @Published private(set) var items: [Transfer]
     @Published private(set) var phase = Phase.choosing
     @Published private(set) var errorMessage: String?
     @Published var isSecurityWarningPresented = false
 
-    private let providers: [ShareItem.ID: NSItemProvider]
+    private let providers: [Transfer.ID: NSItemProvider]
     private let dependencies: ShareDependencies
     private let onClose: (_ cancelled: Bool) -> Void
     private var uploads: BackgroundUploads?
@@ -38,7 +35,7 @@ final class ShareViewModel: ObservableObject {
         attachments: [NSItemProvider], dependencies: ShareDependencies,
         onClose: @escaping (_ cancelled: Bool) -> Void
     ) {
-        let items = attachments.map { ShareItem(name: Self.displayName(of: $0)) }
+        let items = attachments.map { Transfer(name: Self.displayName(of: $0), state: .ready) }
         providers = Dictionary(uniqueKeysWithValues: zip(items.map(\.id), attachments))
         self.dependencies = dependencies
         self.onClose = onClose
@@ -123,7 +120,7 @@ final class ShareViewModel: ObservableObject {
         }
         var handlers = BackgroundUploadHandlers()
         handlers.progress = { [weak self] id, fraction in
-            Task { @MainActor [weak self] in self?.showProgress(fraction, for: id) }
+            Task { @MainActor [weak self] in self?.update(id) { $0.showProgress(fraction) } }
         }
         handlers.completion = { [weak self] id, result in
             Task { @MainActor [weak self] in self?.finish(id, with: result) }
@@ -134,7 +131,7 @@ final class ShareViewModel: ObservableObject {
         return uploads
     }
 
-    private func start(_ id: ShareItem.ID, in batch: Batch) async {
+    private func start(_ id: Transfer.ID, in batch: Batch) async {
         guard let provider = providers[id] else {
             return
         }
@@ -148,7 +145,7 @@ final class ShareViewModel: ObservableObject {
         update(id) { item in
             item.name = file.fileName
             item.state = .waiting
-            item.note = file.isUnconvertedHEIC ? String(localized: "share.keptHEIC") : nil
+            item.note = ConversionNote.text(for: file.keptOriginal)
         }
         do {
             try batch.uploads.start(file, id: id, over: batch.connection)
@@ -161,7 +158,7 @@ final class ShareViewModel: ObservableObject {
     private func prepare(
         _ provider: NSItemProvider, with loader: SharedItemLoader
     ) async throws -> PreparedFile {
-        let convert = dependencies.settingsStore.sendAsJPEG()
+        let convert = dependencies.settingsStore.sendCompatibleFormats()
         guard
             let type = SharedItemType.identifier(
                 from: provider.registeredTypeIdentifiers, convertHEIC: convert)
@@ -171,27 +168,14 @@ final class ShareViewModel: ObservableObject {
         let copy = try await loader.copy(provider, as: type)
         do {
             return try await dependencies.preparer.prepareForSending(
-                copy, convertHEICToJPEG: convert)
+                copy, makeCompatible: convert)
         } catch {
             dependencies.copies.discard(copy)
             throw error
         }
     }
 
-    private func showProgress(_ fraction: Double, for id: ShareItem.ID) {
-        update(id) { item in
-            switch item.state {
-            case .waiting:
-                item.state = .sending(fraction: fraction)
-            case .sending(let shown) where fraction - shown >= Self.progressStep:
-                item.state = .sending(fraction: fraction)
-            default:
-                break
-            }
-        }
-    }
-
-    private func finish(_ id: ShareItem.ID, with result: BackgroundUploadResult) {
+    private func finish(_ id: Transfer.ID, with result: BackgroundUploadResult) {
         switch result {
         case .sent(let savedAs):
             update(id) { $0.state = .sent(savedAs: savedAs) }
@@ -201,7 +185,7 @@ final class ShareViewModel: ObservableObject {
         finishIfDone()
     }
 
-    private func fail(_ id: ShareItem.ID, with error: Error) {
+    private func fail(_ id: Transfer.ID, with error: Error) {
         if error as? IletError == .certificateMismatch {
             isSecurityWarningPresented = true
         }
@@ -214,7 +198,7 @@ final class ShareViewModel: ObservableObject {
         }
     }
 
-    private func update(_ id: ShareItem.ID, _ change: (inout ShareItem) -> Void) {
+    private func update(_ id: Transfer.ID, _ change: (inout Transfer) -> Void) {
         guard let index = items.firstIndex(where: { $0.id == id }) else {
             return
         }
