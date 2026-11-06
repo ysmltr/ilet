@@ -199,7 +199,8 @@ describe('Outbox', () => {
       expect(problems(failed)).toEqual(['unreadable']);
     });
 
-    it('takes at most 50 files at once and 200 per device', async () => {
+    // It makes 201 real copies, each flushed to disk: a few seconds, more on a CI runner.
+    it('takes at most 50 files at once and 200 per device', { timeout: 30_000 }, async () => {
       const setup = await setUp();
       const source = await setup.source('a.txt');
       expect(() => setup.outbox.send(DEVICE_ID, Array<string>(51).fill(source))).toThrow(
