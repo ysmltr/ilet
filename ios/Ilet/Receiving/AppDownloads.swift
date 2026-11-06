@@ -23,21 +23,25 @@ final class AppDownloads {
     /// Opening the session at once also hands it the downloads that an earlier run of the app
     /// left, so those files are saved when they arrive.
     private init() {
-        let appGroup = AppConfiguration.fromMainBundle().appGroupIdentifier
-        guard let defaults = UserDefaults(suiteName: appGroup) else {
-            preconditionFailure("App Group \(appGroup) is not available")
-        }
+        let defaults = AppConfiguration.fromMainBundle().appGroupDefaults()
         let received = ReceivedFiles.documents
         let ledger = DownloadLedger(defaults: defaults)
         self.received = received
         self.ledger = ledger
         events = BackgroundEvents()
-        session = BackgroundDownloads(received: received, ledger: ledger, handlers: Self.handlers())
+        session = BackgroundDownloads(
+            received: received, ledger: ledger, desktops: AppGroupDesktopStore(defaults: defaults),
+            handlers: Self.handlers())
     }
 
     /// iOS woke the app for this session's events.
     func handleEvents(completionHandler: @escaping () -> Void) {
         events.handle(completionHandler: completionHandler)
+    }
+
+    /// The user forgot this PC: the downloads from it that iOS still holds end now.
+    func cancelDownloads(from desktop: Desktop) async {
+        await session.cancelDownloads(from: desktop.id)
     }
 
     /// The session's events go to the one instance there is.

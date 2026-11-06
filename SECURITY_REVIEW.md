@@ -5,6 +5,8 @@
 2. [Phase 5](#phase-5-review-the-share-extension-background-uploads-and-video-conversion),
    6 November 2026: the Share Extension, background uploads and video conversion, all written
    after Phase 7; findings S9 and S10.
+3. [Phase 8](#phase-8-review-files-from-the-pc-to-the-iphone), 6 November 2026: sending files
+   from the PC to the iPhone, written after both; findings S12 to S14.
 
 Every finding is fixed, with tests.
 
@@ -240,3 +242,122 @@ connection (`BackgroundUploadDelegate.accepts`); a task without a readable recor
   starts, so iOS may deliver all of the session's events before it hands over the handler that
   the app must call once they are in. In that case the app now calls the handler as soon as it
   arrives, instead of never.
+
+## Phase 8 review: files from the PC to the iPhone
+
+*6 November 2026.* Everything that Phase 8 added was checked against the threat model (T2, T10,
+T14, T24, T25, T29, T30, T36 and T42 to T47) and its eleven invariants. On the PC: the outbox
+(`desktop/src/outbox`), its routes (`server/routes/outboxRoutes.ts`), the three ways to send
+files (the file dialog, drops on the window and Explorer's Send to, with the confirmation dialog
+and the path checks in `ui/sendDialogs.ts`, `ui/sendToArguments.ts` and
+`outbox/localFilePath.ts`) and the window's list of waiting files. On the iPhone: the outbox list
+and confirmations (`OutboxReceiver`), the background downloads (`BackgroundDownloads`,
+`BackgroundDownloadDelegate`), saving (`ReceivedFiles`, `DownloadLedger`) and the receive screen
+with Share and Save to Photos. The review came after Phase 8 had worked on a real iPhone and PC
+(Windows 0.2.0, TestFlight build 13.1).
+
+### Summary
+
+No critical, high or medium findings. All eleven invariants hold, and invariant 1 now covers
+ilet's folder on the iPhone too. Three low findings, all fixed, with tests:
+
+| ID  | Severity        | Area    | Finding                                                                        | Status |
+| --- | --------------- | ------- | ------------------------------------------------------------------------------ | ------ |
+| S12 | Low             | iPhone  | A PC forgotten on the iPhone still gets the uploads, and sends the downloads, that iOS holds for it | Fixed |
+| S13 | Low (hardening) | Desktop | A download under way outlasts its copy's 24 hours by up to 5 minutes            | Fixed  |
+| S14 | Low (hardening) | iPhone  | A received file's name is not checked again where the file is written           | Fixed  |
+
+### Findings
+
+#### S12 · Low · Forgetting a PC on the iPhone does not stop its transfers (T14)
+
+Forgetting a PC in the app deleted its token and its stored details, but not the transfers that
+iOS's transfer service already held for it: each task carries its own request, token included
+(T10), and its pin. An upload waiting for that PC could still go to it for up to a day, the
+longest an upload may take, and a download from it that was under way was still saved. Nothing
+went anywhere but to that PC, and only files that the user had chosen; nothing came from it but
+what the PC's user had sent. But a forgotten PC should get nothing more and send nothing more.
+
+**Fix:** before every new connection, the upload and download sessions check that a PC with the
+task's pin, and for a download the task's own PC, is still paired. They read the paired PCs from
+the App Group, which the app and the share sheet share. A forgotten PC's task then ends as
+cancelled, before its request goes out and without the certificate warning. A download from a PC
+that was forgotten while the file was on its way is not saved. Forgetting a PC also cancels its
+tasks in the app's own sessions at once, also those already using a connection.
+
+One case is left: a share sheet's uploads that are already going over an open connection when the
+PC is forgotten. The app cannot reach the share sheet's session, so they may finish. That
+connection stays open only while uploads follow each other (the PC closes it after 5 seconds
+without a request), and every new connection is refused (THREAT_MODEL.md, section 6). Removing the
+iPhone on the PC still ends everything there at once (T14).
+
+#### S13 · Low (hardening) · A download could outlast its copy's 24 hours (invariant 10, T45)
+
+A copy is no longer listed or served once its 24 hours are up, and the sweep every 5 minutes
+deletes it, which also stops a download of it that is under way. Until the sweep, though, a
+download that had started in time carried on, so a device could still read a copy for up to
+5 minutes longer than invariant 10 allows. Only the iPhone that the file was sent to could, and
+only a file it was already fetching.
+
+**Fix:** each download has a timer that stops it the moment its copy's time is up, as when the
+user cancels the file on the PC.
+
+#### S14 · Low (hardening) · A received name is not checked where the file is written (T46, invariant 1)
+
+The iPhone cleans a file's name when it starts the download (`ReceivedFileName`), and the record
+that iOS keeps with the task holds the cleaned name. When the download ends, the name comes back
+from that record, and `ReceivedFiles.add` used it as it was. Only ilet writes those records, so no
+name could leave ilet's folder; but the PC checks the path once more where it writes
+(`resolveInsideFolder`, invariant 1), and the iPhone did not.
+
+**Fix:** `ReceivedFiles.add` cleans the name again, so whatever name reaches it, the file can only
+be written in ilet's folder.
+
+### Invariants
+
+All eleven hold. Where Phase 8 enforces those it touches:
+
+| #  | Invariant                                                  | Where it is enforced in Phase 8                                        |
+| -- | ---------------------------------------------------------- | ---------------------------------------------------------------------- |
+| 1  | Data only in the receive folder, or in ilet's folder on the iPhone | `ReceivedFiles.add` cleans the name again (S14); the PC's copies are named by ID only |
+| 3  | No plaintext tokens or secrets on disk or in logs          | Task records hold IDs, the pin, a name and a size; the PC logs counts and sizes |
+| 4  | Authentication before any body                             | The outbox routes are behind the token check; `/received` reads its body (at most 4 KiB) after it |
+| 5  | No token or data to an unpinned server                     | `PinningTaskDelegate` for the list and confirmations; `BackgroundDownloadDelegate.accepts` on every new connection |
+| 6  | Received files are never opened                            | Share and Save to Photos only on a tap; the PC's notice only shows ilet's window |
+| 7  | No overwrites                                              | `moveItem` never replaces, then ` (1)`, ` (2)`, …; copies are written with `wx` |
+| 10 | A device reads only its own copies, by ID, for 24 hours    | Exact ID format; the same `410` for other devices' IDs; expiry checked per request and per download (S13) |
+| 11 | Files enter an outbox only by dialog, trusted drop or Send to | The preload's `isTrusted` check; Send to's paths from the second instance; the main process's dialog; `localFilePath.ts` |
+
+### Notes
+
+- **Checked without findings, on the PC:** entry IDs are 16 random bytes and must have the exact
+  format; another device's ID gets the same `410` as an unknown one; `Ilet-File-Id` must come
+  exactly once; the body must be exactly as long as `Content-Length` says, and an error after the
+  headers cuts the connection instead of sending a second answer; the log names no file and no
+  path, only counts and sizes. Network paths, device paths, relative paths, alternate data
+  streams and control characters are refused before anything touches the file system, and so are
+  Windows device names, also `CONIN$`, `CONOUT$` and those with superscript digits (`COM¹`). Each
+  file is opened once and checked on its handle, then copied under a `.part` name opened with
+  `wx`, flushed, and its byte count checked. Besides the four fuses, `--inspect` is turned off
+  too, and Send to's paths come after `--`, so none can be read as an option. The preload passes
+  on only trusted drops; the confirmation dialog has Cancel as its default and shows an `&` in a
+  name as it is; files picked in the dialog are not added to Windows' recent files; in the outbox
+  folder ilet deletes only names it makes.
+- **Checked without findings, on the iPhone:** the list and confirmations go through the pinned
+  client, which refuses redirects; a download is kept only if it ended with `200`, unredirected,
+  with exactly the listed size; Photos gets add-only access, asked for only when the user taps
+  Save to Photos, and Share opens only on a tap; the outbox is asked for only while the app is on
+  the screen, and only the selected PC; ilet keeps nothing else in its Documents folder, which the
+  Files app shows.
+- **Accepted:**
+  - When the user opens ilet's folder in the Files app, iOS makes thumbnails of the received
+    files, so it reads them, as it does for any file in Files; ilet itself never opens one.
+  - A PC with ilet's key (A2) could answer the list with an endless body until the app runs out
+    of memory, or fill the iPhone's storage with files: denial of service only, which ends when
+    the user forgets that PC.
+  - Received files are part of the iPhone's backups, like every app's documents (PRIVACY.md).
+  - Received files have iOS's default data protection, which keeps them locked until the first
+    unlock after a restart. A stronger class would stop iOS from saving a download while the
+    iPhone is locked.
+  - One iPhone can hold all four download slots, so another paired phone waits; it can do that
+    only while it fetches what the PC's user sent to it.

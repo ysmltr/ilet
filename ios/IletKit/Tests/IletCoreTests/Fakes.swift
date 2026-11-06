@@ -145,6 +145,13 @@ extension XCTestCase {
         AppGroupDesktopStore(defaults: try makeDefaults())
     }
 
+    /// Such a store in which the fixtures' PC is paired, as after scanning its QR code.
+    func makePairedDesktopStore() throws -> AppGroupDesktopStore {
+        let store = try makeDesktopStore()
+        try store.save(Desktop(pairing: try Fixtures.payload(), pairedAt: Date()))
+        return store
+    }
+
     /// An empty store of copies in a fresh folder, which is deleted after the test.
     func makeTemporaryStore() -> TemporaryFiles {
         let base = FileManager.default.temporaryDirectory.appending(

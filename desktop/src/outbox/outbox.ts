@@ -66,7 +66,7 @@ export interface OutboxDownload {
   readonly entry: OutboxEntry;
   /** The copy, open for reading. */
   readonly handle: FileHandle;
-  /** Aborted when the device is removed, or when the file is cancelled or expires meanwhile. */
+  /** Aborted when the device is removed, or when the file is cancelled or its time is up. */
   readonly signal: AbortSignal;
   /** Closes the copy and frees the download slot. */
   finish(): Promise<void>;
@@ -183,7 +183,17 @@ export class Outbox {
     }
     const download: ActiveDownload = { id, stop: new AbortController() };
     this.activeDownloads.add(download);
+    // A copy is served only until its time is up: a download under way stops then too, without
+    // waiting for the sweep (THREAT_MODEL.md, invariant 10).
+    const expiry = setTimeout(
+      () => {
+        download.stop.abort(new ProtocolError('file_gone'));
+      },
+      Date.parse(entry.expiresAt) - this.dependencies.now().getTime(),
+    );
+    expiry.unref();
     const release = (): void => {
+      clearTimeout(expiry);
       this.activeDownloads.delete(download);
       slot.release();
     };

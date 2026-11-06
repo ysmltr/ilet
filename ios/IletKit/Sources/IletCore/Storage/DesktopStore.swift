@@ -10,6 +10,19 @@ public protocol DesktopStore: Sendable {
     func setDefaultDesktopID(_ desktopID: UUID?)
 }
 
+extension DesktopStore {
+    /// True while this iPhone is paired with a PC that has this certificate, and this ID when one
+    /// is given. The background sessions ask before every new connection, so a PC that the user
+    /// forgot gets no more files and sends none (THREAT_MODEL.md, T14). An unreadable list
+    /// counts as empty.
+    func isPaired(pinnedTo fingerprint: CertificateFingerprint, id: UUID? = nil) -> Bool {
+        let desktops = (try? loadDesktops()) ?? []
+        return desktops.contains { desktop in
+            desktop.fingerprint == fingerprint && (id == nil || desktop.id == id)
+        }
+    }
+}
+
 /// Stores PCs in the App Group's user defaults, which the Share Extension can read too.
 /// UserDefaults is thread-safe, which is why this class can be shared across tasks.
 public final class AppGroupDesktopStore: DesktopStore, @unchecked Sendable {

@@ -17,6 +17,14 @@ struct AppConfiguration {
             keychainAccessGroup: infoValue(InfoKey.keychainAccessGroup))
     }
 
+    /// The App Group's user defaults, where the app and the Share Extension keep the paired PCs.
+    func appGroupDefaults() -> UserDefaults {
+        guard let defaults = UserDefaults(suiteName: appGroupIdentifier) else {
+            preconditionFailure("App Group \(appGroupIdentifier) is not available")
+        }
+        return defaults
+    }
+
     /// A missing value means a broken build configuration, not something the app could handle.
     private static func infoValue(_ key: String) -> String {
         guard let value = Bundle.main.object(forInfoDictionaryKey: key) as? String, !value.isEmpty

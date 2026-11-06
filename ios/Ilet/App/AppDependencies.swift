@@ -51,7 +51,12 @@ struct AppDependencies {
     }
 
     func makeDesktopsViewModel() -> DesktopsViewModel {
-        DesktopsViewModel(store: desktopStore, credentials: credentialStore)
+        DesktopsViewModel(
+            store: desktopStore, credentials: credentialStore,
+            stopTransfers: { [uploads, downloads] desktop in
+                await uploads.cancelUploads(to: desktop)
+                await downloads.cancelDownloads(from: desktop)
+            })
     }
 
     func makeSendViewModel() -> SendViewModel {

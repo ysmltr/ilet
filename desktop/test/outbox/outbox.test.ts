@@ -285,6 +285,29 @@ describe('Outbox', () => {
       expect(await readdir(setup.copies)).toEqual([]);
     });
 
+    it('ends a download under way when its 24 hours are up', async () => {
+      const setup = await setUp();
+      const entry = await setup.queue('a.txt');
+      setup.advance(24 * HOUR_MS - 1000);
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+      try {
+        const finished = await setup.outbox.startDownload(DEVICE_ID, entry.id);
+        await finished.finish();
+        // A download that finished in time leaves no timer behind.
+        expect(vi.getTimerCount()).toBe(0);
+
+        const download = await setup.outbox.startDownload(DEVICE_ID, entry.id);
+        vi.advanceTimersByTime(999);
+        expect(download.signal.aborted).toBe(false);
+        vi.advanceTimersByTime(1);
+        expect(download.signal.aborted).toBe(true);
+        expect(download.signal.reason).toMatchObject({ code: 'file_gone' });
+        await download.finish();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
     it('allows four downloads at a time', async () => {
       const setup = await setUp();
       const entry = await setup.queue('a.txt');

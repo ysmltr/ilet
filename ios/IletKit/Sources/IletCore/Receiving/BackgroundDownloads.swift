@@ -25,9 +25,10 @@ public struct BackgroundDownloadHandlers: Sendable {
 /// identifier in a process, so the app opens this one once, and downloads that an earlier run of
 /// the app left come back to it.
 ///
-/// A background session takes no per-request delegate, so each task carries its pin, and the
-/// file's name and size, in its record. The session's delegate checks the pin on every new TLS
-/// connection and saves a file only once it is complete.
+/// A background session takes no per-request delegate, so each task carries its PC and pin, and
+/// the file's name and size, in its record. The session's delegate checks the pin on every new
+/// TLS connection and saves a file only once it is complete, and only from a PC that is still
+/// paired.
 public final class BackgroundDownloads: OutboxDownloading, Sendable {
     public static let appSessionIdentifier = "app.ilet.app-downloads"
     /// A file waits on the PC for at most a day, so no download takes longer.
@@ -38,10 +39,11 @@ public final class BackgroundDownloads: OutboxDownloading, Sendable {
     private let session: URLSession
 
     public init(
-        received: ReceivedFiles, ledger: DownloadLedger, handlers: BackgroundDownloadHandlers
+        received: ReceivedFiles, ledger: DownloadLedger, desktops: any DesktopStore,
+        handlers: BackgroundDownloadHandlers
     ) {
         let delegate = BackgroundDownloadDelegate(
-            received: received, ledger: ledger, handlers: handlers)
+            received: received, ledger: ledger, desktops: desktops, handlers: handlers)
         session = URLSession(
             configuration: Self.configuration(), delegate: delegate, delegateQueue: nil)
     }
@@ -49,6 +51,15 @@ public final class BackgroundDownloads: OutboxDownloading, Sendable {
     public func fileIDsInProgress() async -> Set<String> {
         let unfinished = await session.allTasks.filter { $0.state != .completed }
         return Set(unfinished.compactMap { OutboxDownload($0)?.fileID })
+    }
+
+    /// The user forgot this PC on the iPhone: its downloads that iOS still holds end now, also
+    /// one that is under way over a connection that is already open.
+    public func cancelDownloads(from desktopID: UUID) async {
+        let tasks = await session.allTasks
+        for task in tasks where OutboxDownload(task)?.desktopID == desktopID {
+            task.cancel()
+        }
     }
 
     /// Hands a download to iOS, which carries it on even after the user leaves the app.

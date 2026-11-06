@@ -3,7 +3,7 @@ import os
 
 /// The background session's delegate. iOS calls it in whichever process holds the session, the
 /// share sheet or the app, so it relies on nothing that only one of them knows: each task's pin
-/// and copy come from the task's own record.
+/// and copy come from the task's own record, and the paired PCs from the App Group.
 final class BackgroundUploadDelegate: NSObject, URLSessionDataDelegate, Sendable {
     /// The PC answers with a few hundred bytes of JSON; anything longer is not its answer.
     private static let maxAnswerBytes = 64 * 1024
@@ -16,11 +16,14 @@ final class BackgroundUploadDelegate: NSObject, URLSessionDataDelegate, Sendable
     }
 
     private let copies: TemporaryFiles
+    /// The paired PCs: files go only to them.
+    private let desktops: any DesktopStore
     private let handlers: BackgroundUploadHandlers
     private let state = OSAllocatedUnfairLock(initialState: State())
 
-    init(copies: TemporaryFiles, handlers: BackgroundUploadHandlers) {
+    init(copies: TemporaryFiles, desktops: any DesktopStore, handlers: BackgroundUploadHandlers) {
         self.copies = copies
+        self.desktops = desktops
         self.handlers = handlers
     }
 
@@ -50,6 +53,11 @@ final class BackgroundUploadDelegate: NSObject, URLSessionDataDelegate, Sendable
         else {
             return (.cancelAuthenticationChallenge, nil)
         }
+        // A PC that the user forgot on this iPhone gets nothing more: the upload ends as
+        // cancelled, before its request goes out.
+        guard !Self.isForgotten(task, in: desktops) else {
+            return (.cancelAuthenticationChallenge, nil)
+        }
         guard Self.accepts(trust, for: task) else {
             let taskID = task.taskIdentifier
             state.withLock { _ = $0.rejectedTasks.insert(taskID) }
@@ -66,6 +74,15 @@ final class BackgroundUploadDelegate: NSObject, URLSessionDataDelegate, Sendable
             return false
         }
         return CertificatePinning.leafCertificate(of: trust, matches: record.fingerprint)
+    }
+
+    /// True when no PC with the task's certificate is paired with this iPhone any more. A task
+    /// without a readable record is left to `accepts`, which refuses it.
+    static func isForgotten(_ task: URLSessionTask, in desktops: any DesktopStore) -> Bool {
+        guard let record = BackgroundUploadRecord(task) else {
+            return false
+        }
+        return !desktops.isPaired(pinnedTo: record.fingerprint)
     }
 
     func urlSession(

@@ -19,16 +19,23 @@ final class AppUploads {
     /// Opening the session at once also hands it the uploads that an earlier run of the app
     /// left, so their copies are deleted when they end.
     private init() {
+        let configuration = AppConfiguration.fromMainBundle()
         events = BackgroundEvents()
         session = BackgroundUploads(
             identifier: BackgroundUploads.appSessionIdentifier,
-            appGroup: AppConfiguration.fromMainBundle().appGroupIdentifier,
-            copies: .appUploads, handlers: Self.handlers())
+            appGroup: configuration.appGroupIdentifier, copies: .appUploads,
+            desktops: AppGroupDesktopStore(defaults: configuration.appGroupDefaults()),
+            handlers: Self.handlers())
     }
 
     /// Hands a prepared copy to iOS, which sends it even after the user leaves the app.
     func start(_ file: PreparedFile, id: UUID, over connection: DesktopConnection) throws {
         try session.start(file, id: id, over: connection)
+    }
+
+    /// The user forgot this PC: the uploads to it that iOS still holds end now.
+    func cancelUploads(to desktop: Desktop) async {
+        await session.cancelUploads(pinnedTo: desktop.fingerprint)
     }
 
     /// iOS woke the app for this session's events.

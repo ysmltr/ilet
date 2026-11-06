@@ -41,6 +41,24 @@ final class BackgroundUploadsTests: XCTestCase {
         XCTAssertFalse(BackgroundUploadDelegate.accepts(trust, for: try makeTask(described: nil)))
     }
 
+    /// A PC that the user forgot on this iPhone gets no more files (THREAT_MODEL.md, T14): a PC
+    /// with the task's certificate must still be paired.
+    func testTellsWhenTheTasksPCWasForgotten() throws {
+        let desktops = try makePairedDesktopStore()
+        let other = CertificateFingerprint(certificateData: Data("another certificate".utf8))
+        let pairedTask = try makeTask(described: try makeRecord().encoded())
+        let otherPinTask = try makeTask(described: try makeRecord(pinning: other).encoded())
+        let unreadableTask = try makeTask(described: nil)
+
+        XCTAssertFalse(BackgroundUploadDelegate.isForgotten(pairedTask, in: desktops))
+        XCTAssertTrue(BackgroundUploadDelegate.isForgotten(otherPinTask, in: desktops))
+        // A task without a record is refused by the pin check instead.
+        XCTAssertFalse(BackgroundUploadDelegate.isForgotten(unreadableTask, in: desktops))
+
+        try desktops.remove(desktopID: try XCTUnwrap(UUID(uuidString: Fixtures.desktopID)))
+        XCTAssertTrue(BackgroundUploadDelegate.isForgotten(pairedTask, in: desktops))
+    }
+
     func testReadsThePCsAnswer() {
         let savedAnswer = json(#"{"fileName":"IMG_1 (2).jpg"}"#)
         let fullAnswer = json(#"{"error":"insufficient_storage"}"#)

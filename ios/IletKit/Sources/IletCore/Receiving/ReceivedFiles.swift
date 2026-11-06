@@ -17,8 +17,10 @@ public struct ReceivedFiles: Sendable {
     }
 
     /// Moves a complete download in under `fileName`, or else the first free numbered name, and
-    /// returns the name it got.
+    /// returns the name it got. The name was cleaned when the download started; it is cleaned
+    /// again here, where the file is written, so it can only ever name a file in this folder.
     func add(_ file: URL, named fileName: String) throws -> String {
+        let cleanName = ReceivedFileName.clean(fileName)
         do {
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         } catch {
@@ -26,7 +28,7 @@ public struct ReceivedFiles: Sendable {
             throw IletError.fileNotSaved
         }
         for number in 0...Self.maxNumber {
-            let name = Self.name(fileName, numbered: number)
+            let name = Self.name(cleanName, numbered: number)
             do {
                 // Fails, rather than replaces, when the name is taken.
                 try FileManager.default.moveItem(at: file, to: url(of: name))

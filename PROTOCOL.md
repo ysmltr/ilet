@@ -368,7 +368,9 @@ client starts again from the beginning.
 Errors: `400 invalid_request` (missing, repeated or malformed `Ilet-File-Id`),
 `401 unauthorized`, `410 file_gone`, `503 too_many_downloads`.
 
-Downloading does not remove the entry; confirming does.
+Downloading does not remove the entry; confirming does. When the entry ends during a download
+(the user cancels it, the device is removed, or its 24 hours are up), the desktop cuts the
+connection, so the client gets fewer bytes than `sizeBytes` and discards them.
 
 ### 5.7 `POST /api/v1/outbox/received`
 
@@ -398,8 +400,12 @@ The iOS client:
   connection at a time, and discards a download that was redirected, did not end with `200`, or is
   shorter or longer than `sizeBytes`;
 - tries a file at most three times per visit; pulling the list down tries again;
-- saves a file only once it is complete, under its cleaned name without leading dots, and never
-  over another file (` (1)`, ` (2)`, …), and then confirms it;
+- saves a file only once it is complete, under its cleaned name without leading dots, cleaned
+  again where the file is written, and never over another file (` (1)`, ` (2)`, …), and then
+  confirms it;
+- cancels the downloads from a desktop when the user forgets it on the iPhone, and before every
+  new connection checks that the desktop is still paired, so nothing more comes from a forgotten
+  desktop (uploads to it end the same way);
 - remembers which IDs it saved from which desktop for two days, longer than an entry waits, so a
   lost confirmation does not bring the same file twice: a saved file that is still listed is
   confirmed again instead;

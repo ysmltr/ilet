@@ -3,8 +3,8 @@ import UIKit
 
 /// Finishes background transfers when iOS wakes the app for their events: the app's own uploads
 /// and downloads, and the share sheet's uploads once the sheet is gone. For a share sheet's, the
-/// app opens that session, whose delegate checks the pin of any new connection and deletes each
-/// finished copy, and then lets go of it again.
+/// app opens that session, whose delegate checks the pin of any new connection, refuses a PC that
+/// is no longer paired and deletes each finished copy, and then lets go of it again.
 @MainActor
 final class IletAppDelegate: NSObject, UIApplicationDelegate {
     private var sessions: [String: BackgroundUploads] = [:]
@@ -39,10 +39,12 @@ final class IletAppDelegate: NSObject, UIApplicationDelegate {
         handlers.eventsFinished = { [weak self] in
             Task { @MainActor [weak self] in self?.finishEvents(of: identifier) }
         }
+        let configuration = AppConfiguration.fromMainBundle()
         return BackgroundUploads(
-            identifier: identifier,
-            appGroup: AppConfiguration.fromMainBundle().appGroupIdentifier,
-            copies: .appUploads, handlers: handlers)
+            identifier: identifier, appGroup: configuration.appGroupIdentifier,
+            copies: .appUploads,
+            desktops: AppGroupDesktopStore(defaults: configuration.appGroupDefaults()),
+            handlers: handlers)
     }
 
     /// iOS delivered the waiting events. The app lets go of the session, which ends once its last

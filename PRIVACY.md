@@ -27,9 +27,10 @@ On your iPhone:
   (and converted to JPG or MP4, if that setting is on) only until they are sent. Each copy is
   deleted when its upload ends; a copy left from an upload that did not finish is deleted after
   48 hours, the next time ilet opens.
-- The files your PC sends you, in Files › On My iPhone › ilet, until you delete them. ilet never
-  opens them by itself. For two days it also remembers which of them it saved (a random ID for
-  each, not the file name), so that none arrives twice.
+- The files your PC sends you, in Files › On My iPhone › ilet, until you delete them. Like every
+  app's files, they are part of your iPhone's backups (iCloud or your computer), if you make
+  them. ilet never opens them by itself. For two days it also remembers which of them it saved (a
+  random ID for each, not the file name), so that none arrives twice.
 - Photos: ilet asks only for permission to add, and only when you tap Save to Photos for a photo
   or video from your PC. It cannot see your library.
 
@@ -48,8 +49,10 @@ ilet shares nothing with anyone. There is no one to share with: ilet has no serv
 
 ## Deleting your data
 
-- iPhone: delete received files in Files › On My iPhone › ilet. Deleting the ilet app deletes
-  its data, the received files and its Keychain entries; move the files you want to keep first.
+- iPhone: delete received files in Files › On My iPhone › ilet. Removing a PC from ilet's list
+  (swipe it to the left) deletes its details and its access token, and stops the files still on
+  their way to it or from it. Deleting the ilet app deletes its data, the received files and its
+  Keychain entries; move the files you want to keep first.
 - PC: remove a phone in ilet's list of paired devices, or uninstall ilet and delete the folder
   `%APPDATA%\ilet`. Received files stay in your folder until you delete them.
 
@@ -91,7 +94,8 @@ iPhone’unuzda:
   kadar tutulur. Her kopya, gönderimi bitince silinir; bitmeyen bir gönderimden kalan kopya ise
   48 saat sonra, ilet bir sonraki açıldığında silinir.
 - Bilgisayarınızın size gönderdiği dosyalar, siz silene kadar Dosyalar › iPhone’umda › ilet
-  klasöründe. ilet bunları hiçbir zaman kendiliğinden açmaz. Hangilerini kaydettiğini de iki gün
+  klasöründe. Her uygulamanın dosyaları gibi, iPhone’unuzu yedekliyorsanız yedeklere (iCloud ya
+  da bilgisayarınız) dahil olurlar. ilet bunları hiçbir zaman kendiliğinden açmaz. Hangilerini kaydettiğini de iki gün
   boyunca hatırlar (dosya adını değil, her biri için rastgele bir kimliği); böylece hiçbiri iki
   kez gelmez.
 - Fotoğraflar: ilet yalnızca ekleme izni ister, o da yalnızca bilgisayarınızdan gelen bir fotoğraf
@@ -113,9 +117,11 @@ ilet hiçbir şeyi kimseyle paylaşmaz; paylaşacağı bir yer de yoktur, çünk
 
 ## Verilerinizi silme
 
-- iPhone: gelen dosyaları Dosyalar › iPhone’umda › ilet klasöründen silin. ilet uygulamasını
-  silmek, verilerini, gelen dosyaları ve Anahtar Zinciri kayıtlarını da siler; saklamak
-  istediğiniz dosyaları önce başka bir yere taşıyın.
+- iPhone: gelen dosyaları Dosyalar › iPhone’umda › ilet klasöründen silin. ilet’teki listeden
+  bir bilgisayarı kaldırmak (sola kaydırarak) onun bilgilerini ve erişim anahtarını siler; ona
+  gitmekte ya da ondan gelmekte olan dosyaları da durdurur. ilet uygulamasını silmek, verilerini,
+  gelen dosyaları ve Anahtar Zinciri kayıtlarını da siler; saklamak istediğiniz dosyaları önce
+  başka bir yere taşıyın.
 - Bilgisayar: telefonu ilet’in eşleştirilmiş cihazlar listesinden kaldırın ya da ilet’i kaldırıp
   `%APPDATA%\ilet` klasörünü silin. Gelen dosyalar siz silene kadar klasörünüzde kalır.
 

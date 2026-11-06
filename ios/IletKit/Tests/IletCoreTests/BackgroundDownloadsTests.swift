@@ -2,8 +2,8 @@ import XCTest
 
 @testable import IletCore
 
-/// Background downloads from the PC's outbox: the record and pin that travel with each task, and
-/// which finished downloads are saved.
+/// Background downloads from the PC's outbox: the record and pin that travel with each task, the
+/// PCs that files may come from, and which finished downloads are saved.
 final class BackgroundDownloadsTests: XCTestCase {
     private let endpoint = DesktopEndpoint(address: "192.168.1.20", port: 45380)
 
@@ -30,6 +30,27 @@ final class BackgroundDownloadsTests: XCTestCase {
         XCTAssertTrue(BackgroundDownloadDelegate.accepts(trust, for: pinnedTask))
         XCTAssertFalse(BackgroundDownloadDelegate.accepts(trust, for: otherTask))
         XCTAssertFalse(BackgroundDownloadDelegate.accepts(trust, for: try makeTask(described: nil)))
+    }
+
+    /// A PC that the user forgot on this iPhone sends nothing more (THREAT_MODEL.md, T14): the
+    /// task's PC must still be paired, with the same ID and the same certificate.
+    func testTellsWhenTheTasksPCWasForgotten() throws {
+        let desktops = try makePairedDesktopStore()
+        let other = CertificateFingerprint(certificateData: Data("another certificate".utf8))
+        let download = try makeDownload()
+        let pairedTask = try makeTask(described: try download.encoded())
+        let otherPCTask = try makeTask(described: try makeDownload(from: UUID()).encoded())
+        let otherPinTask = try makeTask(described: try makeDownload(pinning: other).encoded())
+        let unreadableTask = try makeTask(described: nil)
+
+        XCTAssertFalse(BackgroundDownloadDelegate.isForgotten(pairedTask, in: desktops))
+        XCTAssertTrue(BackgroundDownloadDelegate.isForgotten(otherPCTask, in: desktops))
+        XCTAssertTrue(BackgroundDownloadDelegate.isForgotten(otherPinTask, in: desktops))
+        // A task without a record is refused by the pin check instead.
+        XCTAssertFalse(BackgroundDownloadDelegate.isForgotten(unreadableTask, in: desktops))
+
+        try desktops.remove(desktopID: download.desktopID)
+        XCTAssertTrue(BackgroundDownloadDelegate.isForgotten(pairedTask, in: desktops))
     }
 
     func testRequestNamesTheFileOnlyByItsID() throws {
@@ -59,7 +80,7 @@ final class BackgroundDownloadsTests: XCTestCase {
     func testSavesACompleteDownloadAndRemembersIt() throws {
         let received = makeReceivedFiles()
         let ledger = DownloadLedger(defaults: try makeDefaults())
-        let delegate = makeDelegate(received: received, ledger: ledger)
+        let delegate = try makeDelegate(received: received, ledger: ledger)
         let download = try makeDownload(fileName: "notes.txt", sizeBytes: 5)
         let file = try makeDownloadedFile(containing: "12345")
 
@@ -70,10 +91,27 @@ final class BackgroundDownloadsTests: XCTestCase {
         XCTAssertTrue(ledger.contains(download.fileID, from: download.desktopID))
     }
 
+    func testSavesNothingFromAForgottenPC() throws {
+        let received = makeReceivedFiles()
+        let ledger = DownloadLedger(defaults: try makeDefaults())
+        let desktops = try makePairedDesktopStore()
+        let delegate = try makeDelegate(received: received, ledger: ledger, desktops: desktops)
+        let download = try makeDownload(fileName: "notes.txt", sizeBytes: 5)
+        let file = try makeDownloadedFile(containing: "12345")
+        // Forgotten while the file was on its way.
+        try desktops.remove(desktopID: download.desktopID)
+
+        let kept = delegate.keep(file, of: download, statusCode: 200, redirected: false)
+
+        XCTAssertEqual(kept, .failure(.cancelled))
+        XCTAssertFalse(fileExists(received.url(of: "notes.txt")))
+        XCTAssertFalse(ledger.contains(download.fileID, from: download.desktopID))
+    }
+
     func testDiscardsAShortOrRedirectedDownload() throws {
         let received = makeReceivedFiles()
         let ledger = DownloadLedger(defaults: try makeDefaults())
-        let delegate = makeDelegate(received: received, ledger: ledger)
+        let delegate = try makeDelegate(received: received, ledger: ledger)
         let download = try makeDownload(fileName: "notes.txt", sizeBytes: 5)
         let short = try makeDownloadedFile(containing: "1234")
         let redirected = try makeDownloadedFile(containing: "12345")
@@ -90,7 +128,7 @@ final class BackgroundDownloadsTests: XCTestCase {
 
     func testReadsTheCodeOfAnErrorAnswer() throws {
         let received = makeReceivedFiles()
-        let delegate = makeDelegate(
+        let delegate = try makeDelegate(
             received: received, ledger: DownloadLedger(defaults: try makeDefaults()))
         let answer = try makeDownloadedFile(containing: #"{"error":"file_gone"}"#)
 
@@ -106,6 +144,8 @@ final class BackgroundDownloadsTests: XCTestCase {
             ended(kept: .success("a.txt"), error: URLError(.timedOut)), .saved(fileName: "a.txt"))
         XCTAssertEqual(
             ended(error: URLError(.cancelled), rejected: true), .failed(.certificateMismatch))
+        // A forgotten PC's download is cancelled: no certificate warning.
+        XCTAssertEqual(ended(error: URLError(.cancelled)), .failed(.cancelled))
         XCTAssertEqual(ended(error: URLError(.timedOut)), .failed(.desktopUnreachable))
         XCTAssertEqual(ended(error: URLError(.cannotWriteToFile)), .failed(.fileNotSaved))
         XCTAssertEqual(ended(kept: .failure(.server(.fileGone))), .failed(.server(.fileGone)))
@@ -125,22 +165,29 @@ final class BackgroundDownloadsTests: XCTestCase {
         FinishedDownload.result(kept: kept, error: error, certificateRejected: rejected)
     }
 
+    /// A delegate that saves into this folder and ledger. The fixtures' PC is paired, unless
+    /// `desktops` is given.
     private func makeDelegate(
-        received: ReceivedFiles, ledger: DownloadLedger
-    ) -> BackgroundDownloadDelegate {
+        received: ReceivedFiles, ledger: DownloadLedger, desktops: (any DesktopStore)? = nil
+    ) throws -> BackgroundDownloadDelegate {
         BackgroundDownloadDelegate(
-            received: received, ledger: ledger, handlers: BackgroundDownloadHandlers())
+            received: received, ledger: ledger,
+            desktops: try desktops ?? makePairedDesktopStore(),
+            handlers: BackgroundDownloadHandlers())
     }
 
+    /// A download from the fixtures' PC, unless another PC is given.
     private func makeDownload(
         fileID: String = Fixtures.outboxFileID, fileName: String = "notes.txt",
-        sizeBytes: Int64 = 5, pinning fingerprint: CertificateFingerprint? = nil
+        sizeBytes: Int64 = 5, from desktopID: UUID? = nil,
+        pinning fingerprint: CertificateFingerprint? = nil
     ) throws
         -> OutboxDownload
     {
-        OutboxDownload(
-            fileID: fileID, desktopID: UUID(), fileName: fileName, sizeBytes: sizeBytes,
-            fingerprint: try fingerprint ?? Fixtures.desktopFingerprint())
+        let fixtureID = try XCTUnwrap(UUID(uuidString: Fixtures.desktopID))
+        return OutboxDownload(
+            fileID: fileID, desktopID: desktopID ?? fixtureID, fileName: fileName,
+            sizeBytes: sizeBytes, fingerprint: try fingerprint ?? Fixtures.desktopFingerprint())
     }
 
     /// A task that is never resumed, described like a background download.

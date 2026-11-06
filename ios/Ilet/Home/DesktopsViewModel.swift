@@ -9,10 +9,16 @@ final class DesktopsViewModel: ObservableObject {
 
     private let store: any DesktopStore
     private let credentials: any CredentialStore
+    /// Ends the uploads to a PC and the downloads from it that iOS still holds.
+    private let stopTransfers: @MainActor (Desktop) async -> Void
 
-    init(store: any DesktopStore, credentials: any CredentialStore) {
+    init(
+        store: any DesktopStore, credentials: any CredentialStore,
+        stopTransfers: @escaping @MainActor (Desktop) async -> Void
+    ) {
         self.store = store
         self.credentials = credentials
+        self.stopTransfers = stopTransfers
     }
 
     /// The PC that files go to: the chosen one, or the first if none was chosen.
@@ -34,8 +40,10 @@ final class DesktopsViewModel: ObservableObject {
         reload()
     }
 
-    /// Forgets PCs on this iPhone: the token and the stored details are deleted. The PC itself
-    /// still lists this iPhone until it is removed there too.
+    /// Forgets PCs on this iPhone: the token and the stored details are deleted, and the uploads
+    /// and downloads that iOS still holds for them end, so nothing more goes to them or comes from
+    /// them (THREAT_MODEL.md, T14). The PC itself still lists this iPhone until it is removed
+    /// there too.
     func forget(at offsets: IndexSet) {
         for desktop in offsets.map({ desktops[$0] }) {
             do {
@@ -44,6 +52,8 @@ final class DesktopsViewModel: ObservableObject {
             } catch {
                 errorMessage = ErrorMessage.text(for: error)
             }
+            // Also when deleting failed: the user wants nothing more to go to this PC.
+            Task { await stopTransfers(desktop) }
         }
         reload()
     }

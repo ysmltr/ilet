@@ -126,7 +126,8 @@ final class ShareViewModel: ObservableObject {
             Task { @MainActor [weak self] in self?.finish(id, with: result) }
         }
         let uploads = BackgroundUploads(
-            appGroup: dependencies.appGroup, copies: dependencies.copies, handlers: handlers)
+            appGroup: dependencies.appGroup, copies: dependencies.copies,
+            desktops: dependencies.desktopStore, handlers: handlers)
         self.uploads = uploads
         return uploads
     }

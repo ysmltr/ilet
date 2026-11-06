@@ -24,7 +24,8 @@ public struct BackgroundUploadHandlers: Sendable {
 /// remaining events. The app keeps one session of its own for as long as it runs.
 ///
 /// A background session takes no per-request delegate, so each task carries its pin in its
-/// `taskDescription`, and the session's delegate checks it on every new TLS connection.
+/// `taskDescription`, and the session's delegate checks it on every new TLS connection, together
+/// with whether a PC with that pin is still paired.
 public final class BackgroundUploads: Sendable {
     /// The app's own session. iOS allows one session per identifier in a process, so the app
     /// opens it once, and uploads that an earlier run of the app left come back to it.
@@ -44,10 +45,11 @@ public final class BackgroundUploads: Sendable {
     /// that identifier, such as the app's own or a share sheet's that iOS woke the app for.
     public init(
         identifier: String? = nil, appGroup: String, copies: TemporaryFiles,
-        handlers: BackgroundUploadHandlers
+        desktops: any DesktopStore, handlers: BackgroundUploadHandlers
     ) {
         let identifier = identifier ?? Self.shareSheetIdentifierPrefix + UUID().uuidString
-        let delegate = BackgroundUploadDelegate(copies: copies, handlers: handlers)
+        let delegate = BackgroundUploadDelegate(
+            copies: copies, desktops: desktops, handlers: handlers)
         self.delegate = delegate
         session = URLSession(
             configuration: Self.configuration(identifier: identifier, appGroup: appGroup),
@@ -82,6 +84,16 @@ public final class BackgroundUploads: Sendable {
         let task = session.uploadTask(with: request, fromFile: file.url)
         task.taskDescription = description
         task.resume()
+    }
+
+    /// The user forgot the PC with this certificate on the iPhone: its uploads that iOS still
+    /// holds end now, also one that is under way over a connection that is already open. Each
+    /// copy is deleted as its upload ends.
+    public func cancelUploads(pinnedTo fingerprint: CertificateFingerprint) async {
+        let tasks = await session.allTasks
+        for task in tasks where BackgroundUploadRecord(task)?.fingerprint == fingerprint {
+            task.cancel()
+        }
     }
 
     /// Lets go of the session. Uploads under way carry on, and iOS hands their remaining events

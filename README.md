@@ -18,8 +18,9 @@ over your Wi-Fi, with no accounts, no cloud and no analytics.
 > also brought up an error dialog on the PC as its Wi-Fi changed networks
 > ([SECURITY_REVIEW.md](SECURITY_REVIEW.md) S11); Windows 0.1.1 and later fix it, but a network
 > change has not been tried again yet. Newest, and tried on a real iPhone and PC: Phase 8,
-> sending from the PC to the iPhone (Windows 0.2.0, see [Plans](#plans)); it has had no security
-> review of its own yet. Still to come: a Microsoft Store package for Windows.
+> sending from the PC to the iPhone (see [Plans](#plans)), which has had a security review of its
+> own too; Windows 0.2.1 has the PC's fix from it. Still to come: a Microsoft Store package for
+> Windows.
 
 ## Download
 
@@ -39,7 +40,8 @@ could reach it.
   error codes).
 - [THREAT_MODEL.md](THREAT_MODEL.md): what we protect, from whom, and how.
 - [SECURITY_REVIEW.md](SECURITY_REVIEW.md): the reviews of the code against the threat model
-  (Phase 7, then Phase 5's share sheet and background uploads), and their fixes.
+  (Phase 7, then Phase 5's share sheet and background uploads, then Phase 8's files from the PC),
+  and their fixes.
 - [PRIVACY.md](PRIVACY.md): the privacy policy (ilet collects nothing).
 
 In short: HTTPS only, with a self-signed certificate that the iPhone pins by its SHA-256
@@ -51,7 +53,8 @@ on the PC they are marked with Mark-of-the-Web.
 
 ### Phase 8: from the PC to the iPhone (done)
 
-Tried on a real iPhone and PC on 6 November 2026, with Windows 0.2.0. Sending the other way
+Tried on a real iPhone and PC on 6 November 2026, with Windows 0.2.0, and reviewed for security
+the same day ([SECURITY_REVIEW.md](SECURITY_REVIEW.md), S12 to S14). Sending the other way
 round. The iPhone runs no server and ilet uses no push service, so files wait on the PC until
 ilet is open on the iPhone, which then fetches them over pinned HTTPS with its token, just as it
 sends:

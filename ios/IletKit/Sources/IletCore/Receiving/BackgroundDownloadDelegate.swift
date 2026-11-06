@@ -2,9 +2,9 @@ import Foundation
 import os
 
 /// The downloads session's delegate. iOS may call it in a later run of the app than the one that
-/// started a download, so it relies only on each task's record: the pin, the file's name and its
-/// size. A file reaches the received files only when it is complete, and only then does the
-/// ledger remember it (THREAT_MODEL.md, T46).
+/// started a download, so it relies only on each task's record: the PC, its pin, the file's name
+/// and its size. A file reaches the received files only when it is complete and its PC is still
+/// paired, and only then does the ledger remember it (THREAT_MODEL.md, T14 and T46).
 final class BackgroundDownloadDelegate: NSObject, URLSessionDownloadDelegate, Sendable {
     /// The PC's error answers are a few hundred bytes of JSON; anything longer is not its answer.
     private static let maxAnswerBytes: Int64 = 64 * 1_024
@@ -17,12 +17,18 @@ final class BackgroundDownloadDelegate: NSObject, URLSessionDownloadDelegate, Se
 
     private let received: ReceivedFiles
     private let ledger: DownloadLedger
+    /// The paired PCs: files come only from them.
+    private let desktops: any DesktopStore
     private let handlers: BackgroundDownloadHandlers
     private let state = OSAllocatedUnfairLock(initialState: State())
 
-    init(received: ReceivedFiles, ledger: DownloadLedger, handlers: BackgroundDownloadHandlers) {
+    init(
+        received: ReceivedFiles, ledger: DownloadLedger, desktops: any DesktopStore,
+        handlers: BackgroundDownloadHandlers
+    ) {
         self.received = received
         self.ledger = ledger
+        self.desktops = desktops
         self.handlers = handlers
     }
 
@@ -37,6 +43,11 @@ final class BackgroundDownloadDelegate: NSObject, URLSessionDownloadDelegate, Se
             challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
             let trust = challenge.protectionSpace.serverTrust
         else {
+            return (.cancelAuthenticationChallenge, nil)
+        }
+        // A PC that the user forgot on this iPhone sends nothing more: the download ends as
+        // cancelled, before its request goes out.
+        guard !Self.isForgotten(task, in: desktops) else {
             return (.cancelAuthenticationChallenge, nil)
         }
         guard Self.accepts(trust, for: task) else {
@@ -55,6 +66,15 @@ final class BackgroundDownloadDelegate: NSObject, URLSessionDownloadDelegate, Se
             return false
         }
         return CertificatePinning.leafCertificate(of: trust, matches: download.fingerprint)
+    }
+
+    /// True when the task's PC is no longer paired with this iPhone, with the same certificate. A
+    /// task without a readable record is left to `accepts`, which refuses it.
+    static func isForgotten(_ task: URLSessionTask, in desktops: any DesktopStore) -> Bool {
+        guard let download = OutboxDownload(task) else {
+            return false
+        }
+        return !desktops.isPaired(pinnedTo: download.fingerprint, id: download.desktopID)
     }
 
     func urlSession(
@@ -86,8 +106,8 @@ final class BackgroundDownloadDelegate: NSObject, URLSessionDownloadDelegate, Se
     }
 
     /// Saves a finished download only if it is complete: answered with `200`, not redirected, and
-    /// of exactly the listed size. An error answer is read for its code; anything else is left
-    /// for iOS to delete.
+    /// of exactly the listed size, from a PC that is still paired. An error answer is read for its
+    /// code; anything else is left for iOS to delete.
     func keep(
         _ location: URL, of download: OutboxDownload, statusCode: Int?, redirected: Bool
     ) -> Result<String, IletError> {
@@ -96,6 +116,10 @@ final class BackgroundDownloadDelegate: NSObject, URLSessionDownloadDelegate, Se
             expectedBytes: download.sizeBytes)
         switch verdict {
         case .complete:
+            // The PC may have been forgotten while the file was on its way.
+            guard desktops.isPaired(pinnedTo: download.fingerprint, id: download.desktopID) else {
+                return .failure(.cancelled)
+            }
             return save(location, as: download)
         case .answer(let errorStatus):
             let answer = Self.answer(at: location)
