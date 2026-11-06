@@ -149,7 +149,8 @@ final class BonjourSearch: @unchecked Sendable {
             return "DNS \(code)"
         case .tls(let status):
             return "TLS \(status)"
-        @unknown default:
+        default:
+            // Newer SDKs add kinds of errors (Wi-Fi Aware, for example) that ilet never meets.
             return "other"
         }
     }

@@ -44,8 +44,10 @@ final class ServiceResolution {
         else {
             return nil
         }
-        let end = host.firstIndex(of: 0) ?? capacity
-        return String(decoding: host[..<end].map { UInt8(bitPattern: $0) }, as: UTF8.self)
+        // getnameinfo ends the name with a NUL.
+        return host.withUnsafeBufferPointer { buffer in
+            buffer.baseAddress.map { String(cString: $0) }
+        }
     }
 
     /// Whether a host name is in `.local`, which only Multicast DNS answers. The PC's always is;
