@@ -39,7 +39,8 @@ public struct ConversionLimits: Sendable {
 }
 
 public protocol FilePreparing: Sendable {
-    /// Copies a file the user picked (possibly security-scoped) into the app's temporary folder.
+    /// Copies a file the user picked (possibly security-scoped) into the app's temporary folder,
+    /// under a cleaned name: any app may have named a file in Files.
     func importFile(at url: URL) async throws -> URL
     /// Turns a copy in the temporary folder into the file to upload. With `makeCompatible`, HEIC
     /// photos become JPG and HEVC videos become MP4 (H.264), which Windows opens without extra
@@ -74,12 +75,12 @@ public struct FilePreparer: FilePreparing {
                 url.stopAccessingSecurityScopedResource()
             }
         }
-        let copy = try temporaryFiles.makeFolder().appending(path: url.lastPathComponent)
+        let name = SharedFileName.clean(url.lastPathComponent)
+        let copy = try temporaryFiles.makeFolder().appending(path: name)
         do {
             try FileManager.default.copyItem(at: url, to: copy)
         } catch {
-            Log.files.error(
-                "picked file not copied: \(error.localizedDescription, privacy: .public)")
+            Log.files.error("picked file not copied: \(error.logSummary, privacy: .public)")
             throw IletError.fileUnreadable
         }
         return copy
@@ -200,8 +201,7 @@ public struct FilePreparer: FilePreparing {
         do {
             try FileManager.default.removeItem(at: source)
         } catch {
-            Log.files.error(
-                "HEIC copy not deleted: \(error.localizedDescription, privacy: .public)")
+            Log.files.error("HEIC copy not deleted: \(error.logSummary, privacy: .public)")
         }
         return destination
     }

@@ -185,7 +185,7 @@ final class SendViewModel: ObservableObject {
         case .photo:
             return String(localized: "transfer.photo")
         case .file(let url):
-            return url.lastPathComponent
+            return SharedFileName.clean(url.lastPathComponent)
         }
     }
 }

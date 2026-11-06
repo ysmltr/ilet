@@ -71,7 +71,7 @@ final class PinnedDesktopClient: DesktopClient {
             if delegate.rejectedCertificate {
                 throw IletError.certificateMismatch
             }
-            Log.network.error("request failed: \(error.localizedDescription, privacy: .public)")
+            Log.network.error("request failed: \(error.logSummary, privacy: .public)")
             throw IletError(connectionError: error)
         }
         guard let httpResponse = response as? HTTPURLResponse else {
@@ -96,8 +96,7 @@ final class PinnedDesktopClient: DesktopClient {
         do {
             return try JSONDecoder().decode(type, from: data)
         } catch {
-            Log.network.error(
-                "unexpected response: \(error.localizedDescription, privacy: .public)")
+            Log.network.error("unexpected response: \(error.logSummary, privacy: .public)")
             throw IletError.unexpectedResponse
         }
     }

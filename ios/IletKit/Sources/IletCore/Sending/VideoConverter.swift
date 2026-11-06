@@ -59,21 +59,18 @@ enum VideoConverter {
             session.exportAsynchronously { continuation.resume() }
         }
         guard session.status == .completed else {
-            let error = session.error.map { $0 as NSError }
-            let domain = error?.domain ?? "none"
-            let code = error?.code ?? 0
+            let error = session.error
             Log.files.error(
-                "video not converted: \(domain, privacy: .public) \(code, privacy: .public)")
+                "video not converted: \(error?.logSummary ?? "no error", privacy: .public)")
             try? FileManager.default.removeItem(at: output)
-            return isInterruption(error) ? .interrupted : .failed
+            return isInterruption(error.map { $0 as NSError }) ? .interrupted : .failed
         }
         let destination = source.deletingPathExtension().appendingPathExtension(fileExtension)
         do {
             try FileManager.default.removeItem(at: source)
             try FileManager.default.moveItem(at: output, to: destination)
         } catch {
-            Log.files.error(
-                "converted video not moved: \(error.localizedDescription, privacy: .public)")
+            Log.files.error("converted video not moved: \(error.logSummary, privacy: .public)")
             throw IletError.fileUnreadable
         }
         return .converted(destination)

@@ -16,6 +16,9 @@ final class AppUploads {
     private let session: BackgroundUploads
     /// Tells iOS that the events it woke the app for are in, so it may suspend the app again.
     private var eventsCompletionHandler: (() -> Void)?
+    /// The session opens when the app starts, so iOS may deliver every event before it hands
+    /// over the completion handler.
+    private var eventsFinishedEarly = false
 
     /// Opening the session at once also hands it the uploads that an earlier run of the app
     /// left, so their copies are deleted when they end.
@@ -31,15 +34,26 @@ final class AppUploads {
         try session.start(file, id: id, over: connection)
     }
 
-    /// iOS woke the app for this session's events.
+    /// iOS woke the app for this session's events. If they have all arrived already, iOS hears so
+    /// at once.
     func handleEvents(completionHandler: @escaping () -> Void) {
         eventsCompletionHandler?()
-        eventsCompletionHandler = completionHandler
+        eventsCompletionHandler = nil
+        if eventsFinishedEarly {
+            eventsFinishedEarly = false
+            completionHandler()
+        } else {
+            eventsCompletionHandler = completionHandler
+        }
     }
 
     private func finishEvents() {
-        eventsCompletionHandler?()
+        guard let completionHandler = eventsCompletionHandler else {
+            eventsFinishedEarly = true
+            return
+        }
         eventsCompletionHandler = nil
+        completionHandler()
     }
 
     /// The session's events go to the one instance there is.

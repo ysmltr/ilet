@@ -1,11 +1,20 @@
-# ilet security review (Phase 7)
+# ilet security reviews
 
+1. [Phase 7](#phase-7-review-the-whole-codebase), 2 November 2026: the whole codebase,
+   findings S1 to S8.
+2. [Phase 5](#phase-5-review-the-share-extension-background-uploads-and-video-conversion),
+   6 November 2026: the Share Extension, background uploads and video conversion, all written
+   after Phase 7; findings S9 and S10.
+
+Every finding is fixed, with tests.
+
+## Phase 7 review: the whole codebase
 *2 November 2026.* The whole codebase (`desktop/`, `ios/`, the installer script and the CI
 workflow) was checked against every threat in [THREAT_MODEL.md](THREAT_MODEL.md) (T1–T37) and its
 nine security invariants. Every finding below is fixed, with tests. S8 was found afterwards, on
 4 November 2026, by the first run of the Windows checks on GitHub.
 
-## Summary
+### Summary
 
 No critical or high findings. All nine invariants hold. One medium and seven low findings:
 
@@ -20,9 +29,9 @@ No critical or high findings. All nine invariants hold. One medium and seven low
 | S7 | Low (hardening)   | Desktop | The "text only, never HTML" rule for the window is not enforced by the browser | Fixed |
 | S8 | Low               | Desktop | A forbidden receive folder can be reached under another name (a junction, a short name) | Fixed |
 
-## Findings
+### Findings
 
-### S1 · Medium · Domain networks are trusted by the app but blocked by the firewall (T5, T33)
+#### S1 · Medium · Domain networks are trusted by the app but blocked by the firewall (T5, T33)
 
 The installer allows ilet only on Private networks and blocks it on Public and Domain networks.
 The app itself (`network/networkExposure.ts`) blocks only Public networks: on a Domain network
@@ -35,7 +44,7 @@ on this PC's addresses on Private networks (plus loopback), so an unknown adapte
 Windows classifies it. Domain networks get their own explanation in the window, because the user
 cannot switch them to Private.
 
-### S2 · Low · A removal that could not be saved is undone by a restart (T14)
+#### S2 · Low · A removal that could not be saved is undone by a restart (T14)
 
 `DeviceRegistry.revoke` removes the phone in memory and from the window's list, then writes
 `devices.json`. If that write fails (an antivirus scanner holding the file, a full disk), the page
@@ -47,7 +56,7 @@ for (harmless, but wrong).
 phone's uploads are aborted. If saving fails, nothing changes, the phone stays in the list, and the
 window says the removal failed.
 
-### S3 · Low · `autorun.inf` and drive roots (T21, T35)
+#### S3 · Low · `autorun.inf` and drive roots (T21, T35)
 
 Explorer reads `autorun.inf` at the root of a drive to show that drive's icon and name, and a
 receive folder may be a drive root such as `D:\`. A drive root is also where Windows first looks
@@ -57,7 +66,7 @@ for programs whose installed path contains spaces but no quotes (`D:\Program.exe
 **Fix:** append `.txt` to `autorun.inf` like the other shell-parsed files, and refuse a drive's
 top folder as the receive folder.
 
-### S4 · Low · `NSBonjourServices` is missing (T30)
+#### S4 · Low · `NSBonjourServices` is missing (T30)
 
 The spec and T30 require `NSBonjourServices` with `_ilet._tcp` in the iPhone app's Info.plist.
 Without it, iOS 14 and later block browsing for the PC, so finding the PC again (Phase 4) cannot
@@ -65,7 +74,7 @@ work.
 
 **Fix:** add the key in `ios/project.yml`.
 
-### S5 · Low (hardening) · The iPhone app follows redirects (invariant 5)
+#### S5 · Low (hardening) · The iPhone app follows redirects (invariant 5)
 
 URLSession follows HTTP redirects unless the delegate refuses them. A redirect could carry a
 request with the token or a file away from the pinned connection, even to plain `http://` on
@@ -80,7 +89,7 @@ uploads carry on when the user switches apps or locks the phone. `PinningTaskDel
 refuses redirects for the app's other requests (info, pairing, status). THREAT_MODEL.md, section
 6, says why that is accepted.
 
-### S6 · Low (hardening) · Invisible characters in the PC name (T13, T18)
+#### S6 · Low (hardening) · Invisible characters in the PC name (T13, T18)
 
 The confirmation screen, which shows the PC name from the QR code, is the user's defense
 against a forged code. The name is checked only for length, so a forged code could use a
@@ -89,7 +98,7 @@ into a name (`sanitizeDisplayName`).
 
 **Fix:** a code whose name contains control, format or line separator characters is refused.
 
-### S7 · Low (hardening) · HTML in the window (T25)
+#### S7 · Low (hardening) · HTML in the window (T25)
 
 The page sets outside text only with `textContent`, but that is a coding rule, not something the
 browser enforces.
@@ -98,7 +107,7 @@ browser enforces.
 (`require-trusted-types-for 'script'; trusted-types 'none'`): any attempt to write HTML into the
 page then fails.
 
-### S8 · Low · Forbidden receive folders under another name (T35)
+#### S8 · Low · Forbidden receive folders under another name (T35)
 
 The receive-folder check resolved the chosen folder to its real path (links, junctions and short
 8.3 names such as `C:\PROGRA~1` written out), but compared it with the forbidden folders as they
@@ -113,7 +122,7 @@ folder. GitHub's Windows PCs showed it, because their temporary folder has a sho
 stored folder at startup, through its nearest existing parent if it does not exist yet. AppData is
 also forbidden where `APPDATA` and `LOCALAPPDATA` say it is.
 
-## Invariants
+### Invariants
 
 | # | Invariant                                               | Where it is enforced                                                  |
 | - | ------------------------------------------------------- | --------------------------------------------------------------------- |
@@ -127,7 +136,7 @@ also forbidden where `APPDATA` and `LOCALAPPDATA` say it is.
 | 8 | Pairing reads no body without a code on screen          | `pairRoute` checks `codes.isActive()` first                            |
 | 9 | Window loads only bundled files, no Node.js             | `ilet://` with a fixed file list, CSP, sandbox, IPC sender checks     |
 
-## Notes
+### Notes
 
 - **Windows 10 no longer gets security updates** (support ended in October 2025; the consumer
   Extended Security Updates programme ended in October 2026). ilet relies on Windows' own
@@ -140,3 +149,73 @@ also forbidden where `APPDATA` and `LOCALAPPDATA` say it is.
   file name rules, disk space checks, the receive-folder rules (but see S8), PowerShell use, the IPC guard,
   certificate creation and storage, the Keychain attributes, the QR address rules and the
   iPhone's temporary files.
+
+## Phase 5 review: the Share Extension, background uploads and video conversion
+
+*6 November 2026.* Everything written after the Phase 7 review was checked against the threat
+model (T2, T10, T18, T29, T30, T38, T40, T41) and its nine invariants: the Share Extension
+(`ios/IletShare`), the background uploads that the app and the extension share
+(`BackgroundUploads`, `BackgroundUploadDelegate`, `TemporaryFiles`), the app's sending
+(`AppUploads`, `SendViewModel`, `PickedFile`), the conversion of photos and videos
+(`FilePreparer`, `VideoConverter`) and the TestFlight workflow's signing of the extension. The
+review came after the extension had worked on an iPhone (build 10.1).
+
+### Summary
+
+No critical, high or medium findings. All nine invariants hold, with the accepted risk that iOS
+follows redirects in background uploads (THREAT_MODEL.md, section 6). Two low findings, both
+fixed, with tests:
+
+| ID  | Severity        | Area   | Finding                                                           | Status |
+| --- | --------------- | ------ | ----------------------------------------------------------------- | ------ |
+| S9  | Low (hardening) | iPhone | Error messages in the iPhone's log can contain file names         | Fixed  |
+| S10 | Low (hardening) | iPhone | Names of files picked in the app are not cleaned like shared ones | Fixed  |
+
+### Findings
+
+#### S9 · Low (hardening) · File names in the iPhone's log (invariant 3, A1)
+
+Some errors were logged with their localized description, marked public so that it stays
+readable. For a file, that description names the file, for example "IMG_0001.HEIC couldn't be
+copied". Tokens, secrets and file contents never reached the log, but file names are personal
+too, and public log entries go into the diagnostic reports that a user may send to Apple.
+
+**Fix:** every error is logged only by its domain and code (`Error.logSummary`), which tell what
+failed without naming anything.
+
+#### S10 · Low (hardening) · Names of picked files are not cleaned (T18, T40)
+
+The share sheet cleans the names that other apps give shared items (`SharedFileName`): no path,
+no invisible characters, at most 200 bytes. The app used the name of a file picked in Files as it
+was, although any app can name a file there. A right-to-left override could then disguise the
+file in ilet's list: `invoice`, the override and `gpj.exe` show as `invoiceexe.jpg`. The PC
+cleans every name again (T18), so no saved file was ever disguised; only the iPhone's list could
+mislead.
+
+**Fix:** the app cleans the names of picked files and photos the same way.
+
+### Invariants
+
+As in Phase 7, except where invariant 5 is enforced. The app's other requests (info, pairing,
+status) still go through `PinningTaskDelegate`. Every upload, from the app or the extension, goes
+through a background session whose delegate checks the pin from the task's record on every new
+connection (`BackgroundUploadDelegate.accepts`); a task without a readable record is refused.
+
+### Notes
+
+- **Checked without findings:** the pin travels with each task, and the record holds only an ID,
+  the pin and a folder name (T10); the PC's answer is read up to 64 KiB; background uploads never
+  use mobile data and keep no cookies, cache or credentials; copies are deleted only by exact
+  folder names, and after 48 hours at the latest (T41); file names in the upload header are
+  percent-encoded, so no name can add a header; the share sheet takes only files, never links;
+  the extension's entitlements hold only the App Group and the Keychain group, its only ATS
+  exception is `NSAllowsLocalNetworking`, and it has its own privacy manifest; the TestFlight
+  workflow's secrets still reach only the steps that need them (T38).
+- **Converting means parsing.** With "Send photos as JPG, videos as MP4" on, photos and videos
+  from other apps are opened by Apple's Image I/O and AVFoundation, the frameworks Photos uses
+  for the same files; before Phase 5 only photos were. A file is opened only if its extension
+  says it is a photo or a video, and with the setting off every file is sent unread.
+- **Not security, fixed along the way:** the app opens its background session as soon as it
+  starts, so iOS may deliver all of the session's events before it hands over the handler that
+  the app must call once they are in. In that case the app now calls the handler as soon as it
+  arrives, instead of never.

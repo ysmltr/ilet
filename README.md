@@ -9,11 +9,11 @@ over your Wi-Fi, with no accounts, no cloud and no analytics.
 > notifications, settings, paired devices) and the installer are done, and the whole codebase
 > passed the Phase 7 security review ([SECURITY_REVIEW.md](SECURITY_REVIEW.md)). iPhone: pairing,
 > sending and the Share Extension (Phase 5: Share → ilet in other apps) work on a real iPhone,
-> installed through TestFlight. Newer, and not tried on an iPhone yet: sending from the app carries
-> on in the background, and HEVC videos are converted to MP4 so that Windows plays them. Phase 5
-> and these came after the security review. Still to come, in this order (see [Plans](#plans)):
-> Phase 8, sending from the PC to the iPhone; the iPhone's half of Phase 4 (finding the PC again
-> after it changes networks); a Microsoft Store package for Windows.
+> installed through TestFlight. Sending from the app carries on in the background, and HEVC videos
+> arrive as MP4, which Windows plays. Phase 5 and these came after the Phase 7 review and had a
+> security review of their own. Still to come, in this order (see [Plans](#plans)): the iPhone's
+> half of Phase 4 (finding the PC again after it changes networks); Phase 8, sending from the PC
+> to the iPhone; a Microsoft Store package for Windows.
 
 ## Download
 
@@ -32,8 +32,8 @@ could reach it.
 - [PROTOCOL.md](PROTOCOL.md): the wire protocol both apps follow (TLS, pinning, pairing, endpoints,
   error codes).
 - [THREAT_MODEL.md](THREAT_MODEL.md): what we protect, from whom, and how.
-- [SECURITY_REVIEW.md](SECURITY_REVIEW.md): the Phase 7 review of the code against the threat
-  model, and its fixes.
+- [SECURITY_REVIEW.md](SECURITY_REVIEW.md): the reviews of the code against the threat model
+  (Phase 7, then Phase 5's share sheet and background uploads), and their fixes.
 - [PRIVACY.md](PRIVACY.md): the privacy policy (ilet collects nothing).
 
 In short: HTTPS only, with a self-signed certificate that the iPhone pins by its SHA-256
@@ -42,6 +42,14 @@ sanitized, never overwrite anything, are marked with Mark-of-the-Web and are nev
 automatically.
 
 ## Plans
+
+### Next: the iPhone's half of Phase 4
+
+The PC already announces itself with Bonjour. When its address changes (another Wi-Fi, the
+iPhone's Personal Hotspot, a new address from the router), the iPhone will find it again through
+that announcement, check its device ID and pinned certificate exactly as before, and remember the
+new address, so no new pairing is needed. The announcement is only a hint: an address that does
+not present the pinned certificate is never used (T3 in the threat model).
 
 ### Phase 8: from the PC to the iPhone
 

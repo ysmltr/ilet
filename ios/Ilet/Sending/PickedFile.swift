@@ -20,7 +20,7 @@ struct PickedFile: Transferable, Sendable {
     /// The system deletes the received file once the closure returns, so the app keeps a copy.
     private static func keepCopy(of file: URL) throws -> PickedFile {
         let folder = try TemporaryFiles.appUploads.makeFolder()
-        let copy = folder.appending(path: file.lastPathComponent)
+        let copy = folder.appending(path: SharedFileName.clean(file.lastPathComponent))
         do {
             try FileManager.default.copyItem(at: file, to: copy)
         } catch {

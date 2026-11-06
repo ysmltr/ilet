@@ -60,6 +60,20 @@ final class FilePreparerTests: XCTestCase {
         XCTAssertNil(file.keptOriginal)
     }
 
+    /// Any app may name a file in Files, so a picked file's name is cleaned like a shared one:
+    /// here a right-to-left override would show "invoiceexe.jpg".
+    func testCleansTheNameOfAPickedFile() async throws {
+        let store = makeTemporaryStore()
+        let picked = try store.makeFolder().appending(path: "invoice\u{202E}gpj.exe")
+        try Data("picked".utf8).write(to: picked)
+        let preparer = FilePreparer(temporaryFiles: store)
+
+        let copy = try await preparer.importFile(at: picked)
+
+        XCTAssertEqual(copy.lastPathComponent, "invoicegpj.exe")
+        XCTAssertEqual(try Data(contentsOf: copy), Data("picked".utf8))
+    }
+
     private func limits(photoBytes: Int64) -> ConversionLimits {
         ConversionLimits(photoBytes: photoBytes, videoFramePixels: 1920 * 1080)
     }

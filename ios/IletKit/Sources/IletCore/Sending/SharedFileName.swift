@@ -1,7 +1,8 @@
-/// Cleans the name another app gives a shared file. It comes from outside ilet, so it may hold a
-/// path, invisible characters (a right-to-left override can disguise the extension) or far too
-/// many bytes. The PC checks names again (PROTOCOL.md section 5.3); this keeps the copy on the
-/// iPhone and the name in the share sheet safe.
+/// Cleans the name of a file from outside ilet: one that another app shares, or one picked in
+/// Files or Photos, where any app may have named it. Such a name may hold a path, invisible
+/// characters (a right-to-left override can disguise the extension) or far too many bytes. The PC
+/// checks names again (PROTOCOL.md section 5.3); this keeps the copy on the iPhone and the name
+/// in ilet's lists safe.
 public enum SharedFileName {
     static let fallback = "file"
     static let maxBytes = 200

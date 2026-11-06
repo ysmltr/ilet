@@ -35,8 +35,7 @@ public struct TemporaryFiles: Sendable {
         do {
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         } catch {
-            Log.files.error(
-                "temporary folder failed: \(error.localizedDescription, privacy: .public)")
+            Log.files.error("temporary folder failed: \(error.logSummary, privacy: .public)")
             throw IletError.fileUnreadable
         }
         return folder
@@ -96,8 +95,7 @@ public struct TemporaryFiles: Sendable {
         do {
             try FileManager.default.removeItem(at: url)
         } catch {
-            Log.files.error(
-                "temporary file not deleted: \(error.localizedDescription, privacy: .public)")
+            Log.files.error("temporary file not deleted: \(error.logSummary, privacy: .public)")
         }
     }
 }

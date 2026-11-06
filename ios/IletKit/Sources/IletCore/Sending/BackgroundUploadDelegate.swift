@@ -107,8 +107,7 @@ final class BackgroundUploadDelegate: NSObject, URLSessionDataDelegate, Sendable
         if finished.redirected {
             Log.network.error("the PC redirected a background upload")
         } else if let error, !rejected {
-            Log.network.error(
-                "background upload failed: \(error.localizedDescription, privacy: .public)")
+            Log.network.error("background upload failed: \(error.logSummary, privacy: .public)")
         }
         handlers.completion(record.id, finished.result)
     }

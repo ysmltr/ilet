@@ -31,8 +31,7 @@ public final class AppGroupDesktopStore: DesktopStore, @unchecked Sendable {
         do {
             return try JSONDecoder().decode([Desktop].self, from: data)
         } catch {
-            Log.storage.error(
-                "stored PCs are unreadable: \(error.localizedDescription, privacy: .public)")
+            Log.storage.error("stored PCs are unreadable: \(error.logSummary, privacy: .public)")
             throw IletError.storageCorrupted
         }
     }
@@ -70,8 +69,7 @@ public final class AppGroupDesktopStore: DesktopStore, @unchecked Sendable {
         do {
             defaults.set(try JSONEncoder().encode(desktops), forKey: Key.desktops)
         } catch {
-            Log.storage.error(
-                "PCs could not be saved: \(error.localizedDescription, privacy: .public)")
+            Log.storage.error("PCs could not be saved: \(error.logSummary, privacy: .public)")
             throw IletError.storageCorrupted
         }
     }
