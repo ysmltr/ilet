@@ -330,6 +330,19 @@ discovery only to find a new address and port for a desktop it already paired wi
 - It MUST still pin the certificate (section 2.2). Trust comes only from the pin, so a fake
   announcement can at worst make a connection fail.
 
+The iOS client:
+
+- looks for the announcement only when none of the desktop's known addresses has answered within
+  one second, so on an unchanged network it sends no queries;
+- browses for `_ilet._tcp` for at most three seconds, resolves only the services whose TXT `id`
+  is the paired desktop's, and looks up their addresses with DNS-SD (`DNSServiceResolve`,
+  `DNSServiceGetAddrInfo`) without connecting to them, so that it can check each address first;
+- looks up only host names in `.local`, which only Multicast DNS answers, so no lookup leaves the
+  local network;
+- uses at most four such services and eight addresses per search;
+- remembers the address where the pinned desktop answered at the front of its list, together
+  with that port, and keeps at most eight addresses, as many as a QR code may hold.
+
 ## 7. Implementation status
 
 | Part                                   | Desktop | iOS     |
@@ -338,5 +351,5 @@ discovery only to find a new address and port for a desktop it already paired wi
 | `GET /api/info`, `GET /api/v1/status`  | Phase 1 | Phase 3 |
 | `POST /api/v1/files`                   | Phase 1 | Phase 3 |
 | Pairing (QR, `POST /api/v1/pair`)      | Phase 2 | Phase 3 |
-| Discovery                              | Phase 4 | Phase 4 (not written yet) |
+| Discovery                              | Phase 4 | Phase 4 |
 | No connections or announcements outside Private networks | Phase 6, 7 | – |

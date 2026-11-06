@@ -87,7 +87,7 @@ Store Connect.
 
 ## Before submitting
 
-- [ ] The iPhone half of Phase 4 (finding the PC again) is done.
+- [x] The iPhone half of Phase 4 (finding the PC again) is written.
 - [x] Phase 5: the Share Extension is written.
 - [x] `ILET_BUNDLE_ID_PREFIX` in `Config/Shared.xcconfig` is a reverse-DNS name you own:
       `com.ysmltr.ilet`.

@@ -36,7 +36,7 @@ struct AppDependencies {
                 credentialStore: credentialStore, now: { Date() }),
             connector: DesktopConnector(
                 clientFactory: clientFactory, desktopStore: desktopStore,
-                credentialStore: credentialStore),
+                credentialStore: credentialStore, finder: BonjourDesktopFinder()),
             filePreparer: FilePreparer(temporaryFiles: copies),
             copies: copies,
             uploads: .shared)

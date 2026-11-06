@@ -36,7 +36,7 @@ struct ShareDependencies {
             settingsStore: AppGroupSettingsStore(defaults: defaults),
             connector: DesktopConnector(
                 clientFactory: PinnedClientFactory(), desktopStore: desktopStore,
-                credentialStore: credentialStore),
+                credentialStore: credentialStore, finder: BonjourDesktopFinder()),
             preparer: FilePreparer(temporaryFiles: copies, limits: conversionLimits),
             copies: copies)
     }

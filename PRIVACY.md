@@ -1,6 +1,6 @@
 # ilet privacy policy
 
-*Last updated: 5 November 2026 · [Türkçe aşağıda](#ilet-gizlilik-politikası)*
+*Last updated: 6 November 2026 · [Türkçe aşağıda](#ilet-gizlilik-politikası)*
 
 ilet sends files from your iPhone to your own PC over your own Wi-Fi network.
 
@@ -9,6 +9,10 @@ ilet sends files from your iPhone to your own PC over your own Wi-Fi network.
 **Nothing.** ilet has no accounts, no servers, no analytics, no advertising and no tracking.
 Your files go directly from your iPhone to your PC on your local network. They never pass
 through the internet or through anyone else's computer.
+
+So that your iPhone can find it again when its address changes, your PC announces its name and
+a random ID on your local network, only on networks set to Private. Your iPhone looks for that
+announcement only when it cannot reach your PC at an address it already knows.
 
 ## What stays on your devices
 
@@ -49,7 +53,7 @@ Open an issue at <https://github.com/ysmltr/ilet/issues>.
 
 # ilet gizlilik politikası
 
-*Son güncelleme: 5 Kasım 2026*
+*Son güncelleme: 6 Kasım 2026*
 
 ilet, dosyaları iPhone’unuzdan kendi bilgisayarınıza, kendi Wi-Fi ağınız üzerinden gönderir.
 
@@ -58,6 +62,10 @@ ilet, dosyaları iPhone’unuzdan kendi bilgisayarınıza, kendi Wi-Fi ağınız
 **Hiçbir şey.** ilet’te hesap, sunucu, analiz, reklam ya da izleme yoktur. Dosyalarınız yerel
 ağınızda doğrudan iPhone’unuzdan bilgisayarınıza gider; internetten ya da başka birinin
 bilgisayarından geçmez.
+
+Adresi değiştiğinde iPhone’unuz onu yeniden bulabilsin diye bilgisayarınız, adını ve rastgele
+bir kimliği yerel ağınızda duyurur; bunu yalnızca Özel olarak ayarlanmış ağlarda yapar.
+iPhone’unuz bu duyuruyu yalnızca bilgisayarınıza zaten bildiği bir adresten ulaşamadığında arar.
 
 ## Cihazlarınızda kalanlar
 

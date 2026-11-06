@@ -5,7 +5,7 @@ import Foundation
 public enum IletError: Error, Equatable, Sendable {
     /// The scanned QR code is not a valid ilet pairing code.
     case invalidPairingCode
-    /// None of the PC's addresses answered.
+    /// The PC answered neither at a known address nor at one that its announcement named.
     case desktopUnreachable
     /// The PC presented a certificate other than the pinned one. Shown as a security warning.
     case certificateMismatch

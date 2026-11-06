@@ -29,7 +29,7 @@ public struct PairingService: Pairing {
         let token = try await client.pair(
             at: endpoint, secret: payload.secret, deviceName: deviceName)
         var desktop = Desktop(pairing: payload, pairedAt: now())
-        desktop.prefer(endpoint.address)
+        desktop.remember(endpoint)
         try credentialStore.saveToken(token, for: desktop.id)
         try desktopStore.save(desktop)
         return desktop

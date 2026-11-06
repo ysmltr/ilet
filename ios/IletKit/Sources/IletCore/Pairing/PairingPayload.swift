@@ -6,7 +6,6 @@ public struct PairingPayload: Equatable, Sendable {
     private static let maxTextBytes = 2048
     private static let base64URLCharacters = Set(
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_")
-    private static let validPorts = 1...65_535
     private static let validAddressCounts = 1...ProtocolConstants.maxPairingAddresses
     private static let validNameLengths = 1...ProtocolConstants.maxDisplayNameLength
 
@@ -37,7 +36,7 @@ public struct PairingPayload: Equatable, Sendable {
             isVisibleText(fields.name),
             validAddressCounts.contains(fields.addresses.count),
             fields.addresses.allSatisfy(LocalNetworkAddress.isAllowed),
-            validPorts.contains(fields.port),
+            ProtocolConstants.validPorts.contains(fields.port),
             let fingerprint = CertificateFingerprint(hex: fields.fingerprint),
             isWellFormedSecret(fields.secret)
         else {

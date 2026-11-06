@@ -42,6 +42,22 @@ actor FakeDesktopClient: DesktopClient {
     }
 }
 
+/// An announcement that names these endpoints. It counts the searches, so tests can tell when
+/// none was needed.
+actor FakeDesktopFinder: DesktopFinding {
+    private let found: [DesktopEndpoint]
+    private(set) var searches = 0
+
+    init(found: [DesktopEndpoint] = []) {
+        self.found = found
+    }
+
+    func endpoints(of desktopID: UUID) async -> [DesktopEndpoint] {
+        searches += 1
+        return found
+    }
+}
+
 struct FakeClientFactory: DesktopClientFactory {
     let client: FakeDesktopClient
 

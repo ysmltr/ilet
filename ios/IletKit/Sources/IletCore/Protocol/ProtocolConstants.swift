@@ -6,7 +6,18 @@ public enum ProtocolConstants {
 
     /// [4.2] The `ilet` key of a pairing QR code.
     static let pairingPayloadVersion = 1
+    /// [4.2] Also the most addresses the iPhone remembers for a PC.
     static let maxPairingAddresses = 8
+    /// [4.2, 6] Ports in pairing codes and in announcements.
+    static let validPorts = 1...65_535
+
+    /// [6] What the PC announces on the local network.
+    enum Discovery {
+        static let serviceType = "_ilet._tcp"
+        static let domain = "local."
+        /// The TXT key that holds the PC's device ID.
+        static let deviceIDKey = "id"
+    }
 
     /// [4.2] Display and device names, in UTF-16 code units.
     public static let maxDisplayNameLength = 64

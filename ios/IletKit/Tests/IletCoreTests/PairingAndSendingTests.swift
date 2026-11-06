@@ -40,12 +40,47 @@ final class PairingAndSendingTests: XCTestCase {
         let client = FakeDesktopClient(answers: [:])
         let connector = DesktopConnector(
             clientFactory: FakeClientFactory(client: client), desktopStore: try makeDesktopStore(),
-            credentialStore: InMemoryCredentialStore())
+            credentialStore: InMemoryCredentialStore(), finder: FakeDesktopFinder())
 
         await assertThrows(.notPaired) {
             _ = try await connector.connect(
                 to: Desktop(pairing: try Fixtures.payload(), pairedAt: Date()))
         }
+    }
+
+    /// The PC moved to the iPhone's hotspot: the address and port that its announcement named
+    /// come first from now on, so the next send reaches the PC at once, without a new pairing.
+    func testConnectingRemembersWhereTheAnnouncementFoundThePC() async throws {
+        let desktop = Desktop(pairing: try Fixtures.payload(), pairedAt: Date())
+        let client = FakeDesktopClient(answers: [
+            "172.20.10.3": .desktop(id: Fixtures.desktopID, protocolVersion: 1)
+        ])
+        let finder = FakeDesktopFinder(found: [
+            DesktopEndpoint(address: "172.20.10.3", port: 45381)
+        ])
+        let store = try makeDesktopStore()
+        try store.save(desktop)
+        let credentials = InMemoryCredentialStore()
+        try credentials.saveToken("token", for: desktop.id)
+        let connector = DesktopConnector(
+            clientFactory: FakeClientFactory(client: client), desktopStore: store,
+            credentialStore: credentials, finder: finder)
+
+        _ = try await connector.connect(to: desktop)
+
+        let saved = try XCTUnwrap(try store.loadDesktops().first)
+        XCTAssertEqual(saved.addresses, ["172.20.10.3", "192.168.1.20", "fd12:3456::20"])
+        XCTAssertEqual(saved.port, 45381)
+    }
+
+    func testRemembersOnlyTheMostRecentAddresses() throws {
+        var desktop = Desktop(pairing: try Fixtures.payload(), pairedAt: Date())
+
+        for last in 1...10 {
+            desktop.remember(DesktopEndpoint(address: "10.0.0.\(last)", port: 45380))
+        }
+
+        XCTAssertEqual(desktop.addresses, (3...10).reversed().map { "10.0.0.\($0)" })
     }
 
     /// Background uploads check the size before they hand a file to iOS.

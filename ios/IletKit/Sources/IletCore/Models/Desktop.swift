@@ -20,9 +20,13 @@ public struct Desktop: Codable, Identifiable, Hashable, Sendable {
         self.pairedAt = pairedAt
     }
 
-    /// Moves an address that just worked to the front, so it is tried first next time.
-    mutating func prefer(_ address: String) {
-        addresses.removeAll { $0 == address }
-        addresses.insert(address, at: 0)
+    /// Remembers where the PC just answered: that address goes first, so it is tried first next
+    /// time, and the port is the one it answered on. Only the most recent addresses are kept, at
+    /// most as many as a pairing code holds.
+    mutating func remember(_ endpoint: DesktopEndpoint) {
+        addresses.removeAll { $0 == endpoint.address }
+        addresses.insert(endpoint.address, at: 0)
+        addresses = Array(addresses.prefix(ProtocolConstants.maxPairingAddresses))
+        port = endpoint.port
     }
 }

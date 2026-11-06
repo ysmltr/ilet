@@ -124,8 +124,11 @@ targets:
               NSExtensionActivationSupportsImageWithMaxCount: 50
               NSExtensionActivationSupportsMovieWithMaxCount: 50
               NSExtensionActivationSupportsFileWithMaxCount: 50
-        # The same as the app's: the sheet checks the PC before it sends.
+        # The same as the app's: the sheet checks the PC before it sends, and looks for the PC's
+        # announcement when its address has changed.
         NSLocalNetworkUsageDescription: ilet sends your files directly to your PC over your local network.
+        NSBonjourServices:
+          - _ilet._tcp
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
         IletAppGroupIdentifier: group.$(ILET_BUNDLE_ID_PREFIX)

@@ -11,9 +11,12 @@ over your Wi-Fi, with no accounts, no cloud and no analytics.
 > sending and the Share Extension (Phase 5: Share → ilet in other apps) work on a real iPhone,
 > installed through TestFlight. Sending from the app carries on in the background, and HEVC videos
 > arrive as MP4, which Windows plays. Phase 5 and these came after the Phase 7 review and had a
-> security review of their own. Still to come, in this order (see [Plans](#plans)): the iPhone's
-> half of Phase 4 (finding the PC again after it changes networks); Phase 8, sending from the PC
-> to the iPhone; a Microsoft Store package for Windows.
+> security review of their own. Newest, and not tried on an iPhone yet: the iPhone's half of
+> Phase 4. When the PC's address changes (another Wi-Fi, the iPhone's Personal Hotspot, a new
+> address from the router), the iPhone finds it again through its Bonjour announcement, checks
+> its pinned certificate as always, and remembers the new address, so no new pairing is needed.
+> Still to come, in this order (see [Plans](#plans)): Phase 8, sending from the PC to the
+> iPhone; a Microsoft Store package for Windows.
 
 ## Download
 
@@ -42,14 +45,6 @@ sanitized, never overwrite anything, are marked with Mark-of-the-Web and are nev
 automatically.
 
 ## Plans
-
-### Next: the iPhone's half of Phase 4
-
-The PC already announces itself with Bonjour. When its address changes (another Wi-Fi, the
-iPhone's Personal Hotspot, a new address from the router), the iPhone will find it again through
-that announcement, check its device ID and pinned certificate exactly as before, and remember the
-new address, so no new pairing is needed. The announcement is only a hint: an address that does
-not present the pinned certificate is never used (T3 in the threat model).
 
 ### Phase 8: from the PC to the iPhone
 
@@ -196,7 +191,7 @@ Without a Mac there are two ways:
 
 | Path                       | Responsibility                                                                      |
 | -------------------------- | ----------------------------------------------------------------------------------- |
-| `IletKit/Sources/IletCore` | Protocol constants, certificate pinning, HTTPS client, pairing, Keychain and App Group storage, preparing files (HEIC photos to JPG, HEVC videos to MP4), background uploads, checking shared names and types. No UI; the app and the Share Extension both use it. |
+| `IletKit/Sources/IletCore` | Protocol constants, certificate pinning, HTTPS client, pairing, finding a PC again through its Bonjour announcement, Keychain and App Group storage, preparing files (HEIC photos to JPG, HEVC videos to MP4), background uploads, checking shared names and types. No UI; the app and the Share Extension both use it. |
 | `IletShare`                | The Share Extension (Share → ilet): its sheet, copying the shared items and handing them to background uploads |
 | `Ilet/App`                 | Composition root, configuration from Info.plist, the start screen, and the upload events iOS sends while ilet is in the background or after the share sheet has closed |
 | `Ilet/Pairing`             | QR scanner and pairing flow                                                         |
