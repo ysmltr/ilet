@@ -11,14 +11,15 @@ over your Wi-Fi, with no accounts, no cloud and no analytics.
 > sending and the Share Extension (Phase 5: Share → ilet in other apps) work on a real iPhone,
 > installed through TestFlight. Sending from the app carries on in the background, and HEVC videos
 > arrive as MP4, which Windows plays. Phase 5 and these came after the Phase 7 review and had a
-> security review of their own. Newest, and tried on a real iPhone: the iPhone's half of
-> Phase 4. When the PC's address changes (another Wi-Fi, the iPhone's Personal Hotspot, a new
-> address from the router), the iPhone finds it again through its Bonjour announcement, checks
-> its pinned certificate as always, and remembers the new address, so no new pairing is needed.
-> That test also brought up an error dialog on the PC as its Wi-Fi changed networks
-> ([SECURITY_REVIEW.md](SECURITY_REVIEW.md) S11); Windows version 0.1.1 fixes it, but has not
-> been tried on a PC yet. Written, but not yet tried on real devices: Phase 8, sending from the
-> PC to the iPhone (see [Plans](#plans)). Still to come: a Microsoft Store package for Windows.
+> security review of their own. Also tried on a real iPhone: the iPhone's half of Phase 4. When
+> the PC's address changes (another Wi-Fi, the iPhone's Personal Hotspot, a new address from the
+> router), the iPhone finds it again through its Bonjour announcement, checks its pinned
+> certificate as always, and remembers the new address, so no new pairing is needed. That test
+> also brought up an error dialog on the PC as its Wi-Fi changed networks
+> ([SECURITY_REVIEW.md](SECURITY_REVIEW.md) S11); Windows 0.1.1 and later fix it, but a network
+> change has not been tried again yet. Newest, and tried on a real iPhone and PC: Phase 8,
+> sending from the PC to the iPhone (Windows 0.2.0, see [Plans](#plans)); it has had no security
+> review of its own yet. Still to come: a Microsoft Store package for Windows.
 
 ## Download
 
@@ -48,11 +49,12 @@ on the PC they are marked with Mark-of-the-Web.
 
 ## Plans
 
-### Phase 8: from the PC to the iPhone
+### Phase 8: from the PC to the iPhone (done)
 
-Written; being tried on real devices. Sending the other way round. The iPhone runs no server and
-ilet uses no push service, so files wait on the PC until ilet is open on the iPhone, which then
-fetches them over pinned HTTPS with its token, just as it sends:
+Tried on a real iPhone and PC on 6 November 2026, with Windows 0.2.0. Sending the other way
+round. The iPhone runs no server and ilet uses no push service, so files wait on the PC until
+ilet is open on the iPhone, which then fetches them over pinned HTTPS with its token, just as it
+sends:
 
 - On the PC, choose files with **Send to iPhone** in ilet's window, drop them on the window, or
   right-click them in File Explorer and choose **Send to › iPhone (ilet)**. A drop and Send to

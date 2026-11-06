@@ -101,7 +101,7 @@ Store Connect.
 - [x] Build and upload with the TestFlight workflow (see [TestFlight](#testflight)).
 - [ ] Test the TestFlight build on a real iPhone: pairing, sending, the warning for a wrong
       certificate, and Share → ilet from Photos and Files.
-- [ ] Phase 8: test receiving on a real iPhone: files from the PC appear under Received files and
+- [x] Phase 8: test receiving on a real iPhone: files from the PC appear under Received files and
       in Files › On My iPhone › ilet; Share and Save to Photos work.
 - [ ] Screenshots for the 6.9-inch iPhone (1320 × 2868 pixels), in English and Turkish.
 - [ ] Publish the Windows installer as a GitHub release, so reviewers and users can get it (the
