@@ -30,6 +30,11 @@ struct InfoView: View {
                     Text("info.sending.title")
                 }
                 Section {
+                    Text("info.receiving.body")
+                } header: {
+                    Text("info.receiving.title")
+                }
+                Section {
                     Label("info.trouble.running", systemImage: "desktopcomputer")
                     Label("info.trouble.wifi", systemImage: "wifi")
                     Label("info.trouble.private", systemImage: "house")

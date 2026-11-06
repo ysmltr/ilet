@@ -12,6 +12,7 @@ import { removeStalePartFiles } from '../files/partialFiles';
 import { loadOrCreateIdentity, type TlsIdentity } from '../identity/identityStore';
 import type { SecretCipher } from '../identity/secretCipher';
 import type { NetworkExposure } from '../network/networkExposure';
+import { Outbox, OUTBOX_SWEEP_INTERVAL_MS } from '../outbox/outbox';
 import { PairingCodes } from '../pairing/pairingCodes';
 import { closeServer, listen, type ListenAddress } from '../server/httpsServer';
 import { createIletServer } from '../server/iletServer';
@@ -25,6 +26,7 @@ import {
 } from '../settings/receiveFolder';
 import { defaultSettings } from '../settings/settings';
 import { SettingsStore } from '../settings/settingsStore';
+import { errorCodeOf } from '../shared/errors';
 import type { Logger } from '../shared/logger';
 
 /** The files in the data folder. */
@@ -32,10 +34,14 @@ export const DataFileName = {
   identity: 'identity.json',
   settings: 'settings.json',
   pairedDevices: 'paired-devices.json',
+  outbox: 'outbox.json',
 } as const;
 
+/** In the data folder: the copies of the files waiting for phones (PROTOCOL.md section 5.4). */
+export const OUTBOX_FOLDER_NAME = 'outbox';
+
 export interface ServerCoreEnvironment {
-  /** Where identity, settings and paired devices are stored. */
+  /** Where identity, settings, paired devices and the outbox are stored. */
   readonly dataFolder: string;
   readonly downloadsFolder: string;
   readonly listenAddress: ListenAddress;
@@ -58,6 +64,7 @@ export interface ServerCore {
   readonly settings: SettingsStore;
   readonly devices: DeviceRegistry;
   readonly pairingCodes: PairingCodes;
+  readonly outbox: Outbox;
   /** Checks a folder the user picked and, only if it passes, saves files there from now on. */
   changeReceiveFolder(folder: string): Promise<ReceiveFolderCheck>;
   /** Follows the network monitor: where to announce, and which of this PC's addresses to refuse. */
@@ -97,9 +104,32 @@ export async function startServerCore(environment: ServerCoreEnvironment): Promi
     now,
     logger,
   });
+  const outbox = await Outbox.open({
+    folder: path.join(dataFolder, OUTBOX_FOLDER_NAME),
+    listFile: path.join(dataFolder, DataFileName.outbox),
+    isPaired: (deviceId) => devices.has(deviceId),
+    maxFileSizeBytes: () => settings.current.maxFileSizeBytes,
+    availableBytes,
+    now,
+    logger,
+  });
+  outbox.onDelivered(({ sizeBytes }) => {
+    logger.info('file fetched by a device', { bytes: sizeBytes });
+  });
   devices.onRevoked((deviceId) => {
     receiver.abortUploadsFrom(deviceId);
+    outbox.removeDevice(deviceId).catch((error: unknown) => {
+      logger.error('could not delete the files waiting for a removed device', {
+        error: errorCodeOf(error),
+      });
+    });
   });
+  const outboxSweep = setInterval(() => {
+    outbox.removeExpired().catch((error: unknown) => {
+      logger.warn('could not delete expired copies', { error: errorCodeOf(error) });
+    });
+  }, OUTBOX_SWEEP_INTERVAL_MS);
+  outboxSweep.unref();
   const pairingCodes = new PairingCodes(Date.now);
 
   let exposure = environment.networkExposure;
@@ -112,6 +142,7 @@ export async function startServerCore(environment: ServerCoreEnvironment): Promi
     devices,
     pairingCodes,
     receiver,
+    outbox,
     onFileReceived: (file, device) => {
       logger.info('file received', { device: device.name, bytes: file.sizeBytes });
       for (const listener of fileListeners) {
@@ -144,6 +175,7 @@ export async function startServerCore(environment: ServerCoreEnvironment): Promi
     settings,
     devices,
     pairingCodes,
+    outbox,
     changeReceiveFolder: async (folder) => {
       const check = await checkReceiveFolder(
         folder,
@@ -165,6 +197,7 @@ export async function startServerCore(environment: ServerCoreEnvironment): Promi
       fileListeners.add(listener);
     },
     stop: async () => {
+      clearInterval(outboxSweep);
       // Withdrawn first, so phones are told the PC is gone before its port stops answering.
       await announcer?.stop();
       await closeServer(server);

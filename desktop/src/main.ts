@@ -8,6 +8,7 @@ import { ListenAddress } from './server/httpsServer';
 import { createConsoleLogger, errorFields } from './shared/logger';
 import { registerAppScheme } from './ui/appProtocol';
 import { installNavigationGuards } from './ui/securityGuards';
+import { sendToPaths, type SendToRequest } from './ui/sendToArguments';
 import { startupErrorMessage } from './ui/startupErrorMessage';
 
 const logger = createConsoleLogger();
@@ -17,8 +18,12 @@ const EXIT_CODE_STARTUP_FAILED = 1;
 registerAppScheme();
 installNavigationGuards();
 
-// A second instance would compete for the port and the data files; it shows the first one instead.
-if (app.requestSingleInstanceLock()) {
+// A second instance would compete for the port and the data files; it shows the first one
+// instead, and hands over the files of an Explorer Send to.
+const sendToIphone = sendToPaths(process.argv);
+const sendToRequest: SendToRequest | undefined =
+  sendToIphone === undefined ? undefined : { sendToIphone };
+if (app.requestSingleInstanceLock(sendToRequest)) {
   startDesktopApp(
     {
       // All built next to this file by scripts/bundle.mjs.

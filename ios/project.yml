@@ -38,8 +38,8 @@ targets:
         CODE_SIGN_STYLE: Automatic
         # Made from branding/ilet-icon.svg by desktop/scripts/render-icons.mjs.
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-    # The app sends through a background URLSession too, so uploads carry on when the user
-    # switches apps or locks the iPhone. That needs no background mode in Info.plist.
+    # The app sends and receives through background URLSessions too, so transfers carry on when
+    # the user switches apps or locks the iPhone. That needs no background mode in Info.plist.
     info:
       path: Ilet/Info.plist
       properties:
@@ -54,7 +54,15 @@ targets:
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         NSCameraUsageDescription: ilet uses the camera only to scan the pairing QR code shown on your PC.
-        NSLocalNetworkUsageDescription: ilet sends your files directly to your PC over your local network.
+        NSLocalNetworkUsageDescription: ilet sends files directly between this iPhone and your PC over your local network.
+        # Add-only access, asked for when the user first taps Save to Photos: ilet can add a
+        # received photo or video, but never sees the library.
+        NSPhotoLibraryAddUsageDescription: ilet adds a photo or video from your PC to your library only when you tap Save to Photos.
+        # Files from the PC are saved in the app's Documents folder, which these two keys show in
+        # the Files app as On My iPhone › ilet. No document types are declared, so no other app
+        # can hand files to ilet.
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
         # iOS lets the app look for exactly these Bonjour services, and no others.
         NSBonjourServices:
           - _ilet._tcp
@@ -126,7 +134,7 @@ targets:
               NSExtensionActivationSupportsFileWithMaxCount: 50
         # The same as the app's: the sheet checks the PC before it sends, and looks for the PC's
         # announcement when its address has changed.
-        NSLocalNetworkUsageDescription: ilet sends your files directly to your PC over your local network.
+        NSLocalNetworkUsageDescription: ilet sends files directly between this iPhone and your PC over your local network.
         NSBonjourServices:
           - _ilet._tcp
         NSAppTransportSecurity:

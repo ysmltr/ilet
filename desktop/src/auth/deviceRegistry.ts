@@ -59,6 +59,11 @@ export class DeviceRegistry {
     return this.devices.map(toPairedDevice);
   }
 
+  /** False as soon as the device's removal has been saved. */
+  has(deviceId: string): boolean {
+    return this.devices.some((device) => device.id === deviceId);
+  }
+
   /** Listeners hear about the new device only after it has been saved. */
   async register(requestedName: string): Promise<RegisteredDevice> {
     const name = sanitizeDisplayName(requestedName);

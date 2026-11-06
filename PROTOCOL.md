@@ -16,11 +16,13 @@ The key words MUST, MUST NOT, SHOULD and MAY are used as described in RFC 2119.
  2. POST /api/v1/pair  ─── pinned HTTPS ────────►  checks one-time secret, issues token
  3. POST /api/v1/files ─── pinned HTTPS + token ─► saves file into the receive folder
  4. browse _ilet._tcp  ◄─── mDNS (LAN only) ─────  advertises device ID and name
+ 5. GET /api/v1/outbox ─── pinned HTTPS + token ─► lists the files the user sent to this iPhone
 ```
 
 - There are no accounts, no cloud servers and no relays. Both devices must be on the same local
   network.
-- The client always starts the connection. The server never connects to the client.
+- The client always starts the connection. The server never connects to the client. Files from
+  the PC to the iPhone therefore wait on the PC until the iPhone fetches them (section 5.4).
 
 ## 2. Transport
 
@@ -72,7 +74,7 @@ These rules apply to every endpoint.
 | Known path, wrong method | `405 method_not_allowed`, with an `Allow` header                                                       |
 | Body on a route without a body | `413 payload_too_large`                                                                          |
 | Error responses      | Always close the connection (`Connection: close`).                                                         |
-| Response headers     | `Content-Type: application/json; charset=utf-8`, `Cache-Control: no-store`, `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none'` |
+| Response headers     | `Content-Type: application/json; charset=utf-8` (a file download, section 5.6, has `application/octet-stream` instead), `Cache-Control: no-store`, `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none'` |
 | Client source address| The server drops connections from addresses outside local-network ranges (RFC 1918, link-local, loopback, IPv6 ULA) before the TLS handshake. |
 | Public networks      | On Windows, the server accepts connections only on its addresses on networks that Windows classifies as Private (and on loopback). Connections to any other address, on a Public or Domain network or one not classified yet, are dropped before the TLS handshake. |
 
@@ -114,12 +116,14 @@ the code to a localized message.
 | `pairing_rejected`       | 403  | Wrong, expired or already used pairing secret                        |
 | `not_found`              | 404  | Unknown path                                                         |
 | `method_not_allowed`     | 405  | Known path, wrong method                                             |
+| `file_gone`              | 410  | The file is not waiting for this device (any more): fetched, cancelled, expired, or never queued for it |
 | `length_required`        | 411  | Upload without `Content-Length` (chunked uploads are not supported)  |
 | `payload_too_large`      | 413  | File larger than the limit, or a body where none is allowed          |
 | `unsupported_media_type` | 415  | Wrong `Content-Type`                                                 |
 | `too_many_requests`      | 429  | Rate limited; see `Retry-After`                                      |
 | `internal_error`         | 500  | Anything else                                                        |
 | `too_many_uploads`       | 503  | Concurrent upload limit reached; see `Retry-After`                   |
+| `too_many_downloads`     | 503  | Concurrent download limit reached; see `Retry-After`                 |
 | `insufficient_storage`   | 507  | Not enough free disk space on the PC                                 |
 
 ### 3.3 Server timeouts and limits
@@ -137,6 +141,9 @@ Clients should expect the server to enforce these values:
 | JSON request body                     | 4 KiB, complete within 10 s |
 | File size                             | configurable, default 8 GiB |
 | Concurrent uploads (all devices)      | configurable, default 4     |
+| Concurrent downloads (all devices)    | 4                           |
+| Files waiting in one device's outbox  | 200                         |
+| How long a file waits in an outbox    | 24 hours                    |
 
 ## 4. Pairing
 
@@ -302,6 +309,102 @@ If the connection breaks during an upload, the server deletes the partial data. 
 read `limits` from `/api/v1/status` first, so that they don't start uploads the server will
 reject.
 
+### 5.4 The outbox: files from the PC
+
+The iPhone runs no server, so files for it wait on the PC, in that iPhone's **outbox**, until ilet
+on the iPhone fetches them (sections 5.5 to 5.7).
+
+The desktop puts files there only when its user asks for it: by choosing them in a file dialog in
+ilet's window, by dropping them on the window, or with Explorer's **Send to › iPhone (ilet)**. A
+drop and Send to are confirmed first in a dialog of the PC that names the files and the iPhone.
+Only regular files on the PC's own drives are queued: no folders, and no network paths
+(`\\server\share\…`) or device paths (`\\?\…`, `\\.\…`).
+
+| Rule              | Value                                                                       |
+| ----------------- | --------------------------------------------------------------------------- |
+| What is served    | A copy of the file, made when the user sent it, in the desktop's data folder. The desktop never serves any other file, and never by path. |
+| Entry ID          | 16 random bytes as 32 lowercase hexadecimal characters                      |
+| Who sees an entry | Only the paired device it was queued for. Another device's IDs, like unknown ones, give `410 file_gone`. |
+| File name         | The file's own name, cleaned as in section 5.3 (no path, no control or invisible characters). Clients clean it again before using it. |
+| Lifetime          | At most 24 hours from when it was queued. The entry also ends when the device confirms it (5.7), when the user cancels it on the PC, or when the device is removed. |
+| Limits            | 200 entries per device; each file at most the file size limit (section 3.3), with the same free-space reserve as uploads |
+
+### 5.5 `GET /api/v1/outbox`
+
+Access token required. Lists the files waiting for the device that sends the token, oldest
+first.
+
+`200 OK`
+
+```json
+{
+  "files": [
+    {
+      "id": "3f9c2a8e5b7d4c1e9a0b6f8d2c4e1a3b",
+      "name": "report.pdf",
+      "sizeBytes": 48213,
+      "queuedAt": "2026-11-06T12:00:00.000Z",
+      "expiresAt": "2026-11-07T12:00:00.000Z"
+    }
+  ]
+}
+```
+
+Timestamps are ISO 8601 in UTC. An older desktop answers `404 not_found`: it cannot send files.
+
+### 5.6 `GET /api/v1/outbox/file`
+
+Access token required. Downloads one file of the device's outbox.
+
+| Header           | Rule                                                 |
+| ---------------- | ---------------------------------------------------- |
+| `Authorization`  | `Bearer <token>`                                     |
+| `Ilet-File-Id`   | Required, exactly once: the entry ID from the list   |
+
+`200 OK` with `Content-Type: application/octet-stream` and `Content-Length` equal to the entry's
+`sizeBytes`. The body is the file content. There are no ranges: after a broken connection the
+client starts again from the beginning.
+
+Errors: `400 invalid_request` (missing, repeated or malformed `Ilet-File-Id`),
+`401 unauthorized`, `410 file_gone`, `503 too_many_downloads`.
+
+Downloading does not remove the entry; confirming does.
+
+### 5.7 `POST /api/v1/outbox/received`
+
+Access token required. The client confirms that it stored a file completely, so the desktop
+deletes the entry and its copy.
+
+Request headers: `Content-Type: application/json`. Body (at most 4 KiB, complete within 10 s):
+
+```json
+{ "id": "3f9c2a8e5b7d4c1e9a0b6f8d2c4e1a3b" }
+```
+
+`200 OK` with the body `{}`. An ID that is not, or no longer, in this device's outbox gives the
+same answer, so a client may repeat a confirmation whose answer it never got.
+
+Errors: `400 invalid_request`, `401 unauthorized`, `411 length_required`,
+`413 payload_too_large`, `415 unsupported_media_type`.
+
+The iOS client:
+
+- asks for the list only while ilet is open on the screen: when it comes to the front, then every
+  15 seconds (every minute while the PC cannot be reached), and when the user pulls the list
+  down; only the PC selected in the app is asked;
+- stops asking for the rest of that visit when the desktop answers `404 not_found` (an older
+  desktop), no longer accepts the token, or presents a certificate other than the pinned one;
+- downloads in a background session with the pin, as uploads do (section 2.2), over one
+  connection at a time, and discards a download that was redirected, did not end with `200`, or is
+  shorter or longer than `sizeBytes`;
+- tries a file at most three times per visit; pulling the list down tries again;
+- saves a file only once it is complete, under its cleaned name without leading dots, and never
+  over another file (` (1)`, ` (2)`, …), and then confirms it;
+- remembers which IDs it saved from which desktop for two days, longer than an entry waits, so a
+  lost confirmation does not bring the same file twice: a saved file that is still listed is
+  confirmed again instead;
+- never opens a received file by itself.
+
 ## 6. Discovery
 
 The desktop advertises a DNS-SD service (RFC 6763) over Multicast DNS (RFC 6762) on the local
@@ -355,3 +458,4 @@ The iOS client:
 | Pairing (QR, `POST /api/v1/pair`)      | Phase 2 | Phase 3 |
 | Discovery                              | Phase 4 | Phase 4 |
 | No connections or announcements outside Private networks | Phase 6, 7 | – |
+| Outbox (`/api/v1/outbox`, `/file`, `/received`) | Phase 8 | Phase 8 |

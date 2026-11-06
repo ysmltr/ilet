@@ -13,8 +13,8 @@ import { fallbackFileName, sanitizeFileName } from './fileNameSanitizer';
 import type { UntrustedFileMarker } from './markOfTheWeb';
 import { newPartFileName } from './partialFiles';
 import { resolveInsideFolder } from './pathContainment';
+import { TransferSlots } from './transferSlots';
 import { claimUniqueFile } from './uniqueFileName';
-import { UploadSlots } from './uploadSlots';
 
 /** Free space that must remain once every upload in progress has finished. */
 export const FREE_SPACE_RESERVE_BYTES = 512 * 1024 ** 2;
@@ -59,10 +59,10 @@ export interface ReceivedFile {
  * never holds partial or unmarked data.
  */
 export class FileReceiver {
-  private readonly slots: UploadSlots;
+  private readonly slots: TransferSlots;
 
   constructor(private readonly dependencies: FileReceiverDependencies) {
-    this.slots = new UploadSlots(dependencies.policy().maxConcurrentUploads);
+    this.slots = new TransferSlots(dependencies.policy().maxConcurrentUploads);
   }
 
   async receive(file: IncomingFile): Promise<ReceivedFile> {
@@ -87,7 +87,7 @@ export class FileReceiver {
   }
 
   abortUploadsFrom(deviceId: string): void {
-    this.slots.abortUploadsFrom(deviceId);
+    this.slots.abortTransfersFrom(deviceId);
   }
 
   private async ensureFreeSpace(receiveFolder: string): Promise<void> {

@@ -32,6 +32,8 @@ enum ErrorMessage {
             return String(localized: "error.fileTooLarge \(limit)")
         case .fileUnreadable:
             return String(localized: "error.fileUnreadable")
+        case .fileNotSaved:
+            return String(localized: "error.fileNotSaved")
         case .credentialStorage, .storageCorrupted:
             return String(localized: "error.storage")
         case .backgroundUploadsBusy:
@@ -49,7 +51,7 @@ enum ErrorMessage {
             return String(localized: "error.server.payloadTooLarge")
         case .tooManyRequests:
             return String(localized: "error.server.tooManyRequests")
-        case .tooManyUploads:
+        case .tooManyUploads, .tooManyDownloads:
             return String(localized: "error.server.busy")
         default:
             return String(localized: "error.server.generic")

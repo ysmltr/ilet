@@ -25,6 +25,16 @@ enum Fixtures {
 
     static let desktopID = "6f1c2a8e-3a0b-4c55-9d2e-0b8a4f7c1d23"
     static let secret = "q3Zr0bS8wq3qKk4VQ2Xn0hY5w3m6Jt1oZr8sDpX4u7A"
+    /// The entry ID of PROTOCOL.md's outbox example (section 5.5).
+    static let outboxFileID = "3f9c2a8e5b7d4c1e9a0b6f8d2c4e1a3b"
+
+    /// A checked route to the paired PC, as the connector returns it.
+    static func connection() throws -> DesktopConnection {
+        DesktopConnection(
+            limits: UploadLimits(maxFileSizeBytes: 1_000, maxConcurrentUploads: 1),
+            endpoint: DesktopEndpoint(address: "192.168.1.20", port: 45380), token: "token",
+            fingerprint: try desktopFingerprint())
+    }
 
     static func desktopCertificateData() throws -> Data {
         try XCTUnwrap(

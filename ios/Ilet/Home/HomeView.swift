@@ -5,6 +5,7 @@ import SwiftUI
 struct HomeView: View {
     @ObservedObject var desktops: DesktopsViewModel
     @ObservedObject var sender: SendViewModel
+    @ObservedObject var receiver: ReceiveViewModel
     let makePairingViewModel: @MainActor () -> PairingViewModel
 
     /// How long the start screen stays at least, so it reads as a calm start and not as a flicker.
@@ -39,7 +40,7 @@ struct HomeView: View {
             Group {
                 if let desktop = desktops.defaultDesktop {
                     SendList(
-                        desktop: desktop, desktops: desktops, sender: sender,
+                        desktop: desktop, desktops: desktops, sender: sender, receiver: receiver,
                         pickedPhotos: $pickedPhotos, isImportingFiles: $isImportingFiles,
                         onPairAnother: { isPairing = true })
                 } else {
@@ -65,7 +66,7 @@ struct HomeView: View {
             isPresented: $isPairing, onDismiss: { desktops.reload() },
             content: { PairingView(viewModel: makePairingViewModel()) }
         )
-        .sheet(isPresented: $sender.isSecurityWarningPresented) {
+        .sheet(isPresented: isSecurityWarningPresented) {
             SecurityWarningSheet()
         }
         .alert(
@@ -81,16 +82,38 @@ struct HomeView: View {
             message: { Text(desktops.errorMessage ?? "") }
         )
     }
+
+    /// Sending and receiving show the same warning, and only once when both run into it.
+    private var isSecurityWarningPresented: Binding<Bool> {
+        Binding(
+            get: { sender.isSecurityWarningPresented || receiver.isSecurityWarningPresented },
+            set: { isPresented in
+                if !isPresented {
+                    sender.isSecurityWarningPresented = false
+                    receiver.isSecurityWarningPresented = false
+                }
+            })
+    }
 }
 
-/// Everything for sending to the selected PC, plus settings and the list of PCs.
+/// When the receive list checks the PC: while ilet is in front, and for the selected PC.
+private struct CheckSchedule: Equatable {
+    let desktopID: UUID
+    let isActive: Bool
+}
+
+/// Everything for sending to the selected PC and receiving from it, plus settings and the list of
+/// PCs.
 private struct SendList: View {
     let desktop: Desktop
     @ObservedObject var desktops: DesktopsViewModel
     @ObservedObject var sender: SendViewModel
+    @ObservedObject var receiver: ReceiveViewModel
     @Binding var pickedPhotos: [PhotosPickerItem]
     @Binding var isImportingFiles: Bool
     let onPairAnother: () -> Void
+
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         List {
@@ -128,6 +151,7 @@ private struct SendList: View {
                     }
                 }
             }
+            ReceivedSection(receiver: receiver)
             Section {
                 Toggle("settings.compatibleFormats", isOn: $sender.sendCompatibleFormats)
             } footer: {
@@ -135,6 +159,27 @@ private struct SendList: View {
             }
             DesktopsSection(viewModel: desktops, onPairAnother: onPairAnother)
         }
+        .refreshable { [receiver, desktop] in
+            await receiver.refresh(desktop)
+        }
+        .task(id: CheckSchedule(desktopID: desktop.id, isActive: scenePhase == .active)) {
+            guard scenePhase == .active else {
+                return
+            }
+            await receiver.keepChecking(desktop)
+        }
+        .alert(
+            Text("error.title"),
+            isPresented: Binding(
+                get: { receiver.photosMessage != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        receiver.photosMessage = nil
+                    }
+                }),
+            actions: { Button("common.ok") {} },
+            message: { Text(receiver.photosMessage ?? "") }
+        )
         .onChange(of: pickedPhotos) { items in
             guard !items.isEmpty else {
                 return

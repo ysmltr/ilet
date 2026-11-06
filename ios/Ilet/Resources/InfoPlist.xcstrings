@@ -38,13 +38,29 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "ilet sends your files directly to your PC over your local network."
+            "value": "ilet sends files directly between this iPhone and your PC over your local network."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "ilet, dosyalarınızı yerel ağınız üzerinden doğrudan bilgisayarınıza gönderir."
+            "value": "ilet, dosyaları yerel ağınız üzerinden doğrudan bu iPhone ile bilgisayarınız arasında gönderir."
+          }
+        }
+      }
+    },
+    "NSPhotoLibraryAddUsageDescription": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ilet adds a photo or video from your PC to your library only when you tap Save to Photos."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ilet, bilgisayarınızdan gelen bir fotoğrafı ya da videoyu yalnızca Fotoğraflar’a kaydet’e dokunduğunuzda arşivinize ekler."
           }
         }
       }

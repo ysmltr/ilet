@@ -209,6 +209,22 @@
         }
       }
     },
+    "error.fileNotSaved": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The file could not be saved on this iPhone. Make sure there is enough free space."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dosya bu iPhone’a kaydedilemedi. Yeterli boş alan olduğundan emin olun."
+          }
+        }
+      }
+    },
     "error.fileTooLarge %@": {
       "localizations": {
         "en": {
@@ -582,13 +598,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "ilet sends photos and files from this iPhone to your PC over your Wi-Fi. They never pass through the internet or a cloud, and you need no account."
+            "value": "ilet sends photos and files between this iPhone and your PC over your Wi-Fi. They never pass through the internet or a cloud, and you need no account."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "ilet, fotoğrafları ve dosyaları bu iPhone’dan Wi-Fi üzerinden bilgisayarınıza gönderir. Dosyalar hiçbir zaman internetten ya da bir buluttan geçmez ve hesap gerekmez."
+            "value": "ilet, fotoğrafları ve dosyaları Wi-Fi üzerinden bu iPhone ile bilgisayarınız arasında gönderir. Dosyalar hiçbir zaman internetten ya da bir buluttan geçmez ve hesap gerekmez."
           }
         }
       }
@@ -685,6 +701,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Gizlilik"
+          }
+        }
+      }
+    },
+    "info.receiving.body": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On your PC, drag files onto ilet’s window, or right-click them in File Explorer and choose Send to › iPhone (ilet). They wait there for up to 24 hours. While ilet is open on this iPhone, it fetches them and saves them in Files › On My iPhone › ilet."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilgisayarınızda dosyaları ilet penceresine sürükleyin ya da Dosya Gezgini’nde dosyalara sağ tıklayıp Gönder › iPhone (ilet) seçeneğini seçin. Dosyalar orada en fazla 24 saat bekler. ilet bu iPhone’da açıkken onları alır ve Dosyalar › iPhone’umda › ilet klasörüne kaydeder."
+          }
+        }
+      }
+    },
+    "info.receiving.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Receive files from your PC"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilgisayarınızdan dosya alın"
           }
         }
       }
@@ -1005,6 +1053,198 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bilgisayarla eşleştir"
+          }
+        }
+      }
+    },
+    "receive.empty": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Files that you send from ilet on your PC appear here."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilgisayarınızdaki ilet’ten gönderdiğiniz dosyalar burada görünür."
+          }
+        }
+      }
+    },
+    "receive.failed.gone": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No longer waiting on your PC. Send it again from there."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Artık bilgisayarınızda beklemiyor. Oradan yeniden gönderin."
+          }
+        }
+      }
+    },
+    "receive.failed.incomplete": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The download was incomplete."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İndirme tamamlanmadı."
+          }
+        }
+      }
+    },
+    "receive.failed.server": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your PC could not send the file."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilgisayarınız dosyayı gönderemedi."
+          }
+        }
+      }
+    },
+    "receive.footer": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "While ilet is open, it fetches new files from your PC and saves them in Files › On My iPhone › ilet."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ilet açıkken bilgisayarınızdaki yeni dosyaları alır ve Dosyalar › iPhone’umda › ilet klasörüne kaydeder."
+          }
+        }
+      }
+    },
+    "receive.pcTooOld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To send files to this iPhone, update ilet on your PC."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu iPhone’a dosya göndermek için bilgisayarınızdaki ilet’i güncelleyin."
+          }
+        }
+      }
+    },
+    "receive.photosDenied": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ilet may not add to your photos. Allow it in Settings › ilet › Photos."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ilet’in fotoğraflarınıza ekleme izni yok. Ayarlar › ilet › Fotoğraflar’dan izin verin."
+          }
+        }
+      }
+    },
+    "receive.photosFailed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photos could not add this file."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu dosya Fotoğraflar’a eklenemedi."
+          }
+        }
+      }
+    },
+    "receive.saveToPhotos": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save to Photos"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğraflar’a kaydet"
+          }
+        }
+      }
+    },
+    "receive.savedToPhotos": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved to Photos"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğraflar’a kaydedildi"
+          }
+        }
+      }
+    },
+    "receive.share": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paylaş"
+          }
+        }
+      }
+    },
+    "receive.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Received files"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gelen dosyalar"
           }
         }
       }

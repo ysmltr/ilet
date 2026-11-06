@@ -13,6 +13,8 @@ struct AppDependencies {
     let filePreparer: any FilePreparing
     let copies: TemporaryFiles
     let uploads: AppUploads
+    let receiver: OutboxReceiver
+    let downloads: AppDownloads
 
     static func live() -> AppDependencies {
         let configuration = AppConfiguration.fromMainBundle()
@@ -27,6 +29,8 @@ struct AppDependencies {
         let credentialStore = KeychainCredentialStore(
             accessGroup: configuration.keychainAccessGroup)
         let clientFactory = PinnedClientFactory()
+        // Opened at once, like the uploads, so downloads that an earlier run left come back.
+        let downloads = AppDownloads.shared
         return AppDependencies(
             desktopStore: desktopStore,
             settingsStore: AppGroupSettingsStore(defaults: defaults),
@@ -39,7 +43,11 @@ struct AppDependencies {
                 credentialStore: credentialStore, finder: BonjourDesktopFinder()),
             filePreparer: FilePreparer(temporaryFiles: copies),
             copies: copies,
-            uploads: .shared)
+            uploads: .shared,
+            receiver: OutboxReceiver(
+                clientFactory: clientFactory, downloads: downloads.session,
+                ledger: downloads.ledger),
+            downloads: downloads)
     }
 
     func makeDesktopsViewModel() -> DesktopsViewModel {
@@ -50,6 +58,10 @@ struct AppDependencies {
         SendViewModel(
             connector: connector, preparer: filePreparer, settings: settingsStore,
             uploads: uploads, copies: copies)
+    }
+
+    func makeReceiveViewModel() -> ReceiveViewModel {
+        ReceiveViewModel(connector: connector, receiver: receiver, downloads: downloads)
     }
 
     func makePairingViewModel() -> PairingViewModel {

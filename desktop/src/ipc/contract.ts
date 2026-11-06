@@ -24,7 +24,19 @@ export const IpcChannel = {
   checkNetwork: 'network:check',
   networkChanged: 'network:changed',
   openNetworkSettings: 'network:open-settings',
+  getOutbox: 'outbox:get',
+  outboxChanged: 'outbox:changed',
+  chooseFilesToSend: 'outbox:choose-files',
+  cancelOutboxFile: 'outbox:cancel',
+  /** Sent by the preload script itself, never by the page: the paths of a drop the user made. */
+  dropFiles: 'outbox:drop-files',
 } as const;
+
+/**
+ * The most paths one drop carries. More than the main process sends at once, so that a larger
+ * drop still gets its "too many files" message.
+ */
+export const MAX_DROPPED_PATHS = 1000;
 
 /** QR code modules, row by row (`true` is dark), quiet zone included. */
 export type QrMatrix = readonly (readonly boolean[])[];
@@ -71,6 +83,21 @@ export interface NetworkStatus {
   readonly domainNetworks: readonly string[];
 }
 
+/** File names are cleaned, device names come from phones: the window shows both only as text. */
+export interface OutboxFileSummary {
+  readonly id: string;
+  readonly name: string;
+  readonly sizeBytes: number;
+  readonly deviceName: string;
+}
+
+export interface OutboxSummary {
+  /** The files waiting for phones, oldest first. */
+  readonly files: readonly OutboxFileSummary[];
+  /** Explorer's Send to menu offers ilet: only the installed app adds it. */
+  readonly sendToMenu: boolean;
+}
+
 export interface IletBridge {
   startPairing(): Promise<StartPairingResult>;
   cancelPairing(): void;
@@ -92,4 +119,14 @@ export interface IletBridge {
   checkNetwork(): Promise<NetworkStatus>;
   onNetworkChanged(listener: (status: NetworkStatus) => void): void;
   openNetworkSettings(): void;
+
+  getOutbox(): Promise<OutboxSummary>;
+  onOutboxChanged(listener: (outbox: OutboxSummary) => void): void;
+  /**
+   * The user picks the files in a system dialog and, with several phones, the phone in another;
+   * the page never sends a path. Dropped files go to the main process without the page.
+   */
+  chooseFilesToSend(): Promise<void>;
+  /** Resolves to whether the file was still waiting. */
+  cancelOutboxFile(id: string): Promise<boolean>;
 }

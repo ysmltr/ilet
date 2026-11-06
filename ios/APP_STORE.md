@@ -7,7 +7,8 @@
   the corners); the launch screen shows the drawing without its tile.
 - Privacy manifests (`PrivacyInfo.xcprivacy`, in the app and in the Share Extension): no
   tracking, no collected data.
-- Permission texts for the camera and the local network, in English and Turkish.
+- Permission texts for the camera, the local network and adding to Photos (add-only, asked for
+  when Save to Photos is first tapped), in English and Turkish.
 - Export compliance: `ITSAppUsesNonExemptEncryption = NO`, because ilet uses only the system's
   HTTPS and hashing.
 - Privacy policy: [PRIVACY.md](../PRIVACY.md), at
@@ -100,6 +101,8 @@ Store Connect.
 - [x] Build and upload with the TestFlight workflow (see [TestFlight](#testflight)).
 - [ ] Test the TestFlight build on a real iPhone: pairing, sending, the warning for a wrong
       certificate, and Share → ilet from Photos and Files.
+- [ ] Phase 8: test receiving on a real iPhone: files from the PC appear under Received files and
+      in Files › On My iPhone › ilet; Share and Save to Photos work.
 - [ ] Screenshots for the 6.9-inch iPhone (1320 × 2868 pixels), in English and Turkish.
 - [ ] Publish the Windows installer as a GitHub release, so reviewers and users can get it (the
       Desktop workflow makes the draft; see Releases in the README).
@@ -118,7 +121,8 @@ Store Connect.
 
 > ilet sends files to the free ilet app for Windows on a PC in the same Wi-Fi network. Install it
 > from <the release link>, click "Pair new device" and scan the code with ilet on the iPhone, then
-> share a photo with ilet. A video of these steps: <link>.
+> share a photo with ilet. To receive, drop a file on ilet's window on the PC while ilet is open
+> on the iPhone: it appears under Received files. A video of these steps: <link>.
 
 ## Store texts
 
@@ -140,6 +144,7 @@ over your own Wi-Fi. No account, no cloud, no ads, no tracking.
 - Sending carries on when you switch apps or lock your iPhone.
 - iPhone photos arrive as JPG and videos as MP4, so Windows opens them without extra apps (you can
   turn this off).
+- Receive files from your PC too: they arrive in Files › On My iPhone › ilet.
 - Every connection is encrypted and tied to your own PC, so nobody else on the network can
   receive your files.
 
@@ -157,6 +162,7 @@ klasöre, kendi Wi-Fi ağınız üzerinden gönderir. Hesap yok, bulut yok, rekl
 - Başka bir uygulamaya geçseniz ya da iPhone’u kilitleseniz de gönderim sürer.
 - iPhone fotoğrafları JPG, videoları MP4 olarak gelir; Windows bunları ek uygulama olmadan açar
   (bunu kapatabilirsiniz).
+- Bilgisayarınızdan da dosya alın: Dosyalar › iPhone’umda › ilet klasörüne gelir.
 - Her bağlantı şifrelidir ve kendi bilgisayarınıza bağlıdır; ağdaki başka biri dosyalarınızı
   alamaz.
 

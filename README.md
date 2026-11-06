@@ -17,8 +17,8 @@ over your Wi-Fi, with no accounts, no cloud and no analytics.
 > its pinned certificate as always, and remembers the new address, so no new pairing is needed.
 > That test also brought up an error dialog on the PC as its Wi-Fi changed networks
 > ([SECURITY_REVIEW.md](SECURITY_REVIEW.md) S11); Windows version 0.1.1 fixes it, but has not
-> been tried on a PC yet. Still to come, in this order (see [Plans](#plans)): Phase 8, sending
-> from the PC to the iPhone; a Microsoft Store package for Windows.
+> been tried on a PC yet. Written, but not yet tried on real devices: Phase 8, sending from the
+> PC to the iPhone (see [Plans](#plans)). Still to come: a Microsoft Store package for Windows.
 
 ## Download
 
@@ -42,28 +42,32 @@ could reach it.
 - [PRIVACY.md](PRIVACY.md): the privacy policy (ilet collects nothing).
 
 In short: HTTPS only, with a self-signed certificate that the iPhone pins by its SHA-256
-fingerprint; pairing only by QR code; 256-bit tokens stored only as hashes; received files are
-sanitized, never overwrite anything, are marked with Mark-of-the-Web and are never opened
-automatically.
+fingerprint; pairing only by QR code; 256-bit tokens stored only as hashes; on both sides,
+received files are sanitized, never overwrite anything and are never opened automatically, and
+on the PC they are marked with Mark-of-the-Web.
 
 ## Plans
 
 ### Phase 8: from the PC to the iPhone
 
-Sending the other way round. The iPhone runs no server and ilet uses no push service, so files
-wait on the PC until ilet is open on the iPhone, which then fetches them over pinned HTTPS with
-its token, just as it sends:
+Written; being tried on real devices. Sending the other way round. The iPhone runs no server and
+ilet uses no push service, so files wait on the PC until ilet is open on the iPhone, which then
+fetches them over pinned HTTPS with its token, just as it sends:
 
-- On the PC, **Send to iPhone** in ilet's window opens the Windows file dialog: choose the files
-  and the iPhone. The PC serves only the files queued for that iPhone, never any other file.
+- On the PC, choose files with **Send to iPhone** in ilet's window, drop them on the window, or
+  right-click them in File Explorer and choose **Send to › iPhone (ilet)**. A drop and Send to
+  are confirmed in ilet's own dialog. The PC serves only the files queued for that iPhone, never
+  any other file.
 - Each file waits in that iPhone's outbox for at most 24 hours and leaves the PC once the iPhone
-  has it. Removing the iPhone from the paired devices empties its outbox.
-- On the iPhone, files land in ilet's folder in the Files app (On My iPhone › ilet), with **Save
-  to Photos** for photos and videos. Nothing opens by itself.
+  has it. ilet's window lists what is waiting, and each file can be cancelled there. Removing the
+  iPhone from the paired devices empties its outbox.
+- On the iPhone, while ilet is open, it checks the selected PC every 15 seconds, or when you pull
+  the list down, and iOS fetches each new file in the background, so it keeps coming when you
+  switch apps. Files land in ilet's folder in the Files app (On My iPhone › ilet), with **Share**,
+  and **Save to Photos** for photos and videos. Nothing opens by itself.
 - Nothing new is opened on either side: no port on the iPhone, no new pairing, no firewall rule.
 
-To decide when the phase starts: whether Explorer's **Send to** menu and drag and drop should also
-send files, and how long files wait.
+Then: a Microsoft Store package for Windows.
 
 ## Repository layout
 

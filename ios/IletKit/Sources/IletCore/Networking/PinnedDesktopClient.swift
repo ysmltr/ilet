@@ -59,6 +59,26 @@ final class PinnedDesktopClient: DesktopClient {
         return try decode(DeviceStatus.self, from: try await send(request))
     }
 
+    func outbox(at endpoint: DesktopEndpoint, token: String) async throws -> [OutboxFile] {
+        var request = URLRequest(url: try endpoint.url(path: ProtocolConstants.Path.outbox))
+        request.setValue(bearer(token), forHTTPHeaderField: ProtocolConstants.Header.authorization)
+        return try decode(OutboxList.self, from: try await send(request)).usableFiles
+    }
+
+    func confirmReceived(fileID: String, at endpoint: DesktopEndpoint, token: String) async throws {
+        guard OutboxFile.isValidID(fileID) else {
+            throw IletError.unexpectedResponse
+        }
+        var request = URLRequest(url: try endpoint.url(path: ProtocolConstants.Path.outboxReceived))
+        request.httpMethod = ProtocolConstants.Method.post
+        request.setValue(bearer(token), forHTTPHeaderField: ProtocolConstants.Header.authorization)
+        request.setValue(
+            ProtocolConstants.MediaType.json,
+            forHTTPHeaderField: ProtocolConstants.Header.contentType)
+        request.httpBody = try encode(ReceivedRequest(id: fileID))
+        _ = try await send(request)
+    }
+
     /// Sends a request and returns the body of a successful response. Every failure is mapped to
     /// an `IletError`.
     private func send(_ request: URLRequest) async throws -> Data {

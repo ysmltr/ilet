@@ -4,7 +4,7 @@ import { getResponder } from '@homebridge/ciao';
 import { app, safeStorage, session } from 'electron';
 
 import { responderOptions } from '../discovery/serviceAdvertiser';
-import { createTranslator, resolveLanguage, type Translate } from '../i18n/messages';
+import { createTranslator, type Language, resolveLanguage, type Translate } from '../i18n/messages';
 import { createSafeStorageCipher } from '../identity/safeStorageCipher';
 import type { NetworkExposure } from '../network/networkExposure';
 import { NetworkMonitor } from '../network/networkMonitor';
@@ -16,12 +16,15 @@ import { serveRendererAssets } from '../ui/appProtocol';
 import { AppTray } from '../ui/appTray';
 import { AppWindow } from '../ui/appWindow';
 import { connectDevices } from '../ui/devicesIpc';
-import { FileNotifications } from '../ui/fileNotifications';
+import { deliveryNotifications, FileNotifications } from '../ui/fileNotifications';
 import { createIpcGuard } from '../ui/ipcGuard';
 import { createMainWindow } from '../ui/mainWindow';
 import { connectNetwork } from '../ui/networkIpc';
+import { connectOutbox, type SendFlow } from '../ui/outboxIpc';
 import { connectPairing } from '../ui/pairingIpc';
 import { lockDownSession } from '../ui/securityGuards';
+import { parseSendToRequest, sendToPaths } from '../ui/sendToArguments';
+import { installSendToShortcut } from '../ui/sendToShortcut';
 import { connectSettings } from '../ui/settingsIpc';
 import { openFolderInExplorer, openNetworkSettings, revealInExplorer } from '../ui/shellActions';
 import { createToastPresenter } from '../ui/toastPresenter';
@@ -80,19 +83,39 @@ export async function startDesktopApp(
   });
   monitor.start();
 
-  const translate = createTranslator(resolveLanguage(app.getPreferredSystemLanguages()));
+  const language = resolveLanguage(app.getPreferredSystemLanguages());
+  const translate = createTranslator(language);
   const window = new AppWindow(() => createMainWindow(files.preload, files.appIcon, logger));
   const openReceiveFolder = (): Promise<void> =>
     openFolderInExplorer(core.settings.current.receiveFolder, logger);
-  connectWindow({ core, monitor, window, translate, logger, openReceiveFolder });
-  notifyAboutFiles(core, translate, files.appIcon);
+  const sendToMenu = installSendToShortcut(translate('outboxTitle'), logger);
+  const sendFlow = connectWindow({
+    core,
+    monitor,
+    window,
+    translate,
+    language,
+    sendToMenu,
+    logger,
+    openReceiveFolder,
+  });
+  notifyAboutFiles(core, window, translate, files.appIcon);
   const tray = createTray(files.trayIcon, monitor, window, translate, openReceiveFolder);
 
-  app.on('second-instance', () => {
-    window.show();
+  app.on('second-instance', (_event, _argv, _workingDirectory, additionalData) => {
+    const paths = parseSendToRequest(additionalData);
+    if (paths === undefined) {
+      window.show();
+      return;
+    }
+    void sendFlow.sendFromExplorer(paths);
   });
   stopOnQuit(core, monitor, window, tray, logger);
-  if (!isHiddenStart(process.argv)) {
+  const startedWithFiles = sendToPaths(process.argv);
+  if (startedWithFiles !== undefined) {
+    // Explorer's Send to started ilet; the window opens to confirm the files.
+    void sendFlow.sendFromExplorer(startedWithFiles);
+  } else if (!isHiddenStart(process.argv)) {
     window.show();
   }
   return core;
@@ -103,11 +126,13 @@ interface WindowParts {
   readonly monitor: NetworkMonitor;
   readonly window: AppWindow;
   readonly translate: Translate;
+  readonly language: Language;
+  readonly sendToMenu: boolean;
   readonly logger: Logger;
   readonly openReceiveFolder: () => Promise<void>;
 }
 
-function connectWindow(parts: WindowParts): void {
+function connectWindow(parts: WindowParts): SendFlow {
   const { core, monitor, window, translate, logger } = parts;
   const guard = createIpcGuard((event) => window.isSender(event), logger);
   connectPairing(guard, core, window, os.networkInterfaces);
@@ -118,20 +143,40 @@ function connectWindow(parts: WindowParts): void {
   connectNetwork(guard, monitor, window, {
     openNetworkSettings: () => openNetworkSettings(logger),
   });
+  return connectOutbox({
+    guard,
+    core,
+    window,
+    translate,
+    language: parts.language,
+    sendToMenu: parts.sendToMenu,
+    logger,
+  });
 }
 
-function notifyAboutFiles(core: ServerCore, translate: Translate, iconPath: string): void {
-  const notifications = new FileNotifications({
-    show: createToastPresenter(iconPath),
-    reveal: revealInExplorer,
-    translate,
-  });
+function notifyAboutFiles(
+  core: ServerCore,
+  window: AppWindow,
+  translate: Translate,
+  iconPath: string,
+): void {
+  const show = createToastPresenter(iconPath);
+  const received = new FileNotifications({ show, reveal: revealInExplorer, translate });
   core.onFileReceived((file, device) => {
-    notifications.fileReceived({
+    received.fileReceived({
       filePath: file.path,
       fileName: file.fileName,
       deviceName: device.name,
     });
+  });
+  const delivered = deliveryNotifications(show, translate, () => {
+    window.show();
+  });
+  core.outbox.onDelivered(({ deviceId, name }) => {
+    const device = core.devices.list().find(({ id }) => id === deviceId);
+    if (device !== undefined) {
+      delivered.add({ fileName: name, deviceName: device.name });
+    }
   });
 }
 

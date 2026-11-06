@@ -1,4 +1,5 @@
 import { randomUUID, X509Certificate } from 'node:crypto';
+import { mkdir } from 'node:fs/promises';
 import type { IncomingHttpHeaders, OutgoingHttpHeaders } from 'node:http';
 import { request as httpsRequest } from 'node:https';
 import type { AddressInfo } from 'node:net';
@@ -13,6 +14,7 @@ import {
   certificateFingerprint,
   createSelfSignedCertificate,
 } from '../../src/identity/certificate';
+import { Outbox } from '../../src/outbox/outbox';
 import { PairingCodes } from '../../src/pairing/pairingCodes';
 import { SERVER_LIMITS } from '../../src/protocol/constants';
 import {
@@ -48,6 +50,8 @@ export interface TestServerOptions {
   readonly limits?: Partial<ServerLimits>;
   readonly markUntrusted?: UntrustedFileMarker;
   readonly isBlockedLocalAddress?: BlockedLocalAddressCheck;
+  /** The outbox's clock; real time by default. */
+  readonly now?: () => Date;
 }
 
 export interface TestServer {
@@ -57,6 +61,9 @@ export interface TestServer {
   readonly receiveFolder: string;
   readonly devices: DeviceRegistry;
   readonly pairingCodes: PairingCodes;
+  readonly outbox: Outbox;
+  /** Where files to send are placed before the tests queue them. */
+  readonly sourceFolder: string;
   readonly device: PairedDevice;
   readonly token: string;
   readonly logger: MemoryLogger;
@@ -101,9 +108,22 @@ export async function startTestServer(options: TestServerOptions = {}): Promise<
     now: () => new Date(),
     logger,
   });
+  const now = options.now ?? ((): Date => new Date());
+  const outbox = await Outbox.open({
+    folder: path.join(folder, 'outbox'),
+    listFile: path.join(folder, 'outbox.json'),
+    isPaired: (deviceId) => devices.has(deviceId),
+    maxFileSizeBytes: () => settings.maxFileSizeBytes,
+    availableBytes: () => Promise.resolve(Number.MAX_SAFE_INTEGER),
+    now,
+    logger,
+  });
   devices.onRevoked((deviceId) => {
     receiver.abortUploadsFrom(deviceId);
+    void outbox.removeDevice(deviceId);
   });
+  const sourceFolder = path.join(folder, 'to-send');
+  await mkdir(sourceFolder);
   const received: ReceivedFile[] = [];
   const pairingCodes = new PairingCodes(Date.now);
   afterEach(() => {
@@ -115,6 +135,7 @@ export async function startTestServer(options: TestServerOptions = {}): Promise<
     devices,
     pairingCodes,
     receiver,
+    outbox,
     onFileReceived: (file) => received.push(file),
     isBlockedLocalAddress: options.isBlockedLocalAddress ?? (() => false),
     logger,
@@ -140,6 +161,8 @@ export async function startTestServer(options: TestServerOptions = {}): Promise<
     receiveFolder: settings.receiveFolder,
     devices,
     pairingCodes,
+    outbox,
+    sourceFolder,
     device,
     token,
     logger,

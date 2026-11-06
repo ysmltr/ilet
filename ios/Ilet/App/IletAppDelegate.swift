@@ -1,10 +1,10 @@
 import IletCore
 import UIKit
 
-/// Finishes background uploads when iOS wakes the app for their events: the app's own, and the
-/// share sheet's once the sheet is gone. For a share sheet's, the app opens that session, whose
-/// delegate checks the pin of any new connection and deletes each finished copy, and then lets
-/// go of it again.
+/// Finishes background transfers when iOS wakes the app for their events: the app's own uploads
+/// and downloads, and the share sheet's uploads once the sheet is gone. For a share sheet's, the
+/// app opens that session, whose delegate checks the pin of any new connection and deletes each
+/// finished copy, and then lets go of it again.
 @MainActor
 final class IletAppDelegate: NSObject, UIApplicationDelegate {
     private var sessions: [String: BackgroundUploads] = [:]
@@ -16,6 +16,10 @@ final class IletAppDelegate: NSObject, UIApplicationDelegate {
     ) {
         if identifier == BackgroundUploads.appSessionIdentifier {
             AppUploads.shared.handleEvents(completionHandler: completionHandler)
+            return
+        }
+        if identifier == BackgroundDownloads.appSessionIdentifier {
+            AppDownloads.shared.handleEvents(completionHandler: completionHandler)
             return
         }
         guard BackgroundUploads.isShareSheetSession(identifier) else {

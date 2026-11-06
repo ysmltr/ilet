@@ -69,6 +69,47 @@ const english = {
   moreFilesReceivedTitle: '{count} more files received',
   latestFileBody: 'Latest: {file} from {device}',
 
+  outboxTitle: 'Send to iPhone',
+  outboxIntro:
+    'Files you send wait on this PC until ilet on your iPhone fetches them, for up to 24 hours. Open ilet on the iPhone to get them.',
+  chooseFilesToSend: 'Choose files…',
+  outboxDropHint: 'You can also drop files on this window.',
+  outboxSendToHint: 'Or right-click files in File Explorer and choose Send to › iPhone (ilet).',
+  outboxEmpty: 'No files are waiting.',
+  outboxFileDetail: '{size} · for {device}',
+  outboxCancelFailed: 'ilet could not cancel this file. Try again.',
+  dropOverlay: 'Drop files here to send them to your iPhone',
+
+  chooseFilesTitle: 'Choose files to send to your iPhone',
+  sendFilesTitle: 'Send files',
+  sendOneFileQuestion: 'Send “{file}”?',
+  sendFilesQuestion: 'Send {count} files?',
+  sendFilesDetail:
+    'Files wait on this PC until ilet on the iPhone fetches them, for up to 24 hours.',
+  sendTo: 'Send to {device}',
+  moreFileNames: '…and {count} more',
+  ok: 'OK',
+  tooManyFiles: 'You can send up to {max} files at a time.',
+  noDeviceToSendTo: 'Pair your iPhone first. Then you can send files to it.',
+  sendFailed: 'ilet could not send the files. Try again.',
+  oneFileNotSent: '“{file}” was not sent.',
+  filesNotSent: '{count} files were not sent.',
+  problemNotALocalFile:
+    '{file}: only files on this PC can be sent, not files in network locations.',
+  problemNotAFile: '{file}: folders cannot be sent, only files.',
+  problemUnreadable:
+    '{file}: ilet could not read it. It may be open in another program, or it changed while it was copied.',
+  problemTooLarge: '{file}: larger than {max}.',
+  problemNoSpace: '{file}: this PC does not have enough free space.',
+  problemOutboxFull: '{file}: {max} files are already waiting for this iPhone.',
+  problemDeviceRemoved: '{file}: the iPhone was removed.',
+
+  fileDeliveredTitle: 'File sent',
+  fileDeliveredBody: '{file} is on {device}',
+  oneMoreFileDeliveredTitle: '1 more file sent',
+  moreFilesDeliveredTitle: '{count} more files sent',
+  latestFileDeliveredBody: 'Latest: {file} on {device}',
+
   startupFailedTitle: 'ilet could not start',
   startupPortInUse:
     'Another program is using the network port ilet needs. Close that program and start ilet again.',
@@ -154,6 +195,48 @@ const turkish: Messages = {
   oneMoreFileReceivedTitle: '1 dosya daha alındı',
   moreFilesReceivedTitle: '{count} dosya daha alındı',
   latestFileBody: 'Son gelen: {device} cihazından {file}',
+
+  outboxTitle: 'iPhone’a gönder',
+  outboxIntro:
+    'Gönderdiğiniz dosyalar, iPhone’unuzdaki ilet onları alana kadar en fazla 24 saat bu bilgisayarda bekler. Almak için iPhone’da ilet’i açın.',
+  chooseFilesToSend: 'Dosya seç…',
+  outboxDropHint: 'Dosyaları bu pencereye de bırakabilirsiniz.',
+  outboxSendToHint:
+    'Ya da Dosya Gezgini’nde dosyalara sağ tıklayıp Gönder › iPhone (ilet) seçeneğini seçin.',
+  outboxEmpty: 'Bekleyen dosya yok.',
+  outboxFileDetail: '{size} · {device} için',
+  outboxCancelFailed: 'ilet bu dosyayı iptal edemedi. Tekrar deneyin.',
+  dropOverlay: 'iPhone’unuza göndermek için dosyaları buraya bırakın',
+
+  chooseFilesTitle: 'iPhone’unuza gönderilecek dosyaları seçin',
+  sendFilesTitle: 'Dosya gönder',
+  sendOneFileQuestion: '“{file}” gönderilsin mi?',
+  sendFilesQuestion: '{count} dosya gönderilsin mi?',
+  sendFilesDetail:
+    'Dosyalar, iPhone’daki ilet onları alana kadar en fazla 24 saat bu bilgisayarda bekler.',
+  sendTo: '{device} cihazına gönder',
+  moreFileNames: '…ve {count} dosya daha',
+  ok: 'Tamam',
+  tooManyFiles: 'Tek seferde en fazla {max} dosya gönderebilirsiniz.',
+  noDeviceToSendTo: 'Önce iPhone’unuzu eşleştirin. Ardından ona dosya gönderebilirsiniz.',
+  sendFailed: 'ilet dosyaları gönderemedi. Tekrar deneyin.',
+  oneFileNotSent: '“{file}” gönderilmedi.',
+  filesNotSent: '{count} dosya gönderilmedi.',
+  problemNotALocalFile:
+    '{file}: yalnızca bu bilgisayardaki dosyalar gönderilebilir, ağ konumlarındakiler gönderilemez.',
+  problemNotAFile: '{file}: klasörler gönderilemez, yalnızca dosyalar gönderilebilir.',
+  problemUnreadable:
+    '{file}: ilet dosyayı okuyamadı. Başka bir programda açık olabilir veya kopyalanırken değişmiş olabilir.',
+  problemTooLarge: '{file}: {max} boyutundan büyük.',
+  problemNoSpace: '{file}: bu bilgisayarda yeterli boş alan yok.',
+  problemOutboxFull: '{file}: bu iPhone için zaten {max} dosya bekliyor.',
+  problemDeviceRemoved: '{file}: iPhone kaldırıldı.',
+
+  fileDeliveredTitle: 'Dosya gönderildi',
+  fileDeliveredBody: '{file}, {device} cihazında',
+  oneMoreFileDeliveredTitle: '1 dosya daha gönderildi',
+  moreFilesDeliveredTitle: '{count} dosya daha gönderildi',
+  latestFileDeliveredBody: 'Son gönderilen: {file}, {device} cihazında',
 
   startupFailedTitle: 'ilet başlatılamadı',
   startupPortInUse:

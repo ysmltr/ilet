@@ -37,6 +37,14 @@
   !insertmacro iletAddFirewallRule 'name="${ILET_RULE_BLOCK}" action=block profile=public,domain'
 !macroend
 
+; ilet adds "iPhone (ilet)" to Explorer's Send to menu of each user who starts it
+; (src/ui/sendToShortcut.ts). Send to folders are per user, so this removes the one of the user
+; who uninstalls; ilet recreates it at its next start after an update.
+!define ILET_SEND_TO_SHORTCUT "iPhone (ilet).lnk"
+
 !macro customUnInstall
   !insertmacro iletRemoveFirewallRules
+  SetShellVarContext current
+  Delete "$SENDTO\${ILET_SEND_TO_SHORTCUT}"
+  SetShellVarContext all
 !macroend

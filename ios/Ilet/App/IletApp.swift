@@ -2,23 +2,25 @@ import SwiftUI
 
 @main
 struct IletApp: App {
-    /// Receives the share sheet's background uploads when iOS wakes the app for them.
+    /// Receives the events of background transfers when iOS wakes the app for them.
     @UIApplicationDelegateAdaptor(IletAppDelegate.self) private var appDelegate
     private let dependencies: AppDependencies
     @StateObject private var desktops: DesktopsViewModel
     @StateObject private var sender: SendViewModel
+    @StateObject private var receiver: ReceiveViewModel
 
     init() {
         let dependencies = AppDependencies.live()
         self.dependencies = dependencies
         _desktops = StateObject(wrappedValue: dependencies.makeDesktopsViewModel())
         _sender = StateObject(wrappedValue: dependencies.makeSendViewModel())
+        _receiver = StateObject(wrappedValue: dependencies.makeReceiveViewModel())
     }
 
     var body: some Scene {
         WindowGroup {
             HomeView(
-                desktops: desktops, sender: sender,
+                desktops: desktops, sender: sender, receiver: receiver,
                 makePairingViewModel: dependencies.makePairingViewModel)
         }
     }

@@ -64,6 +64,14 @@ export function sanitizeFileName(rawName: string, fallbackName: string): string 
   return neutralizeShellParsedType(avoidReservedName(shortened));
 }
 
+/**
+ * True for names such as "NUL" or "com1.txt", which Windows opens as a device in any folder
+ * instead of as a file.
+ */
+export function isWindowsDeviceName(fileName: string): boolean {
+  return WINDOWS_RESERVED_NAMES.has(baseNameOf(fileName));
+}
+
 /** "ilet-20261101-153012", in local time. */
 export function fallbackFileName(now: Date): string {
   const twoDigits = (value: number): string => String(value).padStart(2, '0');
@@ -96,8 +104,12 @@ function limitLength(name: string): string {
 }
 
 function avoidReservedName(name: string): string {
-  const baseName = (name.split('.')[0] ?? '').trimEnd().toUpperCase();
-  return WINDOWS_RESERVED_NAMES.has(baseName) ? `${REPLACEMENT_CHARACTER}${name}` : name;
+  return isWindowsDeviceName(name) ? `${REPLACEMENT_CHARACTER}${name}` : name;
+}
+
+/** The part before the first dot, as Windows compares device names: upper-case, no trailing spaces. */
+function baseNameOf(name: string): string {
+  return (name.split('.')[0] ?? '').trimEnd().toUpperCase();
 }
 
 function neutralizeShellParsedType(name: string): string {

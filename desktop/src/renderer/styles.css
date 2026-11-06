@@ -177,7 +177,8 @@ p {
   font-size: 13px;
 }
 
-.device-list {
+.device-list,
+.file-list {
   display: flex;
   flex-direction: column;
   margin: 0;
@@ -185,7 +186,8 @@ p {
   list-style: none;
 }
 
-.device {
+.device,
+.file {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -194,20 +196,23 @@ p {
   border-bottom: 1px solid var(--border);
 }
 
-.device-info {
+.device-info,
+.file-info {
   display: flex;
   flex-direction: column;
   min-width: 0;
 }
 
-.device-name {
+.device-name,
+.file-name {
   overflow: hidden;
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.device-date {
+.device-date,
+.file-detail {
   color: var(--muted);
   font-size: 13px;
 }
@@ -329,4 +334,21 @@ p {
 .toggle input:disabled {
   cursor: default;
   opacity: 0.5;
+}
+
+/* Only shows where files can be dropped: the drop itself goes through the window below it. */
+.drop-overlay {
+  position: fixed;
+  inset: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  border: 3px dashed var(--accent-start);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  font-size: 17px;
+  font-weight: 700;
+  text-align: center;
+  pointer-events: none;
 }

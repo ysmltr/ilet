@@ -44,6 +44,22 @@
           ></button>
         </section>
 
+        <section id="outbox-card" class="card" aria-labelledby="outbox-title" hidden>
+          <h2 id="outbox-title" class="card-title" data-i18n="outboxTitle"></h2>
+          <p class="muted small" data-i18n="outboxIntro"></p>
+          <ul id="outbox-list" class="file-list" aria-labelledby="outbox-title"></ul>
+          <p id="outbox-empty" class="muted" data-i18n="outboxEmpty"></p>
+          <p id="outbox-problem" class="problem" role="alert" hidden></p>
+          <button
+            id="choose-files"
+            class="button primary"
+            type="button"
+            data-i18n="chooseFilesToSend"
+          ></button>
+          <p class="muted small" data-i18n="outboxDropHint"></p>
+          <p id="send-to-hint" class="muted small" data-i18n="outboxSendToHint" hidden></p>
+        </section>
+
         <section class="card" aria-labelledby="settings-title">
           <h2 id="settings-title" class="card-title" data-i18n="settingsTitle"></h2>
           <p class="setting-label" data-i18n="receiveFolderLabel"></p>
@@ -87,5 +103,9 @@
         <button id="done-button" class="button" type="button" data-i18n="done"></button>
       </section>
     </main>
+
+    <div id="drop-overlay" class="drop-overlay" aria-hidden="true" hidden>
+      <p data-i18n="dropOverlay"></p>
+    </div>
   </body>
 </html>

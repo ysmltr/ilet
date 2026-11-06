@@ -56,6 +56,19 @@ export const DEFAULT_MAX_CONCURRENT_UPLOADS = 4;
 /** [3.2] Sent with `too_many_uploads`. */
 export const UPLOAD_RETRY_AFTER_SECONDS = 2;
 
+/** [3.3, 5.4] Files from the PC to a phone, which wait in that phone's outbox. */
+export const OUTBOX_LIMITS = {
+  fileLifetimeMs: 24 * 60 * 60 * 1000,
+  maxFilesPerDevice: 200,
+  maxConcurrentDownloads: 4,
+} as const;
+
+/** [5.4] An outbox entry's ID: this many random bytes, as lowercase hexadecimal. */
+export const OUTBOX_FILE_ID_BYTES = 16;
+
+/** [3.2] Sent with `too_many_downloads`. */
+export const DOWNLOAD_RETRY_AFTER_SECONDS = 2;
+
 /** [4.2] Display and device names, in UTF-16 code units (fits a 255-byte mDNS TXT entry). */
 export const MAX_DISPLAY_NAME_LENGTH = 64;
 
@@ -84,6 +97,9 @@ export const ApiPath = {
   pair: '/api/v1/pair',
   status: '/api/v1/status',
   files: '/api/v1/files',
+  outbox: '/api/v1/outbox',
+  outboxFile: '/api/v1/outbox/file',
+  outboxReceived: '/api/v1/outbox/received',
 } as const;
 
 /** Request header names, lower-case as Node.js exposes them. */
@@ -92,6 +108,7 @@ export const RequestHeader = {
   contentLength: 'content-length',
   contentType: 'content-type',
   expect: 'expect',
+  fileId: 'ilet-file-id',
   fileName: 'ilet-file-name',
   host: 'host',
   origin: 'origin',
@@ -101,6 +118,7 @@ export const RequestHeader = {
 export const MediaType = {
   json: 'application/json',
   upload: 'application/octet-stream',
+  download: 'application/octet-stream',
 } as const;
 
 export const JSON_RESPONSE_CONTENT_TYPE = `${MediaType.json}; charset=utf-8`;
@@ -124,12 +142,14 @@ export const ERROR_HTTP_STATUS = {
   pairing_rejected: 403,
   not_found: 404,
   method_not_allowed: 405,
+  file_gone: 410,
   length_required: 411,
   payload_too_large: 413,
   unsupported_media_type: 415,
   too_many_requests: 429,
   internal_error: 500,
   too_many_uploads: 503,
+  too_many_downloads: 503,
   insufficient_storage: 507,
 } as const;
 

@@ -20,6 +20,8 @@ public enum IletError: Error, Equatable, Sendable {
     case unexpectedResponse
     case fileTooLarge(limitBytes: Int64)
     case fileUnreadable
+    /// A file from the PC could not be saved on this iPhone.
+    case fileNotSaved
     case credentialStorage(OSStatus)
     case storageCorrupted
     /// The app is still finishing the share sheet's earlier uploads, so new ones cannot start yet.

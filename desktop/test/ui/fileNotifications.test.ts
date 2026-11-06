@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createTranslator } from '../../src/i18n/messages';
 import {
+  deliveryNotifications,
   FileNotifications,
   type NotificationContent,
   type ReceivedFileNotice,
@@ -95,5 +96,30 @@ describe('FileNotifications', () => {
     notifications.fileReceived(file('2.JPG'));
 
     expect(shown.map(({ content }) => content.title)).toEqual(['File received', 'File received']);
+  });
+});
+
+describe('deliveryNotifications', () => {
+  it('announces files the phone fetched, sums up a burst and opens the window', () => {
+    const shown: Shown[] = [];
+    let windowOpened = 0;
+    const notifications = deliveryNotifications(
+      (content, click) => shown.push({ content, click }),
+      createTranslator('en'),
+      () => {
+        windowOpened += 1;
+      },
+    );
+    for (const name of ['report.pdf', 'a.jpg', 'b.jpg']) {
+      notifications.add({ fileName: name, deviceName: 'iPhone' });
+    }
+    vi.advanceTimersByTime(QUIET_PERIOD_MS);
+
+    expect(shown.map(({ content }) => content)).toEqual([
+      { title: 'File sent', body: 'report.pdf is on iPhone' },
+      { title: '2 more files sent', body: 'Latest: b.jpg on iPhone' },
+    ]);
+    shown[1]?.click();
+    expect(windowOpened).toBe(1);
   });
 });

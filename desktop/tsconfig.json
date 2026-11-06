@@ -4,5 +4,5 @@
     "noEmit": true
   },
   "include": ["src", "dev", "test", "vitest.config.mts"],
-  "exclude": ["src/renderer"]
+  "exclude": ["src/renderer", "src/preload"]
 }

@@ -49,3 +49,14 @@ export class StartupError extends Error {
 export function hasErrorCode(error: unknown, code: string): boolean {
   return error instanceof Error && 'code' in error && error.code === code;
 }
+
+/**
+ * What to log about an error when its message may name a file: only its code ("EBUSY",
+ * "payload_too_large") or, without one, its name.
+ */
+export function errorCodeOf(error: unknown): string {
+  if (!(error instanceof Error)) {
+    return 'unknown';
+  }
+  return 'code' in error && typeof error.code === 'string' ? error.code : error.name;
+}

@@ -2,7 +2,7 @@
  * Runs in the sandboxed window before the page. It can reach Electron's IPC, the page cannot:
  * the page gets only the functions of `IletBridge`, and the main process checks every message.
  */
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, webUtils } from 'electron';
 
 import {
   BRIDGE_NAME,
@@ -10,7 +10,9 @@ import {
   type DeviceSummary,
   type IletBridge,
   IpcChannel,
+  MAX_DROPPED_PATHS,
   type NetworkStatus,
+  type OutboxSummary,
   type PairingEvent,
   type RenameDeviceResult,
   type SettingsSummary,
@@ -67,6 +69,59 @@ const bridge: IletBridge = {
   openNetworkSettings: () => {
     ipcRenderer.send(IpcChannel.openNetworkSettings);
   },
+
+  getOutbox: () => ipcRenderer.invoke(IpcChannel.getOutbox) as Promise<OutboxSummary>,
+  onOutboxChanged: (listener) => {
+    subscribe(IpcChannel.outboxChanged, (payload) => {
+      listener(payload as OutboxSummary);
+    });
+  },
+  chooseFilesToSend: () => ipcRenderer.invoke(IpcChannel.chooseFilesToSend) as Promise<void>,
+  cancelOutboxFile: (id) => ipcRenderer.invoke(IpcChannel.cancelOutboxFile, id) as Promise<boolean>,
 };
 
+const FILES_DRAG_TYPE = 'Files';
+
+function carriesFiles(event: DragEvent): boolean {
+  return event.dataTransfer?.types.includes(FILES_DRAG_TYPE) === true;
+}
+
+/**
+ * Files dropped on the window reach the main process from here, never from the page: only a drop
+ * that the user really made is read (`isTrusted`; the page can dispatch only untrusted events),
+ * and the page never learns a path. These listeners run first, in the capture phase, as they
+ * were added before the page's own. The main process asks the user before it copies anything.
+ */
+function forwardDroppedFiles(): void {
+  window.addEventListener(
+    'dragover',
+    (event) => {
+      if (carriesFiles(event)) {
+        // Without this, the window refuses the drop.
+        event.preventDefault();
+      }
+    },
+    true,
+  );
+  window.addEventListener(
+    'drop',
+    (event) => {
+      event.preventDefault();
+      if (!event.isTrusted) {
+        return;
+      }
+      const paths = Array.from(event.dataTransfer?.files ?? [], (file) =>
+        webUtils.getPathForFile(file),
+      )
+        .filter((filePath) => filePath !== '')
+        .slice(0, MAX_DROPPED_PATHS);
+      if (paths.length > 0) {
+        ipcRenderer.send(IpcChannel.dropFiles, paths);
+      }
+    },
+    true,
+  );
+}
+
 contextBridge.exposeInMainWorld(BRIDGE_NAME, bridge);
+forwardDroppedFiles();

@@ -28,6 +28,11 @@ public enum ProtocolConstants {
     /// [2.2] SHA-256 as lowercase hexadecimal.
     static let fingerprintHexLength = 64
 
+    /// [5.4] An outbox entry's ID: 16 random bytes as lowercase hexadecimal.
+    static let outboxFileIDLength = 32
+    /// [3.3, 5.4] The most files that wait for one device on a PC.
+    static let maxOutboxFiles = 200
+
     /// [2] There is no plaintext port.
     static let scheme = "https"
     static let bearerPrefix = "Bearer "
@@ -38,6 +43,9 @@ public enum ProtocolConstants {
         static let pair = "/api/v1/pair"
         static let status = "/api/v1/status"
         static let files = "/api/v1/files"
+        static let outbox = "/api/v1/outbox"
+        static let outboxFile = "/api/v1/outbox/file"
+        static let outboxReceived = "/api/v1/outbox/received"
     }
 
     enum Method {
@@ -48,6 +56,7 @@ public enum ProtocolConstants {
         static let authorization = "Authorization"
         static let contentType = "Content-Type"
         static let fileName = "Ilet-File-Name"
+        static let fileID = "Ilet-File-Id"
     }
 
     enum MediaType {
