@@ -12,7 +12,8 @@ export function ipv4(address: string, internal = false): NetworkInterfaceInfo {
   };
 }
 
-export function ipv6(address: string): NetworkInterfaceInfo {
+/** `scopeid` is the zone of a link-local address, which Windows numbers; 0 for any other address. */
+export function ipv6(address: string, scopeid = 0): NetworkInterfaceInfo {
   return {
     address,
     family: 'IPv6',
@@ -20,6 +21,6 @@ export function ipv6(address: string): NetworkInterfaceInfo {
     netmask: 'ffff:ffff:ffff:ffff::',
     mac: '00:00:00:00:00:00',
     cidr: `${address}/64`,
-    scopeid: 0,
+    scopeid,
   };
 }

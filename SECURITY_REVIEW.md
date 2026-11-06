@@ -1,7 +1,7 @@
 # ilet security reviews
 
 1. [Phase 7](#phase-7-review-the-whole-codebase), 2 November 2026: the whole codebase,
-   findings S1 to S8.
+   findings S1 to S8, and S11, found later in the same code.
 2. [Phase 5](#phase-5-review-the-share-extension-background-uploads-and-video-conversion),
    6 November 2026: the Share Extension, background uploads and video conversion, all written
    after Phase 7; findings S9 and S10.
@@ -12,11 +12,12 @@ Every finding is fixed, with tests.
 *2 November 2026.* The whole codebase (`desktop/`, `ios/`, the installer script and the CI
 workflow) was checked against every threat in [THREAT_MODEL.md](THREAT_MODEL.md) (T1–T37) and its
 nine security invariants. Every finding below is fixed, with tests. S8 was found afterwards, on
-4 November 2026, by the first run of the Windows checks on GitHub.
+4 November 2026, by the first run of the Windows checks on GitHub, and S11 on 6 November 2026,
+when the PC showed an error dialog during the first test of the iPhone's half of Phase 4.
 
 ### Summary
 
-No critical or high findings. All nine invariants hold. One medium and seven low findings:
+No critical or high findings. All nine invariants hold. One medium and eight low findings:
 
 | ID | Severity          | Area    | Finding                                                               | Status |
 | -- | ----------------- | ------- | --------------------------------------------------------------------- | ------ |
@@ -28,6 +29,7 @@ No critical or high findings. All nine invariants hold. One medium and seven low
 | S6 | Low (hardening)   | iPhone  | The PC name from the QR code may contain invisible characters          | Fixed  |
 | S7 | Low (hardening)   | Desktop | The "text only, never HTML" rule for the window is not enforced by the browser | Fixed |
 | S8 | Low               | Desktop | A forbidden receive folder can be reached under another name (a junction, a short name) | Fixed |
+| S11 | Low              | Desktop | While Windows joins a network, a packet can make the Bonjour library throw, which shows an error dialog | Fixed |
 
 ### Findings
 
@@ -121,6 +123,25 @@ folder. GitHub's Windows PCs showed it, because their temporary folder has a sho
 **Fix:** the forbidden folders are compared both as written and by their real paths, and so is the
 stored folder at startup, through its nearest existing parent if it does not exist yet. AppData is
 also forbidden where `APPDATA` and `LOCALAPPDATA` say it is.
+
+#### S11 · Low · The Bonjour library throws while Windows joins a network (T34)
+
+While Windows joins a network, the adapter has its link-local IPv6 address for a moment, but no
+IPv4 address yet. ciao 1.3.12 looks at the adapters every 15 seconds, and if it looks just then,
+it keeps the adapter without an IPv4 address. If the adapter had one before, ciao leaves its IPv4
+socket open, and the next packet there is compared with the IPv4 netmask that is now missing. An
+assertion then throws before ciao's per-packet error handling, and Electron shows "A JavaScript
+error occurred in the main process". If the adapter had no IPv4 address yet, ciao never opens a
+socket for it, so the PC is not announced on that network, and an iPhone whose known addresses
+fail cannot find it there. Nothing leaked and no file was touched. Someone on the network who can
+make the PC join it again (by knocking it off the Wi-Fi, for example) could bring the dialog back.
+It showed up when the PC moved between the iPhone's hotspot and the home Wi-Fi.
+
+**Fix:** ilet asks ciao to leave out an adapter while it has no IPv4 address (`excludeIpv6Only`,
+in `responderOptions`). ciao then closes the adapter's socket, and opens a new one and announces
+again once the adapter has an IPv4 address. Tests take ciao itself through such a network change,
+without opening sockets; without the option they fail with the dialog's error. ciao 1.4.0, out
+since 1 November 2026, is too new for ilet's 14-day rule (T28), so it is not used yet.
 
 ### Invariants
 

@@ -35,6 +35,29 @@ export interface MdnsResponder {
  */
 export type MdnsResponderFactory = (adapters: readonly string[] | undefined) => MdnsResponder;
 
+/** What ilet passes to ciao's `getResponder`: a subset of ciao's `MDNSServerOptions`. */
+export interface MdnsResponderOptions {
+  /** Adapter names; without them, ciao uses every adapter. */
+  readonly interface?: string[];
+  readonly excludeIpv6Only: true;
+}
+
+/**
+ * ciao's options for a responder on these adapters, or on every adapter for `undefined`.
+ *
+ * `excludeIpv6Only` leaves out an adapter while it has no IPv4 address, as happens for a moment
+ * while Windows joins a network. Without it, ciao 1.3.12 keeps such an adapter: if the adapter
+ * had an IPv4 address before, its socket stays open and the next packet there throws outside any
+ * `try`, so Electron shows an error dialog (SECURITY_REVIEW.md S11); if it had none yet, ciao
+ * never opens a socket for it and the PC is not announced there. Left out, the adapter's socket
+ * is closed, and ciao opens a new one and announces again once the adapter has an IPv4 address.
+ */
+export function responderOptions(adapters: readonly string[] | undefined): MdnsResponderOptions {
+  return adapters === undefined
+    ? { excludeIpv6Only: true }
+    : { interface: [...adapters], excludeIpv6Only: true };
+}
+
 export interface Advertiser {
   /** Withdraws the announcement and closes the sockets. Never rejects; later calls do nothing. */
   stop(): Promise<void>;

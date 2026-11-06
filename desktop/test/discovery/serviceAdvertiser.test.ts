@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { type Advertiser, startAdvertising } from '../../src/discovery/serviceAdvertiser';
+import {
+  type Advertiser,
+  responderOptions,
+  startAdvertising,
+} from '../../src/discovery/serviceAdvertiser';
 import { serviceAnnouncement } from '../../src/discovery/serviceAnnouncement';
 import { FakeMdnsResponder } from '../helpers/fakeMdns';
 import { createMemoryLogger, type MemoryLogger } from '../helpers/fakes';
@@ -123,5 +127,19 @@ describe('startAdvertising', () => {
     await expect(advertiser.stop()).resolves.toBeUndefined();
     expect(responder.calls).toEqual(['advertise', 'destroy', 'shutdown']);
     expect(logText(logger)).toContain('WARN could not withdraw the network announcement');
+  });
+});
+
+// ciaoNetworkChanges.test.ts shows what excludeIpv6Only changes in ciao itself.
+describe('responderOptions', () => {
+  it('announces on the given adapters, leaving out any without an IPv4 address', () => {
+    expect(responderOptions(['Wi-Fi', 'Ethernet'])).toEqual({
+      interface: ['Wi-Fi', 'Ethernet'],
+      excludeIpv6Only: true,
+    });
+  });
+
+  it('announces on every adapter, leaving out any without an IPv4 address', () => {
+    expect(responderOptions(undefined)).toEqual({ excludeIpv6Only: true });
   });
 });

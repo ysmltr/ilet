@@ -11,12 +11,14 @@ over your Wi-Fi, with no accounts, no cloud and no analytics.
 > sending and the Share Extension (Phase 5: Share → ilet in other apps) work on a real iPhone,
 > installed through TestFlight. Sending from the app carries on in the background, and HEVC videos
 > arrive as MP4, which Windows plays. Phase 5 and these came after the Phase 7 review and had a
-> security review of their own. Newest, and not tried on an iPhone yet: the iPhone's half of
+> security review of their own. Newest, and tried on a real iPhone: the iPhone's half of
 > Phase 4. When the PC's address changes (another Wi-Fi, the iPhone's Personal Hotspot, a new
 > address from the router), the iPhone finds it again through its Bonjour announcement, checks
 > its pinned certificate as always, and remembers the new address, so no new pairing is needed.
-> Still to come, in this order (see [Plans](#plans)): Phase 8, sending from the PC to the
-> iPhone; a Microsoft Store package for Windows.
+> That test also brought up an error dialog on the PC as its Wi-Fi changed networks
+> ([SECURITY_REVIEW.md](SECURITY_REVIEW.md) S11); Windows version 0.1.1 fixes it, but has not
+> been tried on a PC yet. Still to come, in this order (see [Plans](#plans)): Phase 8, sending
+> from the PC to the iPhone; a Microsoft Store package for Windows.
 
 ## Download
 

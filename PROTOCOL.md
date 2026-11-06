@@ -318,8 +318,10 @@ network, so that a phone can find a paired PC again after its IP address changes
 
 The TXT record contains nothing else. The desktop announces the service only while its server
 listens on the network (the development scripts listen on `127.0.0.1` and announce nothing), and
-on Windows only on networks classified as Private, never on Public or Domain ones. It receives
-queries on UDP port 5353 and sends goodbye packets (TTL 0) when it stops.
+on Windows only on networks classified as Private, never on Public or Domain ones. It announces
+only on adapters that have an IPv4 address: while Windows joins a network, the adapter is left out
+until it has one. It receives queries on UDP port 5353 and sends goodbye packets (TTL 0) when it
+stops.
 
 Anyone on the network can advertise any service with any TXT record. The client therefore uses
 discovery only to find a new address and port for a desktop it already paired with, matched by

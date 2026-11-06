@@ -3,6 +3,7 @@ import os from 'node:os';
 import { getResponder } from '@homebridge/ciao';
 import { app, safeStorage, session } from 'electron';
 
+import { responderOptions } from '../discovery/serviceAdvertiser';
 import { createTranslator, resolveLanguage, type Translate } from '../i18n/messages';
 import { createSafeStorageCipher } from '../identity/safeStorageCipher';
 import type { NetworkExposure } from '../network/networkExposure';
@@ -65,8 +66,7 @@ export async function startDesktopApp(
     // A server for this PC only has nothing to announce.
     createMdnsResponder:
       listenAddress === ListenAddress.allInterfaces
-        ? (adapters) =>
-            getResponder(adapters === undefined ? undefined : { interface: [...adapters] })
+        ? (adapters) => getResponder(responderOptions(adapters))
         : undefined,
     networkExposure: monitor.current,
     receiveFolderRules: receiveFolderRulesFor(app),
