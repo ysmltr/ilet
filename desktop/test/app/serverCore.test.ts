@@ -68,7 +68,7 @@ async function createEnvironment(
   return {
     dataFolder,
     downloadsFolder,
-    listenAddress: ListenAddress.loopback,
+    listenPolicy: 'loopback',
     createMdnsResponder: undefined,
     networkExposure: UNKNOWN_EXPOSURE,
     receiveFolderRules: NO_FOLDER_RULES,
@@ -78,6 +78,22 @@ async function createEnvironment(
     logger: createMemoryLogger(),
   };
 }
+
+/**
+ * The PC is on one Private network, whose address these tests do not listen on: the announcement
+ * goes out, while the server stays on loopback (the Store version's listening, which announces).
+ */
+const ANNOUNCING_ON_ETHERNET: Pick<ServerCoreEnvironment, 'listenPolicy' | 'networkExposure'> = {
+  listenPolicy: 'private-networks',
+  networkExposure: {
+    announceOn: ['Ethernet'],
+    acceptedLocalAddresses: undefined,
+    listenAddresses: [],
+    otherNetworkConnected: false,
+    publicNetworks: [],
+    domainNetworks: [],
+  },
+};
 
 async function startupError(environment: ServerCoreEnvironment): Promise<StartupError> {
   const error: unknown = await startServerCore(environment).then(
@@ -108,6 +124,7 @@ describe('startServerCore', () => {
       const responder = new FakeMdnsResponder();
       const core = await startServerCore({
         ...(await createEnvironment(port)),
+        ...ANNOUNCING_ON_ETHERNET,
         createMdnsResponder: () => responder,
       });
       const { deviceId } = core.identity;
@@ -140,15 +157,10 @@ describe('startServerCore', () => {
 
   it.runIf(runsOnWindows)('announces only on the adapters the network allows', async () => {
     const created: { adapters: readonly string[] | undefined; responder: FakeMdnsResponder }[] = [];
-    const exposure: NetworkExposure = {
-      announceOn: ['Ethernet'],
-      acceptedLocalAddresses: undefined,
-      publicNetworks: [],
-      domainNetworks: [],
-    };
+    const exposure = ANNOUNCING_ON_ETHERNET.networkExposure;
     const core = await startServerCore({
       ...(await createEnvironment(await freePort())),
-      networkExposure: exposure,
+      ...ANNOUNCING_ON_ETHERNET,
       createMdnsResponder: (adapters) => {
         const responder = new FakeMdnsResponder();
         created.push({ adapters, responder });
@@ -172,6 +184,8 @@ describe('startServerCore', () => {
       await core.applyNetworkExposure({
         announceOn: [],
         acceptedLocalAddresses: new Set(['192.168.1.20']),
+        listenAddresses: [],
+        otherNetworkConnected: true,
         publicNetworks: ['Wi-Fi'],
         domainNetworks: [],
       });
@@ -182,6 +196,86 @@ describe('startServerCore', () => {
     } finally {
       await core.stop();
     }
+  });
+
+  describe('in the Store version, which has no block rules', () => {
+    /** Loopback stands in for a Private network's address: 127.0.0.2 is one more of this PC's. */
+    const privateNetwork: NetworkExposure = {
+      announceOn: ['Ethernet'],
+      acceptedLocalAddresses: new Set(['127.0.0.1', '127.0.0.2']),
+      listenAddresses: ['127.0.0.2'],
+      otherNetworkConnected: false,
+      publicNetworks: [],
+      domainNetworks: [],
+    };
+    const fetchInfoFrom = (host: string, port: number, certificatePem: string) =>
+      sendRequest(port, certificatePem, { path: '/api/info', host, skipHostnameCheck: true });
+
+    it.runIf(runsOnWindows)('listens only on the addresses of Private networks', async () => {
+      const port = await freePort();
+      const core = await startServerCore({
+        ...(await createEnvironment(port)),
+        listenPolicy: 'private-networks',
+        networkExposure: privateNetwork,
+      });
+      const fetchInfo = (host: string) => fetchInfoFrom(host, port, core.identity.certificatePem);
+      try {
+        expect((await fetchInfo('127.0.0.2')).status).toBe(200);
+
+        // The network became Public: nothing listens on its address any more.
+        await core.applyNetworkExposure({
+          ...privateNetwork,
+          announceOn: [],
+          acceptedLocalAddresses: new Set(['127.0.0.1']),
+          listenAddresses: [],
+          otherNetworkConnected: true,
+        });
+        await expect(fetchInfo('127.0.0.2')).rejects.toThrow(/ECONNREFUSED/);
+        // Loopback stays, so that a port taken by another program shows at startup.
+        expect((await fetchInfo('127.0.0.1')).status).toBe(200);
+      } finally {
+        await core.stop();
+      }
+    });
+
+    it.runIf(runsOnWindows)(
+      'listens on this PC only while the categories are unknown',
+      async () => {
+        const port = await freePort();
+        const core = await startServerCore({
+          ...(await createEnvironment(port)),
+          listenPolicy: 'private-networks',
+        });
+        try {
+          // A server on every address would answer here, as the installer's version does.
+          await expect(
+            fetchInfoFrom('127.0.0.2', port, core.identity.certificatePem),
+          ).rejects.toThrow(/ECONNREFUSED/);
+        } finally {
+          await core.stop();
+        }
+      },
+    );
+
+    it.runIf(runsOnWindows)('announces only while no other network is connected', async () => {
+      const created: (readonly string[] | undefined)[] = [];
+      const core = await startServerCore({
+        ...(await createEnvironment(await freePort())),
+        listenPolicy: 'private-networks',
+        networkExposure: { ...privateNetwork, otherNetworkConnected: true },
+        createMdnsResponder: (adapters) => {
+          created.push(adapters);
+          return new FakeMdnsResponder();
+        },
+      });
+      // ciao binds its sockets to every adapter, the other network's too.
+      expect(created).toEqual([]);
+
+      await core.applyNetworkExposure(privateNetwork);
+      await core.stop();
+
+      expect(created).toEqual([['Ethernet']]);
+    });
   });
 
   it.runIf(runsOnWindows)('changes the receive folder only after checking it', async () => {

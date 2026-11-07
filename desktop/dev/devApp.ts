@@ -8,7 +8,6 @@ import path from 'node:path';
 import { startDesktopApp } from '../src/app/desktopApp';
 import { DataFileName } from '../src/app/serverCore';
 import { DeviceRegistry } from '../src/auth/deviceRegistry';
-import { ListenAddress } from '../src/server/httpsServer';
 import { registerAppScheme } from '../src/ui/appProtocol';
 import { installNavigationGuards } from '../src/ui/securityGuards';
 import {
@@ -44,7 +43,7 @@ runDevScript(async (logger) => {
       appIcon: path.join(BUILD_FOLDER, 'icons', 'ilet.ico'),
       trayIcon: path.join(BUILD_FOLDER, 'icons', 'ilet-tray.ico'),
     },
-    ListenAddress.loopback,
+    'this-pc',
     logger,
   );
   const server = await describeDevServer(core, dataFolder);

@@ -91,7 +91,8 @@ export class NetworkMonitor {
       logger.info('network exposure changed', {
         publicNetworks: next.publicNetworks.join(', '),
         domainNetworks: next.domainNetworks.join(', '),
-        announcedOn: next.announceOn?.join(', ') ?? 'all adapters',
+        privateAdapters: next.announceOn?.join(', ') ?? 'unknown',
+        otherNetworkConnected: next.otherNetworkConnected,
       });
       for (const listener of this.listeners) {
         listener(next);

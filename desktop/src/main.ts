@@ -4,7 +4,6 @@ import { app, dialog } from 'electron';
 
 import { startDesktopApp } from './app/desktopApp';
 import { createTranslator, resolveLanguage } from './i18n/messages';
-import { ListenAddress } from './server/httpsServer';
 import { createConsoleLogger, errorFields } from './shared/logger';
 import { registerAppScheme } from './ui/appProtocol';
 import { installNavigationGuards } from './ui/securityGuards';
@@ -32,7 +31,7 @@ if (app.requestSingleInstanceLock(sendToRequest)) {
       appIcon: path.join(__dirname, 'icons', 'ilet.ico'),
       trayIcon: path.join(__dirname, 'icons', 'ilet-tray.ico'),
     },
-    ListenAddress.allInterfaces,
+    'network',
     logger,
   ).catch((error: unknown) => {
     logger.error('ilet could not start', errorFields(error));

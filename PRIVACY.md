@@ -1,6 +1,6 @@
 # ilet privacy policy
 
-*Last updated: 6 November 2026 · [Türkçe aşağıda](#ilet-gizlilik-politikası)*
+*Last updated: 7 November 2026 · [Türkçe aşağıda](#ilet-gizlilik-politikası)*
 
 ilet sends files between your iPhone and your own PC over your own Wi-Fi network.
 
@@ -13,6 +13,11 @@ through the internet or through anyone else's computer.
 So that your iPhone can find it again when its address changes, your PC announces its name and
 a random ID on your local network, only on networks set to Private. Your iPhone looks for that
 announcement only when it cannot reach your PC at an address it already knows.
+
+Where you get ilet from counts the downloads: Apple's App Store or TestFlight, the Microsoft
+Store, or GitHub. Depending on your device's settings, Apple and Microsoft may also pass crash
+reports on to the developers of an app that crashed. They do this under their own privacy
+policies; ilet itself reports nothing.
 
 ## What stays on your devices
 
@@ -42,6 +47,8 @@ On your PC:
 - Your settings, and the files you received, in the folder you chose.
 - The files you send to your iPhone: a copy of each waits in `%APPDATA%\ilet\outbox` for at most
   24 hours. It is deleted as soon as your iPhone has the file, or when you cancel it.
+- In the Microsoft Store version, Windows keeps what ilet creates in `%APPDATA%\ilet` in a folder
+  of the app's own, and deletes it when you uninstall ilet.
 
 ## Sharing
 
@@ -53,8 +60,9 @@ ilet shares nothing with anyone. There is no one to share with: ilet has no serv
   (swipe it to the left) deletes its details and its access token, and stops the files still on
   their way to it or from it. Deleting the ilet app deletes its data, the received files and its
   Keychain entries; move the files you want to keep first.
-- PC: remove a phone in ilet's list of paired devices, or uninstall ilet and delete the folder
-  `%APPDATA%\ilet`. Received files stay in your folder until you delete them.
+- PC: remove a phone in ilet's list of paired devices, or uninstall ilet and then delete the
+  folder `%APPDATA%\ilet` if it is still there (uninstalling the Microsoft Store version deletes
+  what that version created). Received files stay in your folder until you delete them.
 
 ## Questions
 
@@ -64,7 +72,7 @@ Open an issue at <https://github.com/ysmltr/ilet/issues>.
 
 # ilet gizlilik politikası
 
-*Son güncelleme: 6 Kasım 2026*
+*Son güncelleme: 7 Kasım 2026*
 
 ilet, dosyaları iPhone’unuz ile kendi bilgisayarınız arasında, kendi Wi-Fi ağınız üzerinden
 gönderir.
@@ -78,6 +86,11 @@ bilgisayarından geçmez.
 Adresi değiştiğinde iPhone’unuz onu yeniden bulabilsin diye bilgisayarınız, adını ve rastgele
 bir kimliği yerel ağınızda duyurur; bunu yalnızca Özel olarak ayarlanmış ağlarda yapar.
 iPhone’unuz bu duyuruyu yalnızca bilgisayarınıza zaten bildiği bir adresten ulaşamadığında arar.
+
+ilet’i nereden aldıysanız orası indirmeleri sayar: Apple’ın App Store’u ya da TestFlight,
+Microsoft Store veya GitHub. Cihazınızın ayarlarına göre Apple ve Microsoft, çöken bir
+uygulamanın çökme raporlarını geliştiricilerine de iletebilir. Bunu kendi gizlilik politikalarına
+göre yaparlar; ilet’in kendisi hiçbir şey bildirmez.
 
 ## Cihazlarınızda kalanlar
 
@@ -110,6 +123,8 @@ Bilgisayarınızda:
 - iPhone’unuza gönderdiğiniz dosyalar: her birinin kopyası en fazla 24 saat
   `%APPDATA%\ilet\outbox` klasöründe bekler. iPhone’unuz dosyayı alır almaz ya da siz iptal
   ettiğinizde silinir.
+- Microsoft Store sürümünde Windows, ilet’in `%APPDATA%\ilet` içinde oluşturduklarını uygulamaya
+  ait bir klasörde tutar ve ilet’i kaldırdığınızda siler.
 
 ## Paylaşım
 
@@ -122,8 +137,9 @@ ilet hiçbir şeyi kimseyle paylaşmaz; paylaşacağı bir yer de yoktur, çünk
   gitmekte ya da ondan gelmekte olan dosyaları da durdurur. ilet uygulamasını silmek, verilerini,
   gelen dosyaları ve Anahtar Zinciri kayıtlarını da siler; saklamak istediğiniz dosyaları önce
   başka bir yere taşıyın.
-- Bilgisayar: telefonu ilet’in eşleştirilmiş cihazlar listesinden kaldırın ya da ilet’i kaldırıp
-  `%APPDATA%\ilet` klasörünü silin. Gelen dosyalar siz silene kadar klasörünüzde kalır.
+- Bilgisayar: telefonu ilet’in eşleştirilmiş cihazlar listesinden kaldırın ya da ilet’i kaldırın
+  ve ardından `%APPDATA%\ilet` klasörü hâlâ duruyorsa onu silin (Microsoft Store sürümünü
+  kaldırmak, o sürümün oluşturduklarını siler). Gelen dosyalar siz silene kadar klasörünüzde kalır.
 
 ## Sorular
 

@@ -12,12 +12,13 @@ import { removeStalePartFiles } from '../files/partialFiles';
 import { loadOrCreateIdentity, type TlsIdentity } from '../identity/identityStore';
 import type { SecretCipher } from '../identity/secretCipher';
 import type { NetworkExposure } from '../network/networkExposure';
+import { type ListenPolicy, serverReach } from '../network/serverReach';
 import { Outbox, OUTBOX_SWEEP_INTERVAL_MS } from '../outbox/outbox';
 import { PairingCodes } from '../pairing/pairingCodes';
-import { closeServer, listen, type ListenAddress } from '../server/httpsServer';
-import { createIletServer } from '../server/iletServer';
+import { createIletServerFactory } from '../server/iletServer';
 import { normalizeAddress } from '../server/networkAddress';
 import type { FileReceivedListener } from '../server/routes/uploadRoute';
+import { ServerListeners } from '../server/serverListeners';
 import {
   checkReceiveFolder,
   isForbiddenReceiveFolder,
@@ -44,7 +45,7 @@ export interface ServerCoreEnvironment {
   /** Where identity, settings, paired devices and the outbox are stored. */
   readonly dataFolder: string;
   readonly downloadsFolder: string;
-  readonly listenAddress: ListenAddress;
+  readonly listenPolicy: ListenPolicy;
   /**
    * Announces the server on the local network, so phones find it after its address changes.
    * Undefined when the server listens on this PC only (development scripts and tests).
@@ -67,7 +68,10 @@ export interface ServerCore {
   readonly outbox: Outbox;
   /** Checks a folder the user picked and, only if it passes, saves files there from now on. */
   changeReceiveFolder(folder: string): Promise<ReceiveFolderCheck>;
-  /** Follows the network monitor: where to announce, and which of this PC's addresses to refuse. */
+  /**
+   * Follows the network monitor: which of this PC's addresses to refuse, where to listen (for
+   * the Store version) and where to announce.
+   */
   applyNetworkExposure(exposure: NetworkExposure): Promise<void>;
   onFileReceived(listener: FileReceivedListener): void;
   stop(): Promise<void>;
@@ -136,7 +140,7 @@ export async function startServerCore(environment: ServerCoreEnvironment): Promi
   const fileListeners = new Set<FileReceivedListener>();
   // Only the receive folder changes while the app runs, and the receiver reads it per upload.
   const { displayName, port } = settings.current;
-  const server = createIletServer({
+  const createServer = createIletServerFactory({
     identity,
     settings: settings.current,
     devices,
@@ -156,7 +160,9 @@ export async function startServerCore(environment: ServerCoreEnvironment): Promi
     logger,
     now: Date.now,
   });
-  await listen(server, environment.listenAddress, port, logger);
+  const reach = () => serverReach(exposure, environment.listenPolicy);
+  const listeners = new ServerListeners({ createServer, port, logger });
+  await listeners.start(reach().listenOn);
   logger.info('server listening', { port, fingerprint: identity.fingerprint });
 
   const { createMdnsResponder } = environment;
@@ -168,7 +174,7 @@ export async function startServerCore(environment: ServerCoreEnvironment): Promi
           createMdnsResponder,
           logger,
         );
-  await announcer?.announceOn(exposure.announceOn);
+  await announcer?.announceOn(reach().announceOn);
 
   return {
     identity,
@@ -190,8 +196,12 @@ export async function startServerCore(environment: ServerCoreEnvironment): Promi
       return check;
     },
     applyNetworkExposure: async (next) => {
+      // The check per connection applies at once; the listeners and the announcement follow.
       exposure = next;
-      await announcer?.announceOn(next.announceOn);
+      const { listenOn, announceOn } = reach();
+      // Listening first, so that a phone that finds the PC through the announcement gets in.
+      await listeners.update(listenOn);
+      await announcer?.announceOn(announceOn);
     },
     onFileReceived: (listener) => {
       fileListeners.add(listener);
@@ -200,7 +210,7 @@ export async function startServerCore(environment: ServerCoreEnvironment): Promi
       clearInterval(outboxSweep);
       // Withdrawn first, so phones are told the PC is gone before its port stops answering.
       await announcer?.stop();
-      await closeServer(server);
+      await listeners.close();
     },
   };
 }

@@ -37,6 +37,8 @@ export interface TestRequest {
   readonly body?: Buffer | string;
   /** Behave like a client that ignores certificate names (an attacker would). */
   readonly skipHostnameCheck?: boolean;
+  /** The server's address; 127.0.0.1 unless a test listens on another one. */
+  readonly host?: string;
 }
 
 export interface TestResponse {
@@ -182,12 +184,19 @@ export async function startTestServer(options: TestServerOptions = {}): Promise<
 export function sendRequest(
   port: number,
   certificatePem: string,
-  { method = 'GET', path: requestPath, headers = {}, body, skipHostnameCheck = false }: TestRequest,
+  {
+    method = 'GET',
+    path: requestPath,
+    headers = {},
+    body,
+    skipHostnameCheck = false,
+    host = '127.0.0.1',
+  }: TestRequest,
 ): Promise<TestResponse> {
   return new Promise((resolve, reject) => {
     const request = httpsRequest(
       {
-        host: '127.0.0.1',
+        host,
         port,
         method,
         path: requestPath,

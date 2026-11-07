@@ -1,10 +1,11 @@
 // Renders the icon files from the SVG masters in ../branding, with Microsoft Edge in headless
-// mode, which comes with Windows: the .ico files of the desktop app, and the iPhone app's icon and
-// logo (the drawing without its tile, on the launch screen and the welcome page).
+// mode, which comes with Windows: the .ico files of the desktop app, the images of its Microsoft
+// Store package, and the iPhone app's icon and logo (the drawing without its tile, on the launch
+// screen and the welcome page).
 // Run it after changing an SVG: npm run icons
 import { Buffer } from 'node:buffer';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
@@ -27,6 +28,39 @@ const ICONS = [
     file: 'ilet-tray.ico',
     images: [16, 20, 24, 32, 40, 48, 64].map((size) => ({ size, svg: SIMPLE_MARK })),
   },
+];
+
+/**
+ * The Store package's images, which installer/appxmanifest.xml names. Its background colour is
+ * transparent, so Windows shows them as they are. On the Start menu's tiles the icon takes two
+ * thirds of the tile's height, as Microsoft suggests; the taskbar and the app list get the sizes
+ * of ilet.ico ("unplated": without a tile of the accent colour behind them).
+ */
+const STORE_ASSETS_FOLDER = path.resolve('installer/appx');
+const STORE_TILE_ICON_SIZE = 100;
+const STORE_ASSETS = [
+  { file: 'StoreLogo.png', svg: FULL_DRAWING, width: 50, height: 50 },
+  {
+    file: 'Square150x150Logo.png',
+    svg: FULL_DRAWING,
+    width: 150,
+    height: 150,
+    iconSize: STORE_TILE_ICON_SIZE,
+  },
+  {
+    file: 'Wide310x150Logo.png',
+    svg: FULL_DRAWING,
+    width: 310,
+    height: 150,
+    iconSize: STORE_TILE_ICON_SIZE,
+  },
+  { file: 'Square44x44Logo.png', svg: SIMPLE_MARK, width: 44, height: 44 },
+  ...[16, 24, 32, 48, 256].map((size) => ({
+    file: `Square44x44Logo.targetsize-${size}_altform-unplated.png`,
+    svg: size < 48 ? SIMPLE_MARK : FULL_DRAWING,
+    width: size,
+    height: size,
+  })),
 ];
 
 const IOS_ASSETS_FOLDER = path.resolve('../ios/Ilet/Resources/Assets.xcassets');
@@ -107,20 +141,21 @@ async function removeWhenFree(folder) {
 }
 
 /**
- * Renders SVG source to a PNG of exactly `width` x `height` pixels. Edge's launcher exits at once
- * and leaves the work to a browser process, which writes the screenshot a moment later and then
- * keeps its profile for a few seconds; waiting for both means one browser at a time and nothing
- * left behind.
+ * Renders SVG source to a PNG of exactly `width` x `height` pixels, the drawing filling it or, with
+ * `iconSize`, as a square of that size in its middle. Edge's launcher exits at once and leaves the
+ * work to a browser process, which writes the screenshot a moment later and then keeps its
+ * profile for a few seconds; waiting for both means one browser at a time and nothing left behind.
  */
-async function renderPng(edge, workFolder, { name, svg, width, height, background }) {
+async function renderPng(edge, workFolder, { name, svg, width, height, background, iconSize }) {
   const page = path.join(workFolder, `${name}.html`);
   const png = path.join(workFolder, `${name}.png`);
   const profile = path.join(workFolder, `profile-${name}`);
   writeFileSync(
     page,
-    `<!doctype html><body style="margin:0;background:${background ?? 'transparent'}">` +
+    `<!doctype html><body style="margin:0;background:${background ?? 'transparent'};` +
+      `width:${width}px;height:${height}px;display:flex;align-items:center;justify-content:center">` +
       `<img src="data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}" ` +
-      `width="${width}" height="${height}" style="display:block"></body>`,
+      `width="${iconSize ?? width}" height="${iconSize ?? height}" style="display:block"></body>`,
   );
   execFileSync(
     edge,
@@ -202,6 +237,15 @@ try {
     }
     writeFileSync(path.join(BRANDING_FOLDER, icon.file), icoFile(images));
     process.stdout.write(`${icon.file}: ${images.map(({ size }) => size).join(', ')} px\n`);
+  }
+
+  mkdirSync(STORE_ASSETS_FOLDER, { recursive: true });
+  for (const { file, svg, width, height, iconSize } of STORE_ASSETS) {
+    const source = readFileSync(path.join(BRANDING_FOLDER, svg), 'utf8');
+    const name = path.parse(file).name;
+    const data = await renderPng(edge, workFolder, { name, svg: source, width, height, iconSize });
+    writeFileSync(path.join(STORE_ASSETS_FOLDER, file), data);
+    process.stdout.write(`${file}: ${width}x${height} px\n`);
   }
 
   const drawing = readFileSync(path.join(BRANDING_FOLDER, FULL_DRAWING), 'utf8');

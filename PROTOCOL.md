@@ -427,9 +427,11 @@ network, so that a phone can find a paired PC again after its IP address changes
 
 The TXT record contains nothing else. The desktop announces the service only while its server
 listens on the network (the development scripts listen on `127.0.0.1` and announce nothing), and
-on Windows only on networks classified as Private, never on Public or Domain ones. It announces
-only on adapters that have an IPv4 address: while Windows joins a network, the adapter is left out
-until it has one. It receives queries on UDP port 5353 and sends goodbye packets (TTL 0) when it
+on Windows only on networks classified as Private, never on Public or Domain ones. The Microsoft
+Store version announces only while every connected network is Private, because the Multicast DNS
+port is open on all networks at once and its firewall rules cannot block the others
+([desktop/STORE.md](desktop/STORE.md)). The desktop announces only on adapters that have an IPv4
+address: while Windows joins a network, the adapter is left out until it has one. It receives queries on UDP port 5353 and sends goodbye packets (TTL 0) when it
 stops.
 
 Anyone on the network can advertise any service with any TXT record. The client therefore uses
@@ -464,4 +466,5 @@ The iOS client:
 | Pairing (QR, `POST /api/v1/pair`)      | Phase 2 | Phase 3 |
 | Discovery                              | Phase 4 | Phase 4 |
 | No connections or announcements outside Private networks | Phase 6, 7 | – |
+| Microsoft Store version: listening only on Private networks' addresses | Store package | – |
 | Outbox (`/api/v1/outbox`, `/file`, `/received`) | Phase 8 | Phase 8 |

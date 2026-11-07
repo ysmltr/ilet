@@ -74,7 +74,7 @@
             ></button>
             <button id="open-folder" class="button" type="button" data-i18n="openFolder"></button>
           </div>
-          <label class="toggle">
+          <label id="start-with-windows-toggle" class="toggle">
             <input id="start-with-windows" type="checkbox" />
             <span data-i18n="startWithWindows"></span>
           </label>
@@ -84,6 +84,17 @@
             data-i18n="startWithWindowsUnavailable"
             hidden
           ></p>
+          <div id="startup-settings" hidden>
+            <p class="muted small" data-i18n="startWithWindowsInSettings"></p>
+            <div class="actions">
+              <button
+                id="open-startup-settings"
+                class="button"
+                type="button"
+                data-i18n="openStartupSettings"
+              ></button>
+            </div>
+          </div>
         </section>
 
         <p class="muted small" data-i18n="trayNote"></p>

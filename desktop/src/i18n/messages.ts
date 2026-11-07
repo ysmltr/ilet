@@ -46,6 +46,9 @@ const english = {
     'This drive cannot mark files as downloaded from the internet (a FAT32 USB stick, for example). Choose a folder on another drive.',
   startWithWindows: 'Start ilet when Windows starts',
   startWithWindowsUnavailable: 'Available once ilet is installed.',
+  startWithWindowsInSettings:
+    'To start ilet when Windows starts, turn it on in Windows Settings under Apps › Startup.',
+  openStartupSettings: 'Open startup settings',
   trayNote:
     'Closing this window keeps ilet running next to the clock, so files keep arriving. To quit, right-click its icon there.',
 
@@ -173,6 +176,9 @@ const turkish: Messages = {
     'Bu sürücü dosyaları internetten indirilmiş olarak işaretleyemiyor (örneğin FAT32 bir USB bellek). Başka bir sürücüde klasör seçin.',
   startWithWindows: 'Windows başlarken ilet’i başlat',
   startWithWindowsUnavailable: 'ilet yüklendiğinde kullanılabilir.',
+  startWithWindowsInSettings:
+    'Windows başlarken ilet’in de başlaması için bunu Windows Ayarları’nda Uygulamalar › Başlangıç bölümünden açın.',
+  openStartupSettings: 'Başlangıç ayarlarını aç',
   trayNote:
     'Bu pencereyi kapatınca ilet saatin yanında çalışmaya devam eder ve dosyalar gelmeye devam eder. Çıkmak için oradaki simgesine sağ tıklayın.',
 

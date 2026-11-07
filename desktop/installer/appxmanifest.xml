@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The manifest of the Microsoft Store package (desktop/STORE.md). electron-builder fills in the
+  values in macros from the appx section of electron-builder.yml, as in its own template, which
+  this file follows. It adds the startup task and the firewall rules, and leaves out everything
+  else that the template could add. test/installer/appxManifest.test.ts checks it.
+-->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap10="http://schemas.microsoft.com/appx/manifest/uap/windows10/10"
+  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+  xmlns:desktop2="http://schemas.microsoft.com/appx/manifest/desktop/windows10/2"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities">
+  <Identity Name="${identityName}"
+    ProcessorArchitecture="${arch}"
+    Publisher="${publisher}"
+    Version="${version}" />
+  <Properties>
+    <DisplayName>${displayName}</DisplayName>
+    <PublisherDisplayName>${publisherDisplayName}</PublisherDisplayName>
+    <Description>${description}</Description>
+    <Logo>${logo}</Logo>
+  </Properties>
+  <Resources>
+    ${resourceLanguages}
+  </Resources>
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="${minVersion}" MaxVersionTested="${maxVersionTested}" />
+  </Dependencies>
+  <!-- runFullTrust only: ilet is a desktop app, which Windows does not run in an app container. -->
+  ${capabilities}
+  <Applications>
+    <Application Id="${applicationId}" Executable="${executable}" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+       BackgroundColor="${backgroundColor}"
+       DisplayName="${displayName}"
+       Square150x150Logo="${square150x150Logo}"
+       Square44x44Logo="${square44x44Logo}"
+       Description="${description}">
+        ${defaultTile}
+      </uap:VisualElements>
+      <Extensions>
+        <!--
+          Starting with Windows. Off until the user turns it on under Settings, Apps, Startup; the
+          argument puts ilet straight into the tray, as the installer's login item does
+          (src/settings/startWithWindows.ts).
+        -->
+        <desktop:Extension
+         Category="windows.startupTask"
+         Executable="${executable}"
+         EntryPoint="Windows.FullTrustApplication"
+         uap10:Parameters="--hidden">
+          <desktop:StartupTask TaskId="iletStartup" Enabled="false" DisplayName="${displayName}" />
+        </desktop:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+  <Extensions>
+    <!--
+      Like the installer's rules, these let phones in on Private networks only: TCP 45380 for the
+      HTTPS server (PROTOCOL.md) and UDP 5353 for Bonjour. A package can only allow, never block,
+      so ilet does not listen on any other network at all (src/network/serverReach.ts).
+    -->
+    <desktop2:Extension Category="windows.firewallRules">
+      <desktop2:FirewallRules Executable="${executable}">
+        <desktop2:Rule Direction="in" IPProtocol="TCP" Profile="private" LocalPortMin="45380" LocalPortMax="45380" />
+        <desktop2:Rule Direction="in" IPProtocol="UDP" Profile="private" LocalPortMin="5353" LocalPortMax="5353" />
+      </desktop2:FirewallRules>
+    </desktop2:Extension>
+  </Extensions>
+</Package>

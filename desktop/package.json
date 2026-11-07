@@ -1,7 +1,7 @@
 {
   "name": "ilet-desktop",
   "productName": "ilet",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "ilet: Send Files to Your PC",
   "private": true,
   "license": "UNLICENSED",
@@ -23,7 +23,7 @@
     "test": "vitest run",
     "check": "npm run typecheck && npm run lint && npm test",
     "package:dir": "npm run build && electron-builder --dir",
-    "package": "npm run build && electron-builder --win nsis",
+    "package": "npm run build && electron-builder --win nsis appx",
     "icons": "node scripts/render-icons.mjs"
   },
   "devDependencies": {

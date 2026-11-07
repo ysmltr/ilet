@@ -1,7 +1,8 @@
-# Checks the Windows app on one of GitHub's Windows PCs and builds its installer, for every change
-# to the desktop app. Started by hand (Actions > Desktop > Run workflow, on main), it also puts the
-# installer in a draft GitHub release, which only people who can push to this repository see until
-# it is published. README.md describes the steps.
+# Checks the Windows app on one of GitHub's Windows PCs and builds its installer and its Microsoft
+# Store package, for every change to the desktop app. Started by hand (Actions > Desktop > Run
+# workflow, on main), it also puts the installer in a draft GitHub release, which only people who
+# can push to this repository see until it is published. README.md and desktop/STORE.md describe
+# the steps.
 name: Desktop
 
 on:
@@ -35,6 +36,7 @@ jobs:
     outputs:
       version: ${{ steps.installer.outputs.version }}
       file: ${{ steps.installer.outputs.file }}
+      store-file: ${{ steps.installer.outputs.store-file }}
     steps:
       # Pinned to a commit, because a tag such as v7 can be moved to different code.
       - name: Check out
@@ -64,10 +66,10 @@ jobs:
         run: npm run check
 
       # Only builds; the release job below publishes.
-      - name: Build the installer
+      - name: Build the installer and the Store package
         run: npm run package -- --publish never
 
-      - name: Find the installer
+      - name: Find the installer and the Store package
         id: installer
         run: |
           version=$(node -p "require('./package.json').version")
@@ -76,11 +78,14 @@ jobs:
             exit 1
           fi
           file="ilet-Setup-$version.exe"
+          store_file="ilet-Store-$version.appx"
           test -f "release/$file"
-          sha256sum "release/$file"
+          test -f "release/$store_file"
+          sha256sum "release/$file" "release/$store_file"
           {
             echo "version=$version"
             echo "file=$file"
+            echo "store-file=$store_file"
           } >> "$GITHUB_OUTPUT"
 
       # Hands the installer to the release job; a day is plenty.
@@ -95,9 +100,22 @@ jobs:
           # The installer is compressed already.
           compression-level: 0
 
+      # For Partner Center (desktop/STORE.md), and for trying it on a PC in Developer Mode. Not
+      # signed: the Store signs what it accepts.
+      - name: Keep the Store package
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: store-package
+          path: desktop/release/${{ steps.installer.outputs.store-file }}
+          if-no-files-found: error
+          retention-days: 7
+          # The package is a compressed archive already.
+          compression-level: 0
+
   # The only job that can write to the repository. So it runs none of the repository's code and no
-  # npm package: it takes the installer that the build job made, attests where it comes from and
-  # makes the draft release.
+  # npm package: it takes the installer and the Store package that the build job made, attests
+  # where both come from and makes the draft release, with the installer only.
   release:
     if: github.event_name == 'workflow_dispatch'
     needs: build
@@ -114,12 +132,14 @@ jobs:
       GH_REPO: ${{ github.repository }}
       VERSION: ${{ needs.build.outputs.version }}
       FILE: ${{ needs.build.outputs.file }}
+      STORE_FILE: ${{ needs.build.outputs.store-file }}
     steps:
       # Each version is released once, so a release, draft or tag of this version means that the
       # version in desktop/package.json has to go up first.
       - name: Check the version
         run: |
-          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ || "$FILE" != "ilet-Setup-$VERSION.exe" ]]; then
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ || "$FILE" != "ilet-Setup-$VERSION.exe" ||
+            "$STORE_FILE" != "ilet-Store-$VERSION.appx" ]]; then
             echo "::error title=Version::The build job reported an unexpected version or file name."
             exit 1
           fi
@@ -135,12 +155,20 @@ jobs:
           name: installer
           path: installer
 
-      # A public record, signed through Sigstore, that this exact file was built by this workflow
-      # from this commit. Anyone can check it with `gh attestation verify`.
-      - name: Attest where the installer comes from
+      - name: Take the Store package
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: store-package
+          path: store-package
+
+      # A public record, signed through Sigstore, that these exact files were built by this
+      # workflow from this commit. Anyone can check it with `gh attestation verify`.
+      - name: Attest where the installer and the Store package come from
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
-          subject-path: installer/${{ env.FILE }}
+          subject-path: |
+            installer/${{ env.FILE }}
+            store-package/${{ env.STORE_FILE }}
 
       - name: Make the draft release
         run: |

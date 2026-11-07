@@ -20,14 +20,16 @@ over your Wi-Fi, with no accounts, no cloud and no analytics.
 > change has not been tried again yet. Newest, and tried on a real iPhone and PC: Phase 8,
 > sending from the PC to the iPhone (see [Plans](#plans)), which has had a security review of its
 > own too; its fixes, in Windows 0.2.1 and TestFlight build 14.1, were tried on both as well.
-> Still to come: a Microsoft Store package for Windows.
+> In progress: a Microsoft Store package for Windows, which CI builds but which has not been tried
+> on a PC or submitted yet ([desktop/STORE.md](desktop/STORE.md)).
 
 ## Download
 
 - **Windows 10 or 11:** download `ilet-Setup-<version>.exe` from
   [Releases](https://github.com/ysmltr/ilet/releases) and open it. It is not code-signed yet, so
   Windows SmartScreen may warn first: More info → Run anyway. Each release lists the file's
-  SHA-256 and how to check that GitHub built it from this code.
+  SHA-256 and how to check that GitHub built it from this code. A Microsoft Store version comes
+  later.
 - **iPhone:** in testing with TestFlight; the App Store comes later.
 
 ilet works only on networks that Windows treats as **Private**, such as your home Wi-Fi. On a
@@ -72,7 +74,15 @@ which then fetches them over pinned HTTPS with its token, just as it sends:
   and **Save to Photos** for photos and videos. Nothing opens by itself.
 - Nothing new is opened on either side: no port on the iPhone, no new pairing, no firewall rule.
 
-Then: a Microsoft Store package for Windows.
+### Microsoft Store package (in progress)
+
+The Desktop workflow builds `ilet-Store-<version>.appx` next to the installer. The Store signs it,
+so SmartScreen does not warn, and keeps it up to date. A package's firewall rules can only allow,
+never block, so on a Public network Windows would ask whether ilet may use it. The Store version
+therefore listens only on the PC's addresses on Private networks, and announces itself only while
+no other network is connected. It starts with Windows only once it is switched on in Windows'
+Startup settings, and it has no Send to entry. [desktop/STORE.md](desktop/STORE.md) lists the
+differences, how to try the package in Developer Mode, and the steps in Partner Center.
 
 ## Repository layout
 
@@ -97,7 +107,7 @@ Then: a Microsoft Store package for Windows.
 | `pairing/`   | One-time pairing codes, QR code payload, which addresses to advertise              |
 | `server/`    | HTTPS server, request rules, routes                                                |
 | `discovery/` | Announces the PC on the local network (Bonjour), so phones find its new address    |
-| `network/`   | Which networks Windows treats as Public: no connections or announcements there     |
+| `network/`   | Which networks Windows treats as Public: no connections or announcements there; where the server listens |
 | `ipc/`       | The contract between the window and the main process                               |
 | `ui/`        | Window, tray, notifications, `ilet://` protocol, security guards, IPC handlers      |
 | `preload/`   | The functions the window may call (`window.ilet`)                                  |
@@ -118,7 +128,7 @@ npm run dev:token   # DEVELOPMENT ONLY: server + a test token for curl
 npm run dev:pair    # DEVELOPMENT ONLY: server + a pairing code that curl can use
 npm run dev:app     # DEVELOPMENT ONLY: the whole app with a paired test phone, on this PC only
 npm start           # the real app: tray, window, server
-npm run package     # the installer: desktop/release/ilet-Setup-<version>.exe
+npm run package     # in desktop/release: the installer and the Store package (STORE.md)
 ```
 
 The installer installs for all users (Windows asks for administrator rights) and adds Windows
@@ -130,14 +140,18 @@ yet, so Windows SmartScreen warns before it runs (More info → Run anyway). To 
 `CSC_LINK` (the certificate file) and `CSC_KEY_PASSWORD` before `npm run package`.
 
 **Releases.** [`.github/workflows/desktop.yml`](.github/workflows/desktop.yml) runs `npm run check`
-and builds the installer on one of GitHub's Windows PCs whenever `desktop/` or `branding/`
-changes. To release a version:
+and builds the installer (`ilet-Setup-<version>.exe`) and the Microsoft Store package
+(`ilet-Store-<version>.appx`) on one of GitHub's Windows PCs whenever `desktop/` or `branding/`
+changes. Runs on `main` keep the Store package for 7 days, as `store-package` on the run's page.
+To release a version:
 
 1. Raise `version` in `desktop/package.json` (each version is released once) and push.
 2. On GitHub: Actions → Desktop → Run workflow, on `main`.
 3. The run makes a draft release with the installer, its SHA-256 and a GitHub attestation that
    records which workflow and commit built it. Drafts are visible only to people who can push to
-   the repository. Check it, then publish it (the pencil → Publish release).
+   the repository. Check it, then publish it (the pencil → Publish release). The Store package of
+   that run is attested too, and goes to Partner Center rather than into the release
+   ([desktop/STORE.md](desktop/STORE.md)).
 
 The job that makes the release runs none of the repository's code or npm packages; the build job
 that runs them has a read-only token (THREAT_MODEL.md T39). With release immutability turned on
@@ -146,14 +160,16 @@ that runs them has a read-only token (THREAT_MODEL.md T39). With release immutab
 Electron downloads its runtime the first time it starts (about 110 MB).
 
 Closing the window keeps ilet running in the notification area next to the clock; quit it
-from its icon there. The icon files in `branding/` are made from the SVGs with `npm run icons`,
-which uses Microsoft Edge (part of Windows).
+from its icon there. The icon files in `branding/`, and the Store package's images in
+`desktop/installer/appx`, are made from the SVGs with `npm run icons`, which uses Microsoft Edge
+(part of Windows).
 
 The phone can reach ilet only on a network that Windows treats as **Private** (Settings →
 Network & Internet → your Wi-Fi or Ethernet connection → Network profile). On a Public network
 ilet refuses connections and does not announce itself, and its window says so: that is what you
 want in a café. The same holds on a Domain network (one managed by an organization). The first `npm start` makes Windows Firewall ask whether Electron may use the
-network: allow **Private networks** only.
+network: allow **Private networks** only. No rule blocks Electron on the others, so, like the Store
+version, `npm start` listens only on the PC's addresses on Private networks.
 
 The dev scripts keep their data in `%APPDATA%\ilet-dev`, apart from the real app, listen only on
 `127.0.0.1`, and print ready-to-paste `curl.exe` commands. They are compiled to `dist-dev/`, which

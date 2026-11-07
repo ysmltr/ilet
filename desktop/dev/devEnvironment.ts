@@ -56,7 +56,7 @@ export async function startDevServer(logger: Logger): Promise<DevServer> {
   const core = await startServerCore({
     dataFolder,
     downloadsFolder: app.getPath('downloads'),
-    listenAddress: ListenAddress.loopback,
+    listenPolicy: 'loopback',
     createMdnsResponder: undefined,
     // Loopback only: no network can reach the server, so there is nothing to protect.
     networkExposure: UNKNOWN_EXPOSURE,

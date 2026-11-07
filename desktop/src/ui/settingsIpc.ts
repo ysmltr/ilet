@@ -8,6 +8,7 @@ import type { IpcGuard } from './ipcGuard';
 
 export interface SettingsActions {
   readonly openReceiveFolder: () => Promise<void>;
+  readonly openStartupSettings: () => Promise<void>;
 }
 
 /** The receive folder and starting with Windows. The page never sends a path. */
@@ -22,7 +23,7 @@ export function connectSettings(
   const summary = (): SettingsSummary => ({
     receiveFolder: core.settings.current.receiveFolder,
     startWithWindows: startWithWindows.isEnabled(),
-    startWithWindowsAvailable: startWithWindows.available,
+    startWithWindowsControl: startWithWindows.control,
   });
 
   guard.handle(IpcChannel.getSettings, noArguments, summary);
@@ -49,5 +50,10 @@ export function connectSettings(
   guard.handle(IpcChannel.setStartWithWindows, booleanArgument, (enabled) => {
     startWithWindows.setEnabled(enabled);
     return summary();
+  });
+  guard.on(IpcChannel.openStartupSettings, noArguments, () => {
+    if (startWithWindows.control === 'windows-settings') {
+      void actions.openStartupSettings();
+    }
   });
 }

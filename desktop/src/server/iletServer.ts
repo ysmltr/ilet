@@ -10,7 +10,12 @@ import { AUTH_FAILURE_LIMIT, SERVER_LIMITS } from '../protocol/constants';
 import type { Settings } from '../settings/settings';
 import type { Logger } from '../shared/logger';
 import { createTokenAuthenticator } from './authentication';
-import { type BlockedLocalAddressCheck, createHttpsServer, type ServerLimits } from './httpsServer';
+import {
+  type BlockedLocalAddressCheck,
+  ConnectionBudget,
+  createHttpsServer,
+  type ServerLimits,
+} from './httpsServer';
 import { infoRoute } from './routes/infoRoute';
 import { outboxFileRoute, outboxListRoute, outboxReceivedRoute } from './routes/outboxRoutes';
 import { pairRoute } from './routes/pairRoute';
@@ -32,8 +37,17 @@ export interface IletServerDependencies {
   readonly limits?: ServerLimits;
 }
 
-/** Wires the routes, authentication and TLS settings into one HTTPS server (not yet listening). */
+/** One HTTPS server, not yet listening: for tests, which listen on a single address. */
 export function createIletServer(dependencies: IletServerDependencies): Server {
+  return createIletServerFactory(dependencies)();
+}
+
+/**
+ * Wires the routes, authentication and TLS settings into HTTPS servers (not yet listening), one
+ * per address the app listens on. They share everything that counts: the limiter for failed
+ * attempts and the budget for open connections.
+ */
+export function createIletServerFactory(dependencies: IletServerDependencies): () => Server {
   const { identity, settings, devices, receiver, onFileReceived, outbox, logger, now } =
     dependencies;
   const limits = dependencies.limits ?? SERVER_LIMITS;
@@ -52,11 +66,14 @@ export function createIletServer(dependencies: IletServerDependencies): Server {
     authenticate: createTokenAuthenticator(devices, failureLimiter, logger),
     logger,
   });
-  return createHttpsServer(
-    identity,
-    handleRequest,
-    dependencies.isBlockedLocalAddress,
-    logger,
-    limits,
-  );
+  const budget = new ConnectionBudget(limits.maxConnections);
+  return () =>
+    createHttpsServer(
+      identity,
+      handleRequest,
+      dependencies.isBlockedLocalAddress,
+      logger,
+      limits,
+      budget,
+    );
 }

@@ -21,6 +21,7 @@ export const IpcChannel = {
   chooseReceiveFolder: 'settings:choose-receive-folder',
   openReceiveFolder: 'settings:open-receive-folder',
   setStartWithWindows: 'settings:set-start-with-windows',
+  openStartupSettings: 'settings:open-startup-settings',
   checkNetwork: 'network:check',
   networkChanged: 'network:changed',
   openNetworkSettings: 'network:open-settings',
@@ -61,11 +62,19 @@ export interface DeviceSummary {
 
 export type RenameDeviceResult = 'renamed' | 'invalid-name' | 'not-found';
 
+/**
+ * Where the user turns starting with Windows on and off:
+ * - `checkbox`: in ilet's settings (the installer's version).
+ * - `windows-settings`: on the Startup page of Windows Settings (the Microsoft Store version).
+ * - `unavailable`: nowhere, in a development build.
+ */
+export type StartWithWindowsControl = 'checkbox' | 'windows-settings' | 'unavailable';
+
 export interface SettingsSummary {
   readonly receiveFolder: string;
+  /** Always false unless the control is the checkbox. */
   readonly startWithWindows: boolean;
-  /** Only the installed app can start with Windows; a development build cannot. */
-  readonly startWithWindowsAvailable: boolean;
+  readonly startWithWindowsControl: StartWithWindowsControl;
 }
 
 export type ReceiveFolderProblem =
@@ -114,6 +123,8 @@ export interface IletBridge {
   chooseReceiveFolder(): Promise<ChooseReceiveFolderResult>;
   openReceiveFolder(): void;
   setStartWithWindows(enabled: boolean): Promise<SettingsSummary>;
+  /** Opens the Startup page of Windows Settings; only when that is where the switch is. */
+  openStartupSettings(): void;
 
   /** Reads the network categories again. */
   checkNetwork(): Promise<NetworkStatus>;

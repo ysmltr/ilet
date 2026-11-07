@@ -47,7 +47,8 @@ export class Announcer {
     await this.withdraw();
     this.adaptersKey = key;
     if (adapters?.length === 0) {
-      this.logger.info('not announcing: the PC is on no Private network');
+      // No Private network, or (for the Store version) another network is connected too.
+      this.logger.info('not announcing on any adapter');
       return;
     }
     this.advertiser = startAdvertising(

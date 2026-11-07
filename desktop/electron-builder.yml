@@ -30,7 +30,8 @@ electronFuses:
   loadBrowserProcessSpecificV8Snapshot: false
 
 win:
-  target: nsis
+  # The installer, and the Microsoft Store package (STORE.md).
+  target: [nsis, appx]
   icon: ../branding/ilet.ico
   # Not signed yet. To sign later, set CSC_LINK (the .pfx certificate) and CSC_KEY_PASSWORD, or
   # add azureSignOptions for Azure Trusted Signing; electron-builder then signs ilet.exe and the
@@ -45,3 +46,26 @@ nsis:
   include: installer/installer.nsh
   artifactName: ${productName}-Setup-${version}.${ext}
   shortcutName: ilet
+
+# The Microsoft Store package (STORE.md). Its manifest is installer/appxmanifest.xml, its images
+# are in installer/appx (npm run icons). The Store signs the package itself, so it is not signed
+# here.
+appx:
+  # Placeholders until the app's name is reserved in Partner Center, whose Product identity page
+  # gives the real values: Package/Identity/Name, Package/Identity/Publisher and
+  # Package/Properties/PublisherDisplayName. The Store shows the publisher's display name.
+  identityName: ilet.development
+  publisher: CN=ilet development
+  publisherDisplayName: ilet development
+  applicationId: ilet
+  # Must be a name reserved in Partner Center.
+  displayName: ilet
+  # Windows draws the images as they are, without a coloured plate behind them.
+  backgroundColor: transparent
+  # The first is the default. Partner Center asks for a Store listing in each.
+  languages: [en-US, tr-TR]
+  # Windows 10 version 2004, the first with uap10 (the startup task's argument).
+  minVersion: 10.0.19041.0
+  maxVersionTested: 10.0.19045.0
+  customManifestPath: appxmanifest.xml
+  artifactName: ${productName}-Store-${version}.${ext}

@@ -59,6 +59,9 @@ const bridge: IletBridge = {
   },
   setStartWithWindows: (enabled) =>
     ipcRenderer.invoke(IpcChannel.setStartWithWindows, enabled) as Promise<SettingsSummary>,
+  openStartupSettings: () => {
+    ipcRenderer.send(IpcChannel.openStartupSettings);
+  },
 
   checkNetwork: () => ipcRenderer.invoke(IpcChannel.checkNetwork) as Promise<NetworkStatus>,
   onNetworkChanged: (listener) => {

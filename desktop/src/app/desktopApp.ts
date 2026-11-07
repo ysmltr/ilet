@@ -9,7 +9,7 @@ import { createSafeStorageCipher } from '../identity/safeStorageCipher';
 import type { NetworkExposure } from '../network/networkExposure';
 import { NetworkMonitor } from '../network/networkMonitor';
 import { createWindowsProfileReader, type NetworkProfileReader } from '../network/networkProfiles';
-import { ListenAddress } from '../server/httpsServer';
+import type { ListenPolicy } from '../network/serverReach';
 import { createStartWithWindows, isHiddenStart } from '../settings/startWithWindows';
 import { errorFields, type Logger } from '../shared/logger';
 import { serveRendererAssets } from '../ui/appProtocol';
@@ -26,14 +26,23 @@ import { lockDownSession } from '../ui/securityGuards';
 import { parseSendToRequest, sendToPaths } from '../ui/sendToArguments';
 import { installSendToShortcut } from '../ui/sendToShortcut';
 import { connectSettings } from '../ui/settingsIpc';
-import { openFolderInExplorer, openNetworkSettings, revealInExplorer } from '../ui/shellActions';
+import {
+  openFolderInExplorer,
+  openNetworkSettings,
+  openStartupSettings,
+  revealInExplorer,
+} from '../ui/shellActions';
 import { createToastPresenter } from '../ui/toastPresenter';
+import { firewallBlocksOtherNetworks, type Packaging, packagingOf } from './packaging';
 import { receiveFolderRulesFor } from './receiveFolderRules';
 import { type ServerCore, startServerCore } from './serverCore';
 
 /** Must match the installer's shortcut (electron-builder's appId), or notifications do not show. */
 const APP_USER_MODEL_ID = 'com.ilet.desktop';
 const DEFAULT_SYSTEM_ROOT = 'C:\\Windows';
+
+/** Phones on the local network, or only this PC (the development app). */
+export type ServerScope = 'network' | 'this-pc';
 
 export interface DesktopAppFiles {
   readonly preload: string;
@@ -45,11 +54,16 @@ export interface DesktopAppFiles {
 /** Composition root of the desktop app: network monitor, server, window, tray and notifications. */
 export async function startDesktopApp(
   files: DesktopAppFiles,
-  listenAddress: ListenAddress,
+  scope: ServerScope,
   logger: Logger,
 ): Promise<ServerCore> {
-  // A development build has no Start menu shortcut, so Electron's own path stands in for it.
-  app.setAppUserModelId(app.isPackaged ? APP_USER_MODEL_ID : process.execPath);
+  const packaging = packagingOf(app.isPackaged, process.windowsStore);
+  // A Store package's identity names the app for its notifications; another name would hide them.
+  if (packaging !== 'store') {
+    // A development build has no Start menu shortcut, so Electron's own path stands in for it.
+    app.setAppUserModelId(packaging === 'installer' ? APP_USER_MODEL_ID : process.execPath);
+  }
+  const listenPolicy = listenPolicyFor(scope, packaging);
   const monitor = new NetworkMonitor({
     readProfiles: networkProfileReader(logger),
     networkInterfaces: os.networkInterfaces,
@@ -65,12 +79,12 @@ export async function startDesktopApp(
   const core = await startServerCore({
     dataFolder: app.getPath('userData'),
     downloadsFolder: app.getPath('downloads'),
-    listenAddress,
+    listenPolicy,
     // A server for this PC only has nothing to announce.
     createMdnsResponder:
-      listenAddress === ListenAddress.allInterfaces
-        ? (adapters) => getResponder(responderOptions(adapters))
-        : undefined,
+      listenPolicy === 'loopback'
+        ? undefined
+        : (adapters) => getResponder(responderOptions(adapters)),
     networkExposure: monitor.current,
     receiveFolderRules: receiveFolderRulesFor(app),
     hostname: os.hostname(),
@@ -88,13 +102,17 @@ export async function startDesktopApp(
   const window = new AppWindow(() => createMainWindow(files.preload, files.appIcon, logger));
   const openReceiveFolder = (): Promise<void> =>
     openFolderInExplorer(core.settings.current.receiveFolder, logger);
-  const sendToMenu = installSendToShortcut(translate('outboxTitle'), logger);
+  // Windows keeps what a Store package writes in AppData private to it, so Explorer would never
+  // see the shortcut there; the Store version has only the window (STORE.md).
+  const sendToMenu =
+    packaging === 'installer' && installSendToShortcut(translate('outboxTitle'), logger);
   const sendFlow = connectWindow({
     core,
     monitor,
     window,
     translate,
     language,
+    packaging,
     sendToMenu,
     logger,
     openReceiveFolder,
@@ -127,6 +145,7 @@ interface WindowParts {
   readonly window: AppWindow;
   readonly translate: Translate;
   readonly language: Language;
+  readonly packaging: Packaging;
   readonly sendToMenu: boolean;
   readonly logger: Logger;
   readonly openReceiveFolder: () => Promise<void>;
@@ -137,8 +156,9 @@ function connectWindow(parts: WindowParts): SendFlow {
   const guard = createIpcGuard((event) => window.isSender(event), logger);
   connectPairing(guard, core, window, os.networkInterfaces);
   connectDevices(guard, core.devices, window, translate);
-  connectSettings(guard, core, window, createStartWithWindows(app), translate, {
+  connectSettings(guard, core, window, createStartWithWindows(app, parts.packaging), translate, {
     openReceiveFolder: parts.openReceiveFolder,
+    openStartupSettings: () => openStartupSettings(logger),
   });
   connectNetwork(guard, monitor, window, {
     openNetworkSettings: () => openNetworkSettings(logger),
@@ -231,6 +251,14 @@ function stopOnQuit(
         app.exit();
       });
   });
+}
+
+/** Only the installer's firewall rules keep other networks out of a server on every address. */
+function listenPolicyFor(scope: ServerScope, packaging: Packaging): ListenPolicy {
+  if (scope === 'this-pc') {
+    return 'loopback';
+  }
+  return firewallBlocksOtherNetworks(packaging) ? 'all-interfaces' : 'private-networks';
 }
 
 function networkProfileReader(logger: Logger): NetworkProfileReader {

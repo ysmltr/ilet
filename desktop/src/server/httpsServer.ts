@@ -28,7 +28,28 @@ export const ListenAddress = {
   /** This PC only: tests and the dev token script. */
   loopback: '127.0.0.1',
 } as const;
-export type ListenAddress = (typeof ListenAddress)[keyof typeof ListenAddress];
+
+/**
+ * Counts the open connections of all the servers that share it (one per address the Store
+ * version listens on), so that listening on more addresses allows no more connections.
+ */
+export class ConnectionBudget {
+  private open = 0;
+
+  constructor(private readonly limit: number) {}
+
+  /** Counts the connection until it closes, if there is room for it. */
+  admit(socket: Socket): boolean {
+    if (this.open >= this.limit) {
+      return false;
+    }
+    this.open += 1;
+    socket.once('close', () => {
+      this.open -= 1;
+    });
+    return true;
+  }
+}
 
 export function createHttpsServer(
   credentials: TlsCredentials,
@@ -36,6 +57,7 @@ export function createHttpsServer(
   isBlockedLocalAddress: BlockedLocalAddressCheck,
   logger: Logger,
   limits: ServerLimits = SERVER_LIMITS,
+  budget: ConnectionBudget = new ConnectionBudget(limits.maxConnections),
 ): Server {
   const server = createServer(
     {
@@ -53,7 +75,6 @@ export function createHttpsServer(
     handleRequest,
   );
   server.timeout = limits.idleTimeoutMs;
-  server.maxConnections = limits.maxConnections;
   // Lets the upload route validate a request before telling the client to send the body.
   server.on('checkContinue', handleRequest);
   // Runs before any TLS bytes are processed, so other networks see nothing.
@@ -62,7 +83,8 @@ export function createHttpsServer(
     if (
       !isLocalNetworkAddress(remoteAddress) ||
       localAddress === undefined ||
-      isBlockedLocalAddress(localAddress)
+      isBlockedLocalAddress(localAddress) ||
+      !budget.admit(socket)
     ) {
       socket.destroy();
     }
@@ -73,14 +95,20 @@ export function createHttpsServer(
   return server;
 }
 
+/** `address` is an IP address, with its zone for a link-local IPv6 address. */
 export async function listen(
   server: Server,
-  address: ListenAddress,
+  address: string,
   port: number,
   logger: Logger,
 ): Promise<void> {
   await new Promise<void>((resolve, reject) => {
+    const onListening = (): void => {
+      server.off('error', onListenError);
+      resolve();
+    };
     const onListenError = (error: Error): void => {
+      server.off('listening', onListening);
       reject(
         hasErrorCode(error, 'EADDRINUSE')
           ? new StartupError('port_in_use', { detail: String(port), cause: error })
@@ -88,10 +116,8 @@ export async function listen(
       );
     };
     server.once('error', onListenError);
-    server.listen({ port, host: address, ipv6Only: false }, () => {
-      server.off('error', onListenError);
-      resolve();
-    });
+    server.once('listening', onListening);
+    server.listen({ port, host: address, ipv6Only: false });
   });
   server.on('error', (error: Error) => {
     logger.error('server error', errorFields(error));

@@ -28,6 +28,8 @@ describe('networkExposure', () => {
 
     expect(exposure.announceOn).toEqual(['Ethernet']);
     expect(exposure.acceptedLocalAddresses).toEqual(new Set(['10.0.0.5', '127.0.0.1']));
+    expect(exposure.listenAddresses).toEqual(['10.0.0.5']);
+    expect(exposure.otherNetworkConnected).toBe(true);
     // A virtual adapter is not something the user can fix in the network settings.
     expect(exposure.publicNetworks).toEqual(['Wi-Fi']);
     expect(exposure.domainNetworks).toEqual([]);
@@ -64,6 +66,25 @@ describe('networkExposure', () => {
     expect(exposure.acceptedLocalAddresses?.has('192.168.1.20')).toBe(false);
   });
 
+  it('gives link-local addresses their zone, which a server needs to bind them', () => {
+    const exposure = networkExposure([{ interfaceName: 'Wi-Fi', category: 'private' }], {
+      'Wi-Fi': [ipv4('192.168.1.20'), ipv6('fe80::1', 12), ipv6('fd00::20')],
+      'Loopback Pseudo-Interface 1': [ipv4('127.0.0.1', true)],
+    });
+    expect(exposure.listenAddresses).toEqual(['192.168.1.20', 'fe80::1%12', 'fd00::20']);
+    // The loopback adapter is no other network.
+    expect(exposure.otherNetworkConnected).toBe(false);
+  });
+
+  it('counts an adapter without a category, a virtual one included, as another network', () => {
+    const exposure = networkExposure([{ interfaceName: 'Wi-Fi', category: 'private' }], {
+      'Wi-Fi': [ipv4('192.168.1.20')],
+      'vEthernet (WSL)': [ipv4('172.20.0.1')],
+    });
+    expect(exposure.listenAddresses).toEqual(['192.168.1.20']);
+    expect(exposure.otherNetworkConnected).toBe(true);
+  });
+
   it('warns only about adapters with an address a phone could use', () => {
     const exposure = networkExposure([{ interfaceName: 'Wi-Fi', category: 'public' }], {
       'Wi-Fi': [ipv6('fe80::1')],
@@ -91,6 +112,13 @@ describe('sameExposure', () => {
   it('notices a changed address', () => {
     const before = networkExposure(profiles, interfaces);
     const after = networkExposure(profiles, { ...interfaces, Ethernet: [ipv4('10.0.0.6')] });
+    expect(sameExposure(before, after)).toBe(false);
+  });
+
+  it('notices another network that comes or goes', () => {
+    const ethernetOnly = { Ethernet: [ipv4('10.0.0.5')] };
+    const before = networkExposure(profiles, ethernetOnly);
+    const after = networkExposure(profiles, { ...ethernetOnly, 'Wi-Fi': [ipv4('192.168.1.20')] });
     expect(sameExposure(before, after)).toBe(false);
   });
 });
