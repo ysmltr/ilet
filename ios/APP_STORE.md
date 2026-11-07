@@ -94,7 +94,7 @@ Store Connect.
       `com.ysmltr.ilet`.
 - [x] Apple Developer Program (99 USD a year): register the app's App ID with the App Group
       `group.<prefix>`. The Keychain group needs no registration.
-- [ ] Register the Share Extension's App ID `<prefix>.share` with the same App Group (see
+- [x] Register the Share Extension's App ID `<prefix>.share` with the same App Group (see
       [The Share Extension's App ID](#the-share-extensions-app-id)).
 - [x] App Store Connect: create the app.
 - [ ] App Store Connect: fill in the answers below.

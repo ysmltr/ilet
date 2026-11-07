@@ -19,8 +19,8 @@ over your Wi-Fi, with no accounts, no cloud and no analytics.
 > ([SECURITY_REVIEW.md](SECURITY_REVIEW.md) S11); Windows 0.1.1 and later fix it, but a network
 > change has not been tried again yet. Newest, and tried on a real iPhone and PC: Phase 8,
 > sending from the PC to the iPhone (see [Plans](#plans)), which has had a security review of its
-> own too; Windows 0.2.1 has the PC's fix from it. Still to come: a Microsoft Store package for
-> Windows.
+> own too; its fixes, in Windows 0.2.1 and TestFlight build 14.1, were tried on both as well.
+> Still to come: a Microsoft Store package for Windows.
 
 ## Download
 
@@ -54,10 +54,10 @@ on the PC they are marked with Mark-of-the-Web.
 ### Phase 8: from the PC to the iPhone (done)
 
 Tried on a real iPhone and PC on 6 November 2026, with Windows 0.2.0, and reviewed for security
-the same day ([SECURITY_REVIEW.md](SECURITY_REVIEW.md), S12 to S14). Sending the other way
-round. The iPhone runs no server and ilet uses no push service, so files wait on the PC until
-ilet is open on the iPhone, which then fetches them over pinned HTTPS with its token, just as it
-sends:
+the same day ([SECURITY_REVIEW.md](SECURITY_REVIEW.md), S12 to S14); the review's fixes were
+tried on both the next day, with Windows 0.2.1. Sending the other way round. The iPhone runs no
+server and ilet uses no push service, so files wait on the PC until ilet is open on the iPhone,
+which then fetches them over pinned HTTPS with its token, just as it sends:
 
 - On the PC, choose files with **Send to iPhone** in ilet's window, drop them on the window, or
   right-click them in File Explorer and choose **Send to › iPhone (ilet)**. A drop and Send to
