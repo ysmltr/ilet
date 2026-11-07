@@ -8,6 +8,7 @@ import { ipv4 } from '../helpers/networkFakes';
 
 const ADAPTER_CHECK_INTERVAL_MS = 10_000;
 const PROFILE_REFRESH_INTERVAL_MS = 5 * 60_000;
+const UNKNOWN_RETRY_INTERVAL_MS = 30_000;
 const WIFI_PUBLIC: readonly NetworkProfile[] = [{ interfaceName: 'Wi-Fi', category: 'public' }];
 
 function setUp(initialProfiles: readonly NetworkProfile[] | undefined) {
@@ -91,6 +92,39 @@ describe('NetworkMonitor', () => {
 
     expect(readProfiles).toHaveBeenCalledTimes(2);
     expect(monitor.current.publicNetworks).toEqual([]);
+    monitor.stop();
+  });
+
+  it('reads again every 30 seconds while it does not know the categories', async () => {
+    vi.useFakeTimers();
+    const { monitor, readProfiles, setProfiles } = setUp(undefined);
+    await monitor.refresh();
+    monitor.start();
+
+    await vi.advanceTimersByTimeAsync(UNKNOWN_RETRY_INTERVAL_MS);
+    expect(readProfiles).toHaveBeenCalledTimes(2);
+
+    setProfiles(WIFI_PUBLIC);
+    await vi.advanceTimersByTimeAsync(UNKNOWN_RETRY_INTERVAL_MS);
+    expect(readProfiles).toHaveBeenCalledTimes(3);
+    expect(monitor.current.publicNetworks).toEqual(['Wi-Fi']);
+
+    // Known now, so only the five-minute refresh reads again.
+    await vi.advanceTimersByTimeAsync(PROFILE_REFRESH_INTERVAL_MS - 2 * UNKNOWN_RETRY_INTERVAL_MS);
+    expect(readProfiles).toHaveBeenCalledTimes(4);
+    monitor.stop();
+  });
+
+  it('retries quickly only for the first five minutes', async () => {
+    vi.useFakeTimers();
+    const { monitor, readProfiles } = setUp(undefined);
+    await monitor.refresh();
+    monitor.start();
+
+    await vi.advanceTimersByTimeAsync(2 * PROFILE_REFRESH_INTERVAL_MS);
+
+    // The first query, 9 quick retries and two five-minute refreshes.
+    expect(readProfiles).toHaveBeenCalledTimes(1 + 9 + 2);
     monitor.stop();
   });
 });

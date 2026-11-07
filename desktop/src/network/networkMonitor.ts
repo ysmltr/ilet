@@ -12,6 +12,13 @@ import type { NetworkProfileReader } from './networkProfiles';
 const ADAPTER_CHECK_INTERVAL_MS = 10_000;
 /** A category can change without any adapter changing: the user switches it in Windows Settings. */
 const PROFILE_REFRESH_INTERVAL_MS = 5 * 60_000;
+/**
+ * Until a first query succeeds, it is tried again sooner, because until then the Store version
+ * listens on 127.0.0.1 only. One can fail while Windows starts, when PowerShell is slow.
+ */
+const UNKNOWN_RETRY_INTERVAL_MS = 30_000;
+/** Only until the first five-minute refresh, which carries on after that. */
+const MAX_UNKNOWN_RETRIES = PROFILE_REFRESH_INTERVAL_MS / UNKNOWN_RETRY_INTERVAL_MS - 1;
 
 export interface NetworkMonitorDependencies {
   readonly readProfiles: NetworkProfileReader;
@@ -25,6 +32,7 @@ type ExposureListener = (exposure: NetworkExposure) => void;
 export class NetworkMonitor {
   private exposure: NetworkExposure = UNKNOWN_EXPOSURE;
   private categoriesKnown = false;
+  private unknownRetries = 0;
   private adaptersKey = '';
   private reading: Promise<void> | undefined;
   private readonly listeners = new Set<ExposureListener>();
@@ -57,12 +65,22 @@ export class NetworkMonitor {
       setInterval(() => {
         void this.refresh();
       }, PROFILE_REFRESH_INTERVAL_MS),
+      setInterval(() => {
+        this.retryIfUnknown();
+      }, UNKNOWN_RETRY_INTERVAL_MS),
     );
   }
 
   stop(): void {
     for (const timer of this.timers.splice(0)) {
       clearInterval(timer);
+    }
+  }
+
+  private retryIfUnknown(): void {
+    if (!this.categoriesKnown && this.unknownRetries < MAX_UNKNOWN_RETRIES) {
+      this.unknownRetries += 1;
+      void this.refresh();
     }
   }
 

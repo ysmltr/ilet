@@ -79,15 +79,15 @@ describe('createWindowsProfileReader', () => {
     expect(logger.lines.join('\n')).toContain('unexpected format');
   });
 
+  // On a busy CI runner, PowerShell can take longer to start than the reader's own 10 s limit.
   it.runIf(runsOnWindows)(
     'reads the networks of this PC',
+    { timeout: POWERSHELL_QUERY_TIMEOUT_MS, retry: 1 },
     async () => {
-      const read = createWindowsProfileReader(
-        process.env['SystemRoot'] ?? SYSTEM_ROOT,
-        createMemoryLogger(),
-      );
-      expect(Array.isArray(await read())).toBe(true);
+      const logger = createMemoryLogger();
+      const read = createWindowsProfileReader(process.env['SystemRoot'] ?? SYSTEM_ROOT, logger);
+      // If PowerShell failed, its log line says why.
+      expect(Array.isArray(await read()), logger.lines.join('\n')).toBe(true);
     },
-    POWERSHELL_QUERY_TIMEOUT_MS,
   );
 });

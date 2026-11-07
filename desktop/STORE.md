@@ -21,8 +21,9 @@ Before that, Windows installs it only in Developer Mode, for a test (see
 when the app listens there and no rule decides. The installer's block rules answer that question
 for Public and Domain networks. A Store package can only allow, so the Store version must not
 listen on those networks at all: its server listens only on the addresses that the PC has on
-Private networks, and on `127.0.0.1`, and follows them when networks change. While Windows has not
-said which networks are Private, it listens on `127.0.0.1` only. Bonjour's port (UDP 5353) is
+Private networks, and on `127.0.0.1`, and follows them when networks change. Until it knows which
+networks are Private, it listens on `127.0.0.1` only, and asks Windows again every 30 seconds for
+the first five minutes. Bonjour's port (UDP 5353) is
 opened on every network at once, so the Store version announces itself only while every
 connected network is Private. A second network that is not, such as a VPN or the virtual network
 of WSL or Hyper-V, turns the announcement off.
