@@ -65,9 +65,28 @@ jobs:
       - name: Type check, lint (zero warnings) and tests
         run: npm run check
 
-      # Only builds; the release job below publishes.
+      # Only builds; the release job below publishes. electron-builder's own copy of makeappx comes
+      # from Windows SDK 10.0.17763, which does not know the manifest's uap10 namespace (the startup
+      # task's argument), so the Store package is made with the newest Windows SDK on GitHub's PC.
+      # The log can be read only when signed in to GitHub, so its error lines also become
+      # annotations.
       - name: Build the installer and the Store package
-        run: npm run package -- --publish never
+        run: |
+          kit=$(printf '%s\n' "/c/Program Files (x86)/Windows Kits/10/bin"/10.*/x64 | sort -V | tail -n 1)
+          if [[ ! -f "$kit/makeappx.exe" || ! -f "$kit/makepri.exe" ]]; then
+            echo "::error title=Windows SDK::No Windows SDK with makeappx and makepri was found."
+            exit 1
+          fi
+          echo "Store package tools: $kit"
+          ELECTRON_BUILDER_WINDOWS_KITS_PATH=$(cygpath -w "$kit")
+          export ELECTRON_BUILDER_WINDOWS_KITS_PATH
+          if ! npm run package -- --publish never 2>&1 | tee package.log; then
+            grep -aiE '⨯|error' package.log | tail -n 10 | while IFS= read -r line; do
+              line=${line//$'\r'/}
+              echo "::error title=Package::${line//'%'/'%25'}"
+            done
+            exit 1
+          fi
 
       - name: Find the installer and the Store package
         id: installer

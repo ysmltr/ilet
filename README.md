@@ -139,6 +139,11 @@ debugging flags, and loads only its own checked app archive. The installer is no
 yet, so Windows SmartScreen warns before it runs (More info → Run anyway). To sign it later, set
 `CSC_LINK` (the certificate file) and `CSC_KEY_PASSWORD` before `npm run package`.
 
+The Store package needs `makeappx` from Windows SDK 10.0.19041 or later, because electron-builder's
+own copy is older. CI uses the newest SDK on GitHub's PC. On your own PC, install the Windows SDK
+and, before `npm run package`, set `ELECTRON_BUILDER_WINDOWS_KITS_PATH` to its tools, for example
+`C:\Program Files (x86)\Windows Kits\10\bin\10.0.22000.0\x64`.
+
 **Releases.** [`.github/workflows/desktop.yml`](.github/workflows/desktop.yml) runs `npm run check`
 and builds the installer (`ilet-Setup-<version>.exe`) and the Microsoft Store package
 (`ilet-Store-<version>.appx`) on one of GitHub's Windows PCs whenever `desktop/` or `branding/`
