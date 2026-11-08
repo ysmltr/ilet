@@ -51,15 +51,17 @@ nsis:
 # are in installer/appx (npm run icons). The Store signs the package itself, so it is not signed
 # here.
 appx:
-  # Placeholders until the app's name is reserved in Partner Center, whose Product identity page
-  # gives the real values: Package/Identity/Name, Package/Identity/Publisher and
-  # Package/Properties/PublisherDisplayName. The Store shows the publisher's display name.
-  identityName: ilet.development
-  publisher: CN=ilet development
-  publisherDisplayName: ilet development
+  # From the Product identity page in Partner Center: Package/Identity/Name,
+  # Package/Identity/Publisher and Package/Properties/PublisherDisplayName. Partner Center takes a
+  # package only with exactly these values. None of them is secret: every installed copy shows
+  # them, and the Store shows the publisher's display name.
+  identityName: landroapps.iletFilesBetweenPhonePC
+  publisher: CN=A4D7BAF1-319D-4246-89A2-9422BA49FDA7
+  publisherDisplayName: landroapps
   applicationId: ilet
-  # Must be a name reserved in Partner Center.
-  displayName: ilet
+  # The name reserved in Partner Center (Manage app names). Windows also shows it in the Start
+  # menu and on the Startup page in Settings.
+  displayName: 'ilet: Files Between Phone & PC'
   # Windows draws the images as they are, without a coloured plate behind them.
   backgroundColor: transparent
   # The first is the default. Partner Center asks for a Store listing in each.

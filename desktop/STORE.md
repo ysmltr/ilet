@@ -65,13 +65,13 @@ and the paired iPhone.
    Add-AppxPackage -Register .\ilet-store-test\package\AppxManifest.xml
    ```
 
-5. Start it. The Start menu lists both versions as ilet, so this command starts the Store version
-   by its package name, `ilet.development` (`identityName` in `electron-builder.yml`, until it
-   holds the name from Partner Center). Its settings show **Open startup settings** instead of the
-   Start with Windows checkbox.
+5. Start it from the Start menu, where it is **ilet: Files Between Phone & PC** (the installer
+   version is ilet), or with this command, which finds it by its package name (`identityName` in
+   `electron-builder.yml`). Its settings show **Open startup settings** instead of the Start with
+   Windows checkbox.
 
    ```powershell
-   explorer.exe "shell:AppsFolder\$((Get-AppxPackage -Name ilet.development).PackageFamilyName)!ilet"
+   explorer.exe "shell:AppsFolder\$((Get-AppxPackage -Name landroapps.iletFilesBetweenPhonePC).PackageFamilyName)!ilet"
    ```
 
 What to check:
@@ -99,7 +99,7 @@ What to check:
 Then remove the test version, delete the folder and turn Developer Mode off:
 
 ```powershell
-Get-AppxPackage -Name ilet.development | Remove-AppxPackage
+Get-AppxPackage -Name landroapps.iletFilesBetweenPhonePC | Remove-AppxPackage
 Remove-Item -Recurse .\ilet-store-test
 ```
 
@@ -118,12 +118,15 @@ App Review gets the Windows app from Releases ([ios/APP_STORE.md](../ios/APP_STO
    installs on every user's PC by itself (THREAT_MODEL.md T49).
 2. **Reserve the name.** Apps and games › New product › **MSIX or PWA app**. The name must be free
    in the whole Store, so have a second one ready; it may differ from the iPhone app's name.
+   ilet's is **ilet: Files Between Phone & PC**. The Store Policies (10.1.1) say that a name must
+   not contain marketing or descriptive text; if certification objects to it, reserve a shorter
+   one under Product management › Manage app names and build again with it.
 3. **Product identity.** The app › Product management › Product identity shows
    `Package/Identity/Name`, `Package/Identity/Publisher` and
-   `Package/Properties/PublisherDisplayName`. They and the reserved name go into the `appx` section
-   of `electron-builder.yml` (`identityName`, `publisher`, `publisherDisplayName`, `displayName`).
-   None of them is secret (every installed copy shows them), and the Store shows the publisher's
-   display name to everyone.
+   `Package/Properties/PublisherDisplayName`. They and the reserved name are in the `appx` section
+   of `electron-builder.yml` (`identityName`, `publisher`, `publisherDisplayName`, `displayName`),
+   exactly as Partner Center shows them. None of them is secret (every installed copy shows them),
+   and the Store shows the publisher's display name to everyone.
 4. **The package.** Raise `version` in `desktop/package.json` and push, then start a release
    (Actions › Desktop › Run workflow, on `main`; see Releases in the README). Upload the
    `store-package` of that run: GitHub attests it like the installer, so it is provably the build
@@ -159,7 +162,7 @@ App Review gets the Windows app from Releases ([ios/APP_STORE.md](../ios/APP_STO
 
 | Field                  | English                                                           | Türkçe                                                          |
 | ---------------------- | ----------------------------------------------------------------- | --------------------------------------------------------------- |
-| Name                   | The reserved name                                                 | The reserved name                                               |
+| Name                   | ilet: Files Between Phone & PC                                    | ilet: Files Between Phone & PC                                  |
 | Search terms (up to 7) | iphone, file transfer, photos, videos, wifi, local network, share | iphone, dosya aktarımı, fotoğraf, video, wifi, yerel ağ, paylaş |
 
 **Description (English)**
