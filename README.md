@@ -20,8 +20,8 @@ over your Wi-Fi, with no accounts, no cloud and no analytics.
 > change has not been tried again yet. Newest, and tried on a real iPhone and PC: Phase 8,
 > sending from the PC to the iPhone (see [Plans](#plans)), which has had a security review of its
 > own too; its fixes, in Windows 0.2.1 and TestFlight build 14.1, were tried on both as well.
-> In progress: a Microsoft Store package for Windows, which CI builds but which has not been tried
-> on a PC or submitted yet ([desktop/STORE.md](desktop/STORE.md)).
+> In progress: a Microsoft Store package for Windows, tried on a real PC on 9 November 2026 but
+> not submitted yet ([desktop/STORE.md](desktop/STORE.md)).
 
 ## Download
 
@@ -81,8 +81,10 @@ so SmartScreen does not warn, and keeps it up to date. A package's firewall rule
 never block, so on a Public network Windows would ask whether ilet may use it. The Store version
 therefore listens only on the PC's addresses on Private networks, and announces itself only while
 no other network is connected. It starts with Windows only once it is switched on in Windows'
-Startup settings, and it has no Send to entry. [desktop/STORE.md](desktop/STORE.md) lists the
-differences, how to try the package in Developer Mode, and the steps in Partner Center.
+Startup settings, and it has no Send to entry. Tried on a real PC on 9 November 2026, with
+Windows 0.3.1: Windows asked nothing about the firewall, also on a Public network.
+[desktop/STORE.md](desktop/STORE.md) lists the differences, how to try the package in Developer
+Mode, and the steps in Partner Center.
 
 ## Repository layout
 

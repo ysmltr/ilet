@@ -8,14 +8,14 @@ Before that, Windows installs it only in Developer Mode, for a test (see
 
 ## What is different
 
-|                          | Installer (`ilet-Setup-<version>.exe`)                                          | Microsoft Store                                                                                                           |
-| ------------------------ | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Updates                  | Download the new installer from Releases                                        | The Store installs them by itself; users can only pause them. ilet has no updater of its own.                             |
-| Firewall                 | The installer's rules allow ilet on Private networks and block it on the others | The package's rules allow ilet on Private networks. A package cannot block, so ilet does not listen on any other network. |
-| Bonjour (finding the PC) | On Private networks                                                             | Only while no other network is connected (see below); without it, the iPhone tries the addresses it knows                 |
-| Start with Windows       | The checkbox in ilet's settings                                                 | Off at first. It is switched on in Windows Settings › Apps › Startup, which a button in ilet's settings opens.            |
-| Send to › iPhone (ilet)  | In File Explorer's right-click menu                                             | Not there: drop files on ilet's window, or use Send to iPhone in it                                                       |
-| Data in AppData          | `%APPDATA%\ilet`, kept after uninstalling                                       | Windows keeps what ilet creates there in a folder of the package and deletes it when ilet is uninstalled                  |
+|                          | Installer (`ilet-Setup-<version>.exe`)                                          | Microsoft Store                                                                                                            |
+| ------------------------ | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Updates                  | Download the new installer from Releases                                        | The Store installs them by itself; users can only pause them. ilet has no updater of its own.                              |
+| Firewall                 | The installer's rules allow ilet on Private networks and block it on the others | The package's rules allow ilet on Private networks. A package cannot block, so ilet does not listen on any other network.  |
+| Bonjour (finding the PC) | On Private networks                                                             | Only while no other network is connected (see below); without it, the iPhone tries the addresses it knows                  |
+| Start with Windows       | The checkbox in ilet's settings                                                 | Off at first. It is switched on in Windows Settings › Apps › Startup, which a button in ilet's settings opens.             |
+| Send to › iPhone (ilet)  | In File Explorer's right-click menu                                             | Not there: drop files on ilet's window, or use Send to iPhone in it                                                        |
+| Data in AppData          | `%APPDATA%\ilet`, kept after uninstalling                                       | The installer version's `%APPDATA%\ilet` if it is there; if not, a folder of the package, deleted when ilet is uninstalled |
 
 **Why ilet listens differently.** Windows Firewall asks the user whether an app may use a network
 when the app listens there and no rule decides. The installer's block rules answer that question
@@ -28,26 +28,36 @@ opened on every network at once, so the Store version announces itself only whil
 connected network is Private. A second network that is not, such as a VPN or the virtual network
 of WSL or Hyper-V, turns the announcement off.
 
-**Why there is no Send to.** Windows keeps the files that a Store app creates in AppData private
-to that app, and Explorer's Send to folder is in AppData, so Explorer would never see the entry.
+**Why there is no Send to.** Its entry is a shortcut in Explorer's Send to folder, which is in
+AppData. Windows may keep a file that the Store version creates there private to it, where
+Explorer never sees it, or, as with `%APPDATA%\ilet` below, write it to the real folder, where it
+stays after the Store version is uninstalled and points at a program that is gone.
 
-**Data.** Windows keeps the files that the Store version creates in AppData in a folder of the
-package (in `%LOCALAPPDATA%\Packages`), shows them to ilet as if they were in `%APPDATA%\ilet`,
-and deletes them when ilet is uninstalled. Files that were already there, from the installer
-version, stay where they are, and the Store version can read and change them. Received files go to
-the folder chosen in the settings, `Downloads\ilet` at first, as in the installer version, and stay
-there after uninstalling.
+**Data.** On a PC where the installer version has made `%APPDATA%\ilet`, the Store version uses
+that same folder: it finds the paired phones and the settings there, and the installer version
+sees what it changes. Uninstalling the Store version leaves the folder. On a PC without it,
+Windows keeps what the Store version creates in AppData in a folder of the package (in
+`%LOCALAPPDATA%\Packages`), shows it to ilet as `%APPDATA%\ilet`, and deletes it when ilet is
+uninstalled. Received files go to the folder chosen in the settings, `Downloads\ilet` at first, as
+in the installer version, and stay there after uninstalling.
 
-Use one version per PC: both use the same data folder name, so only one of them can run at a time,
-and Windows may keep what the Store version changes away from the installer version. To move to
-the Store version, turn off Start with Windows in the installer version, then uninstall it
-(Settings › Apps).
+Use one version per PC. Both use the same data folder name, so only one of them can run at a time:
+starting one while the other runs only brings the running one's window forward. When they share
+the installer version's folder, a phone removed in one is removed in the other too. To move to the
+Store version, turn off Start with Windows in the installer version, then uninstall it (Settings ›
+Apps).
 
 ## Trying the package
 
 Do this before the first submission, and after changes to the Store version's own parts (the
 manifest, the firewall rules, where ilet listens). You need the PC that has the installer version
 and the paired iPhone.
+
+Tried on 9 November 2026 with version 0.3.1, on Windows 10: Windows asked nothing about the
+firewall with the Wi-Fi Private, switched to Public while ilet ran, or Public when it started, and
+on a Public network ilet listened on `127.0.0.1` only. Receiving, sending and the Startup page
+worked, and the installer version showed a name given in the Store version. Not tried yet: a
+second network, starting with Windows after signing in, and a PC without the installer version.
 
 1. Turn on Developer Mode: Settings › Update & Security › For developers › Developer Mode. It lets
    Windows install an app from a folder without a signature. Turn it off again at the end.
@@ -93,14 +103,15 @@ What to check:
   (Ethernet, a phone's hotspot over USB, a VPN), connect it while ilet runs on the Private Wi-Fi:
   no question either. If Windows does ask, choose **Cancel**, never Allow, and stop the test.
 - **Two versions:** rename the iPhone in the list of paired devices, quit the Store version from
-  the tray, then start the installer version: its list shows whether it sees the Store version's
-  change. Quit the installer version again.
+  the tray, then start the installer version (its window mentions Send to, the Store version's
+  does not): its list should show the new name. Quit the installer version again.
 
-Then remove the test version, delete the folder and turn Developer Mode off:
+Then remove the test version, delete the folder (with `-Force`, because Windows leaves a hidden
+folder in it) and turn Developer Mode off:
 
 ```powershell
 Get-AppxPackage -Name landroapps.iletFilesBetweenPhonePC | Remove-AppxPackage
-Remove-Item -Recurse .\ilet-store-test
+Remove-Item -Recurse -Force .\ilet-store-test
 ```
 
 Start the installer version again from the Start menu.

@@ -1,6 +1,6 @@
 # ilet privacy policy
 
-*Last updated: 7 November 2026 · [Türkçe aşağıda](#ilet-gizlilik-politikası)*
+*Last updated: 10 November 2026 · [Türkçe aşağıda](#ilet-gizlilik-politikası)*
 
 ilet sends files between your iPhone and your own PC over your own Wi-Fi network.
 
@@ -47,8 +47,9 @@ On your PC:
 - Your settings, and the files you received, in the folder you chose.
 - The files you send to your iPhone: a copy of each waits in `%APPDATA%\ilet\outbox` for at most
   24 hours. It is deleted as soon as your iPhone has the file, or when you cancel it.
-- In the Microsoft Store version, Windows keeps what ilet creates in `%APPDATA%\ilet` in a folder
-  of the app's own, and deletes it when you uninstall ilet.
+- The Microsoft Store version uses `%APPDATA%\ilet` as it is if the version from GitHub made that
+  folder first. Otherwise Windows keeps what ilet creates there in a folder of the app's own, and
+  deletes it when you uninstall ilet.
 
 ## Sharing
 
@@ -61,8 +62,9 @@ ilet shares nothing with anyone. There is no one to share with: ilet has no serv
   their way to it or from it. Deleting the ilet app deletes its data, the received files and its
   Keychain entries; move the files you want to keep first.
 - PC: remove a phone in ilet's list of paired devices, or uninstall ilet and then delete the
-  folder `%APPDATA%\ilet` if it is still there (uninstalling the Microsoft Store version deletes
-  what that version created). Received files stay in your folder until you delete them.
+  folder `%APPDATA%\ilet` if it is still there (after uninstalling the Microsoft Store version, it
+  is there only if the version from GitHub made it). Received files stay in your folder until you
+  delete them.
 
 ## Questions
 
@@ -72,7 +74,7 @@ Open an issue at <https://github.com/ysmltr/ilet/issues>.
 
 # ilet gizlilik politikası
 
-*Son güncelleme: 7 Kasım 2026*
+*Son güncelleme: 10 Kasım 2026*
 
 ilet, dosyaları iPhone’unuz ile kendi bilgisayarınız arasında, kendi Wi-Fi ağınız üzerinden
 gönderir.
@@ -123,7 +125,8 @@ Bilgisayarınızda:
 - iPhone’unuza gönderdiğiniz dosyalar: her birinin kopyası en fazla 24 saat
   `%APPDATA%\ilet\outbox` klasöründe bekler. iPhone’unuz dosyayı alır almaz ya da siz iptal
   ettiğinizde silinir.
-- Microsoft Store sürümünde Windows, ilet’in `%APPDATA%\ilet` içinde oluşturduklarını uygulamaya
+- GitHub’daki sürüm `%APPDATA%\ilet` klasörünü daha önce oluşturduysa Microsoft Store sürümü de bu
+  klasörü olduğu gibi kullanır. Oluşturmadıysa Windows, ilet’in orada oluşturduklarını uygulamaya
   ait bir klasörde tutar ve ilet’i kaldırdığınızda siler.
 
 ## Paylaşım
@@ -139,7 +142,8 @@ ilet hiçbir şeyi kimseyle paylaşmaz; paylaşacağı bir yer de yoktur, çünk
   başka bir yere taşıyın.
 - Bilgisayar: telefonu ilet’in eşleştirilmiş cihazlar listesinden kaldırın ya da ilet’i kaldırın
   ve ardından `%APPDATA%\ilet` klasörü hâlâ duruyorsa onu silin (Microsoft Store sürümünü
-  kaldırmak, o sürümün oluşturduklarını siler). Gelen dosyalar siz silene kadar klasörünüzde kalır.
+  kaldırdıktan sonra bu klasör, yalnızca GitHub’daki sürüm onu oluşturduysa durur). Gelen dosyalar
+  siz silene kadar klasörünüzde kalır.
 
 ## Sorular
 
